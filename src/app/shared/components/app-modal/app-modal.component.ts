@@ -47,7 +47,11 @@ export class AppModalComponent implements AfterViewInit, OnDestroy {
   }
 
   @HostListener('document:keydown.tab', ['$event'])
-  onTab(event: KeyboardEvent): void {
+  onTab(event: Event): void {
+    // Angular 21's strict host-binding inference types $event as Event; narrow at runtime.
+    if (!(event instanceof KeyboardEvent)) {
+      return;
+    }
     if (!this.panel?.nativeElement) {
       return;
     }
