@@ -1,0 +1,284 @@
+<section class="users-page">
+  <header class="page-header">
+    <div>
+      <h2>Usuarios</h2>
+      <p>Administracion de usuarios internos y roles asignados.</p>
+    </div>
+
+    <button type="button" class="btn-primary" (click)="openCreateForm()" *appHasPermission="['Users.Create']">
+      Nuevo usuario
+    </button>
+  </header>
+
+  <section class="filters">
+    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <label>
+        Buscar
+        <input type="text" formControlName="search" placeholder="Usuario, nombre o correo" />
+      </label>
+
+      <label>
+        Tamano pagina
+        <select formControlName="pageSize">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+
+      <div class="filter-actions">
+        <button type="submit" class="btn-secondary">Aplicar</button>
+        <button type="button" class="btn-secondary" (click)="clearFilters()">Limpiar</button>
+      </div>
+    </form>
+  </section>
+
+  @if (listError) {
+    <section class="error-box">
+      <p>{{ listError }}</p>
+    </section>
+  }
+
+  @if (isLoading) {
+    <app-loading-state message="Cargando usuarios..." />
+  } @else if (users.length === 0) {
+    <app-empty-state title="Sin usuarios" message="No hay usuarios para el filtro actual." />
+  } @else {
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Nombre completo</th>
+            <th>Correo</th>
+            <th>Estado</th>
+            <th>Roles</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users; track user.id) {
+            <tr>
+              <td>{{ user.userName || '-' }}</td>
+              <td>{{ fullName(user) }}</td>
+              <td>{{ user.email || '-' }}</td>
+              <td>
+                <span [class]="statusClass(user.isActive)">{{ user.isActive ? 'Activo' : 'Inactivo' }}</span>
+              </td>
+              <td>{{ roleNamesFromUser(user) }}</td>
+              <td class="row-actions">
+                <button type="button" class="btn-secondary" (click)="viewUserDetail(user.id)">Ver</button>
+                <button type="button" class="btn-secondary" (click)="openEditForm(user.id)" *appHasPermission="['Users.Update']">
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  class="btn-danger"
+                  (click)="disableUser(user)"
+                  [disabled]="!user.isActive"
+                  *appHasPermission="['Users.Disable']"
+                >
+                  Deshabilitar
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  <section class="pagination">
+    <span>Pagina {{ currentPage }} de {{ totalPages() }} | Total {{ totalCount }}</span>
+    <div>
+      <button type="button" class="btn-secondary" (click)="goToPreviousPage()" [disabled]="currentPage <= 1">Anterior</button>
+      <button type="button" class="btn-secondary" (click)="goToNextPage()" [disabled]="currentPage >= totalPages()">Siguiente</button>
+    </div>
+  </section>
+
+  @if (showForm) {
+    <app-modal (closed)="cancelForm()">
+      <section class="form-panel">
+        <header>
+          <h3>{{ editingUserId ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
+          <button type="button" class="btn-secondary" (click)="cancelForm()">Cerrar</button>
+        </header>
+
+        @if (formError) {
+          <p class="error-text">{{ formError }}</p>
+        }
+
+        <form [formGroup]="userForm" (ngSubmit)="submitUser()" novalidate>
+          <div class="grid">
+            <h4 class="form-section-title full-width">Identidad</h4>
+
+            <label>
+              <span class="form-label">Usuario <span class="required-marker">*</span></span>
+              <input type="text" formControlName="userName" [readonly]="!!editingUserId" />
+              @if (userForm.controls.userName.invalid && (userForm.controls.userName.touched || formSubmitted)) {
+                <span class="field-error">Usuario es requerido.</span>
+              }
+            </label>
+
+            <label>
+              <span class="form-label">Correo <span class="required-marker">*</span></span>
+              <input type="email" formControlName="email" />
+              @if (userForm.controls.email.invalid && (userForm.controls.email.touched || formSubmitted)) {
+                <span class="field-error">Ingresa un correo valido.</span>
+              }
+            </label>
+
+            <label>
+              <span class="form-label">Nombres <span class="required-marker">*</span></span>
+              <input type="text" formControlName="firstName" />
+              @if (userForm.controls.firstName.invalid && (userForm.controls.firstName.touched || formSubmitted)) {
+                <span class="field-error">Nombres son requeridos.</span>
+              }
+            </label>
+
+            <label>
+              <span class="form-label">Apellidos <span class="required-marker">*</span></span>
+              <input type="text" formControlName="lastName" />
+              @if (userForm.controls.lastName.invalid && (userForm.controls.lastName.touched || formSubmitted)) {
+                <span class="field-error">Apellidos son requeridos.</span>
+              }
+            </label>
+
+            @if (!editingUserId) {
+              <label>
+                <span class="form-label">Password temporal <span class="required-marker">*</span></span>
+                <input type="password" formControlName="password" />
+                @if (userForm.controls.password.invalid && (userForm.controls.password.touched || formSubmitted)) {
+                  <span class="field-error">Password minimo 8 caracteres.</span>
+                }
+              </label>
+            }
+
+            <label>
+              Estado
+              <select formControlName="isActive">
+                <option [ngValue]="true">Activo</option>
+                <option [ngValue]="false">Inactivo</option>
+              </select>
+            </label>
+
+            <h4 class="form-section-title full-width">Roles asignados</h4>
+
+            <div class="full-width role-picker">
+              @if (isLookupLoading) {
+                <app-loading-state message="Cargando roles..." />
+              } @else if (roleOptions.length === 0) {
+                <app-empty-state
+                  title="Sin roles disponibles"
+                  message="No fue posible cargar roles para asignar."
+                />
+              } @else {
+                <div class="role-options">
+                  @for (role of roleOptions; track role.id) {
+                    <label class="role-option">
+                      <input
+                        type="checkbox"
+                        [checked]="isRoleSelected(role.id)"
+                        (change)="toggleRole(role.id, $any($event.target).checked)"
+                      />
+                      <span class="role-name">{{ role.name }}</span>
+                      <span class="role-meta">{{ role.description || 'Sin descripcion' }}</span>
+                    </label>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+          @if (userForm.controls.roleIds.invalid && (userForm.controls.roleIds.dirty || formSubmitted)) {
+            <p class="field-error">Selecciona al menos un rol para continuar.</p>
+          }
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="cancelForm()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="isSubmitting || userForm.invalid">
+              {{ editingUserId ? 'Guardar cambios' : 'Crear usuario' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </app-modal>
+  }
+
+  @if (showUserDetailModal) {
+    <app-modal (closed)="closeUserDetailModal()">
+      <section class="form-panel detail-modal">
+        <header>
+          <h3>Detalle de usuario</h3>
+          <button type="button" class="btn-secondary" (click)="closeUserDetailModal()">Cerrar</button>
+        </header>
+
+        @if (isDetailLoading) {
+          <app-loading-state message="Cargando detalle de usuario..." />
+        } @else if (detailError) {
+          <section class="error-box">
+            <p>{{ detailError }}</p>
+          </section>
+        } @else if (selectedUserDetail; as detail) {
+          <div class="detail-header">
+            <div>
+              <h4>{{ userDisplayName(detail) }}</h4>
+              <p>{{ detail.userName || detail.email || '-' }}</p>
+            </div>
+            <span [class]="statusClass(detail.isActive)">{{ detail.isActive ? 'Activo' : 'Inactivo' }}</span>
+          </div>
+
+          <div class="detail-grid">
+            <div><strong>Usuario:</strong> {{ detail.userName || '-' }}</div>
+            <div><strong>Correo:</strong> {{ detail.email || '-' }}</div>
+            <div><strong>Nombre:</strong> {{ fullName(detail) }}</div>
+            <div><strong>Ultimo login:</strong> {{ detail.lastLoginAtUtc ? (detail.lastLoginAtUtc | date: 'short') : '-' }}</div>
+            <div class="full-width"><strong>Roles:</strong> {{ roleNamesFromUser(detail) }}</div>
+          </div>
+
+          <section class="subsection">
+            <h4>Permisos efectivos</h4>
+            @if (!detail.permissions || detail.permissions.length === 0) {
+              <app-empty-state title="Sin permisos" message="Este usuario no tiene permisos efectivos listados." />
+            } @else {
+              <div class="permission-chips">
+                @for (permission of detail.permissions; track permission) {
+                  <span class="chip">{{ permission }}</span>
+                }
+              </div>
+            }
+          </section>
+        }
+      </section>
+    </app-modal>
+  }
+
+  @if (showDisableConfirmModal && pendingDisableUser) {
+    <app-modal (closed)="cancelDisableUser()" [closeOnBackdrop]="!isSubmitting">
+      <section class="form-panel confirm-panel">
+        <header>
+          <h3>Deshabilitar usuario</h3>
+          <button type="button" class="btn-secondary" (click)="cancelDisableUser()" [disabled]="isSubmitting">Cerrar</button>
+        </header>
+
+        <p>
+          Se deshabilitara el usuario
+          <strong>{{ userDisplayName(pendingDisableUser) }}</strong>.
+          Esta accion puede revertirse luego editando el usuario.
+        </p>
+
+        @if (disableError) {
+          <p class="error-text">{{ disableError }}</p>
+        }
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelDisableUser()" [disabled]="isSubmitting">Cancelar</button>
+          <button type="button" class="btn-danger" (click)="confirmDisableUser()" [disabled]="isSubmitting">
+            Confirmar deshabilitacion
+          </button>
+        </div>
+      </section>
+    </app-modal>
+  }
+</section>

@@ -1,0 +1,133 @@
+{
+  "executedAtUtc": "2026-05-11T15:15:41.162Z",
+  "frontendUrl": "http://localhost:4200",
+  "runtimeErrors": [],
+  "results": [
+    {
+      "step": 1,
+      "title": "Login admin",
+      "status": "PASS",
+      "detail": "Login OK"
+    },
+    {
+      "step": 2,
+      "title": "Crear proyecto y refresco inmediato",
+      "status": "PASS",
+      "detail": "Proyecto PR-F811778512503969 visible sin click extra"
+    },
+    {
+      "step": 3,
+      "title": "Editar proyecto y reflejo inmediato",
+      "status": "PASS",
+      "detail": "Nombre actualizado en tabla sin click extra"
+    },
+    {
+      "step": 4,
+      "title": "Crear lote y refresco inmediato",
+      "status": "PASS",
+      "detail": "Lote LT-F811778512503969 visible sin click extra"
+    },
+    {
+      "step": 5,
+      "title": "Cambiar estado de lote y reflejo inmediato",
+      "status": "PASS",
+      "detail": "Estado Reservado visible inmediatamente"
+    },
+    {
+      "step": 6,
+      "title": "Crear cliente y refresco inmediato",
+      "status": "PASS",
+      "detail": "Cliente ClienteF811778512503969 Demo visible sin click extra"
+    },
+    {
+      "step": 6.1,
+      "title": "Crear cliente Juridica y refresco inmediato",
+      "status": "PASS",
+      "detail": "Cliente juridica Empresa F811778512503969 visible por busqueda email sin click extra"
+    },
+    {
+      "step": 7,
+      "title": "Editar cliente y reflejo inmediato",
+      "status": "PASS",
+      "detail": "Telefono actualizado en fila sin click extra"
+    },
+    {
+      "step": 8,
+      "title": "Crear beneficiario y refresco inmediato",
+      "status": "PASS",
+      "detail": "Beneficiario visible sin click extra"
+    },
+    {
+      "step": 9,
+      "title": "Crear referencia y refresco inmediato",
+      "status": "PASS",
+      "detail": "Referencia visible sin click extra"
+    },
+    {
+      "step": 10,
+      "title": "Crear contrato y refresco inmediato",
+      "status": "PASS",
+      "detail": "Contrato visible sin click extra (CTR-20260511-6EB8BD)"
+    },
+    {
+      "step": 11,
+      "title": "Generar documentos y refresco inmediato",
+      "status": "PASS",
+      "detail": "Documentos visibles sin click extra"
+    },
+    {
+      "step": 11.1,
+      "title": "Consultar cronograma sin navegacion adicional",
+      "status": "PASS",
+      "detail": "Cronograma cargado en detalle sin click extra"
+    },
+    {
+      "step": 12,
+      "title": "Registrar pago y refresco inmediato",
+      "status": "PASS",
+      "detail": "Detalle refrescado sin click extra (PAY-20260511-CD53CE)"
+    },
+    {
+      "step": 13,
+      "title": "Aplicar pago y refresco inmediato de balance/detalle",
+      "status": "PASS",
+      "detail": "Aplicacion reflejada sin click extra"
+    },
+    {
+      "step": 14,
+      "title": "Crear recibo y refresco inmediato",
+      "status": "PASS",
+      "detail": "Recibo reflejado sin click extra (RCP-20260511-07B18B)"
+    },
+    {
+      "step": 14.1,
+      "title": "Descargar PDF y DOCX con blob/bearer",
+      "status": "PASS",
+      "detail": "Descargas OK (RCP-20260511-07B18B.pdf, RCP-20260511-07B18B.docx)"
+    },
+    {
+      "step": 15,
+      "title": "Aprobar comprobante y refresco inmediato",
+      "status": "PASS",
+      "detail": "Comprobante aprobado visible sin click extra"
+    },
+    {
+      "step": 16,
+      "title": "Rechazar comprobante y refresco inmediato",
+      "status": "PASS",
+      "detail": "Comprobante rechazado visible sin click extra"
+    },
+    {
+      "step": 17,
+      "title": "Anular pago y refresco inmediato",
+      "status": "PASS",
+      "detail": "Pago anulado visible sin click extra"
+    },
+    {
+      "step": 18,
+      "title": "Anular recibo y refresco inmediato",
+      "status": "PASS",
+      "detail": "Recibo anulado visible sin click extra"
+    }
+  ]
+}

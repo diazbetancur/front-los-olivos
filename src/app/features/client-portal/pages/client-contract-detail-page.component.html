@@ -1,0 +1,319 @@
+<section class="contract-detail-page">
+  <header class="page-header">
+    <div class="title-wrap">
+      <a class="back-link" routerLink="/client/contracts">Volver a mis contratos</a>
+      <h2>Detalle de contrato</h2>
+      <p>Consulta oficial de cronograma, pagos, recibos y carga de comprobantes.</p>
+    </div>
+  </header>
+
+  @if (contractError) {
+    <section class="error-box">
+      <p>{{ contractError }}</p>
+    </section>
+  }
+
+  @if (isContractLoading) {
+    <app-loading-state message="Cargando detalle de contrato..." />
+  } @else if (!contract) {
+    <app-empty-state title="Contrato no disponible" message="No se encontro informacion para este contrato." />
+  } @else {
+    <section class="summary-card">
+      <div class="summary-item">
+        <span class="summary-label">Contrato</span>
+        <strong>{{ contract.contractNumber }}</strong>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Estado</span>
+        <strong><span [class]="contractStatusClass(contract.status)">{{ contract.status }}</span></strong>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Monto</span>
+        <strong>{{ contract.contractAmount | number: '1.2-2' }} {{ contract.currency }}</strong>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Plazo</span>
+        <strong>{{ contract.termMonths }} meses</strong>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Cuota mensual</span>
+        <strong>{{ contract.monthlyPayment | number: '1.2-2' }} {{ contract.currency }}</strong>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Pago mensual dia</span>
+        <strong>{{ contract.monthlyPaymentDay }}</strong>
+      </div>
+    </section>
+
+    <nav class="section-tabs" aria-label="Secciones de contrato">
+      <a
+        [routerLink]="['/client/contracts', contract.id]"
+        [class.active]="activeSection === 'overview'"
+      >
+        Resumen
+      </a>
+      <a
+        [routerLink]="['/client/contracts', contract.id, 'schedule']"
+        [class.active]="activeSection === 'schedule'"
+      >
+        Cronograma
+      </a>
+      <a
+        [routerLink]="['/client/contracts', contract.id, 'payments']"
+        [class.active]="activeSection === 'payments'"
+      >
+        Pagos
+      </a>
+      <a
+        [routerLink]="['/client/contracts', contract.id, 'receipts']"
+        [class.active]="activeSection === 'receipts'"
+      >
+        Recibos
+      </a>
+    </nav>
+
+    <section class="panel">
+      @if (activeSection === 'overview') {
+        <div class="overview-grid">
+          <article class="overview-block">
+            <h3>Cliente</h3>
+            @if (contract.clientSnapshot) {
+              <dl>
+                <div><dt>Nombre</dt><dd>{{ contract.clientSnapshot.clientFullName || '-' }}</dd></div>
+                <div><dt>DNI</dt><dd>{{ contract.clientSnapshot.clientDni || '-' }}</dd></div>
+                <div><dt>RTN</dt><dd>{{ contract.clientSnapshot.clientRtn || '-' }}</dd></div>
+                <div><dt>Telefono</dt><dd>{{ contract.clientSnapshot.clientPhone || '-' }}</dd></div>
+                <div><dt>Email</dt><dd>{{ contract.clientSnapshot.clientEmail || '-' }}</dd></div>
+                <div><dt>Direccion</dt><dd>{{ contract.clientSnapshot.clientAddress || '-' }}</dd></div>
+              </dl>
+            } @else {
+              <p class="muted">No hay snapshot de cliente disponible.</p>
+            }
+          </article>
+
+          <article class="overview-block">
+            <h3>Lote</h3>
+            @if (contract.lotSnapshot) {
+              <dl>
+                <div><dt>Proyecto</dt><dd>{{ contract.lotSnapshot.projectName }}</dd></div>
+                <div><dt>Lote</dt><dd>{{ contract.lotSnapshot.lotFullCode }}</dd></div>
+                <div><dt>Area m2</dt><dd>{{ contract.lotSnapshot.lotAreaM2 | number: '1.2-2' }}</dd></div>
+                <div><dt>Area v2</dt><dd>{{ contract.lotSnapshot.lotAreaV2 ?? '-' }}</dd></div>
+                <div><dt>Fecha inicio</dt><dd>{{ contract.startDate }}</dd></div>
+                <div><dt>Fecha fin</dt><dd>{{ contract.endDate || '-' }}</dd></div>
+              </dl>
+            } @else {
+              <p class="muted">No hay snapshot de lote disponible.</p>
+            }
+          </article>
+        </div>
+
+        <article class="overview-block">
+          <h3>Condiciones</h3>
+          <dl class="conditions-grid">
+            <div><dt>Enganche</dt><dd>{{ contract.downPayment | number: '1.2-2' }}</dd></div>
+            <div><dt>Interes</dt><dd>{{ contract.interestRate | number: '1.2-2' }}%</dd></div>
+            <div><dt>Mora</dt><dd>{{ contract.lateFeeRate | number: '1.2-2' }}%</dd></div>
+            <div><dt>CAT anual</dt><dd>{{ contract.annualTotalCost | number: '1.2-2' }}</dd></div>
+            <div><dt>Opcion compra</dt><dd>{{ contract.purchaseOptionValue | number: '1.2-2' }}</dd></div>
+            <div><dt>Descuento preparado</dt><dd>{{ contract.discountPreparedEnabled ? 'Si' : 'No' }}</dd></div>
+          </dl>
+          @if (contract.specialConditionText) {
+            <p class="notes"><strong>Condiciones especiales:</strong> {{ contract.specialConditionText }}</p>
+          }
+          @if (contract.notes) {
+            <p class="notes"><strong>Notas:</strong> {{ contract.notes }}</p>
+          }
+        </article>
+      }
+
+      @if (activeSection === 'schedule') {
+        @if (scheduleError) {
+          <p class="error-text">{{ scheduleError }}</p>
+        }
+        @if (isScheduleLoading) {
+          <app-loading-state message="Cargando cronograma..." />
+        } @else if (schedule.length === 0) {
+          <app-empty-state title="Sin cronograma" message="No hay cuotas registradas para este contrato." />
+        } @else {
+          <section class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cuota</th>
+                  <th>Vence</th>
+                  <th>Monto</th>
+                  <th>Pagado</th>
+                  <th>Saldo</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of schedule; track item.id) {
+                  <tr>
+                    <td>{{ item.installmentNumber }}</td>
+                    <td>{{ item.dueDate }}</td>
+                    <td>{{ item.amount | number: '1.2-2' }}</td>
+                    <td>{{ item.paidAmount | number: '1.2-2' }}</td>
+                    <td>{{ item.remainingAmount | number: '1.2-2' }}</td>
+                    <td><span [class]="installmentStatusClass(item.status)">{{ item.status }}</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        }
+      }
+
+      @if (activeSection === 'payments') {
+        @if (paymentsError) {
+          <p class="error-text">{{ paymentsError }}</p>
+        }
+        @if (isPaymentsLoading) {
+          <app-loading-state message="Cargando pagos..." />
+        } @else if (payments.length === 0) {
+          <app-empty-state title="Sin pagos" message="No hay pagos registrados para este contrato." />
+        } @else {
+          <section class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Numero</th>
+                  <th>Fecha</th>
+                  <th>Monto</th>
+                  <th>Aplicado</th>
+                  <th>No aplicado</th>
+                  <th>Estado</th>
+                  <th>Metodo</th>
+                  <th>Referencia</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of payments; track item.id) {
+                  <tr>
+                    <td>{{ item.paymentNumber }}</td>
+                    <td>{{ item.paymentDate }}</td>
+                    <td>{{ item.amount | number: '1.2-2' }}</td>
+                    <td>{{ item.appliedAmount | number: '1.2-2' }}</td>
+                    <td>{{ item.unallocatedAmount | number: '1.2-2' }}</td>
+                    <td><span [class]="paymentStatusClass(item.status)">{{ item.status }}</span></td>
+                    <td>{{ item.paymentMethod || '-' }}</td>
+                    <td>{{ item.transactionReference || '-' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        }
+      }
+
+      @if (activeSection === 'receipts') {
+        @if (receiptsError) {
+          <p class="error-text">{{ receiptsError }}</p>
+        }
+        @if (isReceiptsLoading) {
+          <app-loading-state message="Cargando recibos..." />
+        } @else if (receipts.length === 0) {
+          <app-empty-state title="Sin recibos" message="No hay recibos registrados para este contrato." />
+        } @else {
+          <section class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Recibo</th>
+                  <th>Fecha</th>
+                  <th>Monto</th>
+                  <th>Estado</th>
+                  <th>Emitido</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of receipts; track item.id) {
+                  <tr>
+                    <td>{{ item.receiptNumber }}</td>
+                    <td>{{ item.receiptDate }}</td>
+                    <td>{{ item.amount | number: '1.2-2' }}</td>
+                    <td><span [class]="receiptStatusClass(item.status)">{{ item.status }}</span></td>
+                    <td>{{ item.generatedAtUtc | date: 'short' }}</td>
+                    <td>
+                      <div class="row-actions">
+                        <button type="button" class="btn-secondary" [disabled]="isDownloading" (click)="downloadReceiptPdf(item)">
+                          PDF
+                        </button>
+                        <button type="button" class="btn-secondary" [disabled]="isDownloading" (click)="downloadReceiptDocx(item)">
+                          DOCX
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        }
+      }
+    </section>
+
+    <section class="panel">
+      <header class="panel-header">
+        <h3>Cargar comprobante de pago</h3>
+        <p>El comprobante queda en estado PendienteRevision hasta aprobacion administrativa.</p>
+      </header>
+
+      <form class="proof-form" [formGroup]="proofForm" (ngSubmit)="submitPaymentProof()">
+        <label>
+          Fecha de pago *
+          <input type="date" formControlName="paymentDate" />
+          @if ((proofForm.controls.paymentDate.touched || proofSubmitted) && proofForm.controls.paymentDate.invalid) {
+            <small class="field-error">La fecha es obligatoria.</small>
+          }
+        </label>
+
+        <label>
+          Monto *
+          <input type="number" min="0.01" step="0.01" formControlName="amount" />
+          @if ((proofForm.controls.amount.touched || proofSubmitted) && proofForm.controls.amount.invalid) {
+            <small class="field-error">Ingresa un monto mayor que cero.</small>
+          }
+        </label>
+
+        <label>
+          Moneda
+          <input type="text" maxlength="16" formControlName="currency" placeholder="HNL" />
+        </label>
+
+        <label>
+          Referencia externa
+          <input type="text" maxlength="256" formControlName="externalReference" />
+        </label>
+
+        <label class="full-width">
+          Notas
+          <textarea rows="3" maxlength="2048" formControlName="notes"></textarea>
+        </label>
+
+        <label class="full-width">
+          Archivo *
+          <input type="file" accept=".pdf,image/jpeg,image/jpg,image/png" (change)="onFileSelected($event)" />
+          @if (proofForm.controls.fileName.value) {
+            <small class="file-name">Archivo: {{ proofForm.controls.fileName.value }}</small>
+          }
+          @if ((proofForm.controls.fileName.touched || proofSubmitted) && proofForm.controls.fileName.invalid) {
+            <small class="field-error">Debes seleccionar un archivo PDF/JPG/PNG.</small>
+          }
+        </label>
+
+        @if (proofError) {
+          <p class="error-text full-width">{{ proofError }}</p>
+        }
+
+        <div class="form-actions full-width">
+          <button type="submit" class="btn-primary" [disabled]="isSubmittingProof || proofForm.invalid">
+            Enviar comprobante
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+</section>

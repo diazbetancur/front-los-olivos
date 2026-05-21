@@ -1,0 +1,16 @@
+.projects-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header > button {
+  min-width: 10.2rem;
+}
+
+.row-actions {
+  align-items: center;
+}
+
+.form-panel textarea {
+  resize: vertical;
+}

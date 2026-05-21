@@ -1,0 +1,38 @@
+<section class="client-layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">C</span>
+      <div>
+        <h1>Constructora</h1>
+        <p>Portal cliente</p>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Portal cliente">
+      <a routerLink="/client/contracts" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        Mis contratos
+      </a>
+    </nav>
+  </aside>
+
+  <section class="main-area">
+    <header class="topbar">
+      <div>
+        <h2>Portal cliente</h2>
+        <p>Consulta tus contratos, cuotas, pagos y recibos.</p>
+      </div>
+
+      <div class="user-area">
+        <div class="identity">
+          <strong>{{ displayName() }}</strong>
+          <span>{{ currentUser()?.userName }}</span>
+        </div>
+        <button type="button" class="logout-btn" (click)="logout()">Cerrar sesion</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <router-outlet />
+    </main>
+  </section>
+</section>

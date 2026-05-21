@@ -1,0 +1,65 @@
+.users-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header > button {
+  min-width: 9.8rem;
+}
+
+.status-badge.approved {
+  background: var(--success-soft);
+  border-color: #bbf7d0;
+  color: var(--success);
+}
+
+.status-badge.blocked {
+  background: var(--danger-soft);
+  border-color: #fecaca;
+  color: var(--danger);
+}
+
+.role-picker {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  background: var(--bg-surface-muted);
+}
+
+.role-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.55rem;
+}
+
+.role-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.5rem;
+  align-items: start;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.6rem;
+  background: #ffffff;
+}
+
+.role-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.role-meta {
+  grid-column: 2;
+  color: var(--text-soft);
+  font-size: 0.83rem;
+}
+
+.permission-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.confirm-panel p {
+  margin: 0;
+}

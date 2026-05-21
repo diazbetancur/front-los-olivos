@@ -1,0 +1,21 @@
+@if (pageData$ | async; as pageData) {
+  <section class="placeholder-page">
+    <header>
+      <h2>{{ pageData.title }}</h2>
+      <p>{{ pageData.description }}</p>
+    </header>
+
+    <app-empty-state
+      title="Pendiente de implementacion"
+      message="Este modulo se habilitara en las siguientes fases del frontend."
+    />
+
+    @if (pageData.requiredPermissions?.length) {
+      <article class="permission-box" *appHasPermission="pageData.requiredPermissions">
+        <h3>Permiso requerido (dev)</h3>
+        <p>{{ pageData.requiredPermissions?.join(', ') }}</p>
+      </article>
+    }
+  </section>
+}
+

@@ -1,0 +1,53 @@
+.global-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  pointer-events: auto;
+  backdrop-filter: blur(1px);
+}
+
+.indicator {
+  position: relative;
+  z-index: 1;
+  min-width: 180px;
+  padding: 1rem 1.3rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  pointer-events: auto;
+}
+
+.indicator p {
+  margin: 0;
+  font-size: 0.91rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.spinner {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 3px solid #dbeafe;
+  border-top-color: #2563eb;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

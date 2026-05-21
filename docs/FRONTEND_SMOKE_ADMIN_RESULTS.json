@@ -1,0 +1,170 @@
+[
+    {
+        "Step": 1,
+        "Title": "Login admin",
+        "Status": "PASS",
+        "Detail": "Login correcto. Usuario: admin"
+    },
+    {
+        "Step": 2,
+        "Title": "Crear proyecto",
+        "Status": "PASS",
+        "Detail": "Proyecto creado: 2803bf8b-5f3d-4760-9a77-3876a5b30efc"
+    },
+    {
+        "Step": 3,
+        "Title": "Crear lote Disponible",
+        "Status": "PASS",
+        "Detail": "Lote creado: 71e7ef43-4e6d-4f41-bbe6-c81175510973"
+    },
+    {
+        "Step": 4,
+        "Title": "Crear cliente Natural",
+        "Status": "PASS",
+        "Detail": "Cliente creado: aab1e309-9eb9-4077-ade1-d878deea8851"
+    },
+    {
+        "Step": 5,
+        "Title": "Crear beneficiario",
+        "Status": "PASS",
+        "Detail": "Beneficiario creado: 6c142748-352c-4c31-b343-5a285db1d78d"
+    },
+    {
+        "Step": 6,
+        "Title": "Crear referencia",
+        "Status": "PASS",
+        "Detail": "Referencia creada: d7542ef6-0614-4db3-8057-4d10c4de88d1"
+    },
+    {
+        "Step": 7,
+        "Title": "Crear contrato",
+        "Status": "PASS",
+        "Detail": "Contrato creado: 6c73c1d0-5a67-49b9-be1f-145b389228e4 / CTR-20260510-36D547"
+    },
+    {
+        "Step": 8,
+        "Title": "Validar lote Contratado",
+        "Status": "PASS",
+        "Detail": "Estado de lote correcto: Contratado"
+    },
+    {
+        "Step": 9,
+        "Title": "Abrir detalle de contrato",
+        "Status": "PASS",
+        "Detail": "Detalle cargado. Estado: Borrador"
+    },
+    {
+        "Step": 10,
+        "Title": "Validar cronograma",
+        "Status": "PASS",
+        "Detail": "Cronograma OK. Cuotas: 12"
+    },
+    {
+        "Step": 11,
+        "Title": "Generar documentos de contrato",
+        "Status": "PASS",
+        "Detail": "Documentos generados: 1"
+    },
+    {
+        "Step": 12,
+        "Title": "Validar lista de documentos",
+        "Status": "PASS",
+        "Detail": "Documentos listados: 1"
+    },
+    {
+        "Step": 13,
+        "Title": "Registrar pago",
+        "Status": "PASS",
+        "Detail": "Pago registrado: b12d064f-e125-4344-b0d4-e7175458f17a / PAY-20260510-CCEBA2"
+    },
+    {
+        "Step": 14,
+        "Title": "Aplicar pago a una cuota",
+        "Status": "PASS",
+        "Detail": "Pago aplicado. Estado pago: Aplicado"
+    },
+    {
+        "Step": 15,
+        "Title": "Consultar balance del contrato",
+        "Status": "PASS",
+        "Detail": "Balance OK. Total pendiente: 412500.00"
+    },
+    {
+        "Step": 16,
+        "Title": "Crear recibo manual",
+        "Status": "PASS",
+        "Detail": "Recibo creado: f269a293-7786-45c9-ab0d-97fc19ddb9be / RCP-20260510-70872C"
+    },
+    {
+        "Step": 17,
+        "Title": "Descargar PDF de recibo",
+        "Status": "PASS",
+        "Detail": "PDF descargado. Bytes: 596"
+    },
+    {
+        "Step": 18,
+        "Title": "Descargar DOCX de recibo",
+        "Status": "PASS",
+        "Detail": "DOCX descargado. Bytes: 596"
+    },
+    {
+        "Step": 19,
+        "Title": "Listar comprobantes",
+        "Status": "PASS",
+        "Detail": "Comprobantes listados: 8"
+    },
+    {
+        "Step": 20,
+        "Title": "Aprobar comprobante",
+        "Status": "PASS",
+        "Detail": "Comprobante aprobado: 25a8bec0-e8d5-4a01-80f4-fe2f6f522fc1"
+    },
+    {
+        "Step": 21,
+        "Title": "Crear segundo pago",
+        "Status": "PASS",
+        "Detail": "Segundo pago creado: 869ca2d0-1a8f-4212-b969-432a28a49de6"
+    },
+    {
+        "Step": 22,
+        "Title": "Rechazar comprobante",
+        "Status": "PASS",
+        "Detail": "Comprobante rechazado: 4c226324-8b5d-4422-8224-1416b37d5305"
+    },
+    {
+        "Step": 23,
+        "Title": "Anular pago de prueba",
+        "Status": "PASS",
+        "Detail": "Pago anulado: 869ca2d0-1a8f-4212-b969-432a28a49de6 / Estado: Anulado"
+    },
+    {
+        "Step": 24,
+        "Title": "Anular recibo de prueba",
+        "Status": "PASS",
+        "Detail": "Recibo anulado: f269a293-7786-45c9-ab0d-97fc19ddb9be / Estado: Anulado"
+    },
+    {
+        "Step": 25,
+        "Title": "Validar filtros basicos de listados",
+        "Status": "PASS",
+        "Detail": "Filtros de endpoints listados respondieron correctamente."
+    },
+    {
+        "Step": 26,
+        "Title": "Logout",
+        "Status": "PASS",
+        "Detail": "Logout correcto."
+    },
+    {
+        "Step": 27,
+        "Title": "Validar 401 con sesion invalida",
+        "Status": "PASS",
+        "Detail": "Respuesta 401 detectada correctamente."
+    },
+    {
+        "Step": 28,
+        "Title": "Validar permisos visuales minimos",
+        "Status": "PASS",
+        "Detail": "PASS por validacion visual automatizada: menu recortado correcto, rutas sin permiso bloqueadas y botones sensibles ocultos para usuario VentasReadOnlyDemoF8."
+    }
+]

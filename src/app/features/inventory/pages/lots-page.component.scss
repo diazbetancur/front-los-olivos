@@ -1,0 +1,70 @@
+.lots-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header > button {
+  min-width: 9rem;
+}
+
+.import-panel {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.import-panel > header h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.import-panel > header p {
+  margin: 0.35rem 0 0;
+  color: #475569;
+  font-size: 0.92rem;
+}
+
+.import-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.import-summary {
+  border: 1px dashed #bfdbfe;
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 0.75rem 0.85rem;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.import-summary h4,
+.detail-panel h3 {
+  margin: 0;
+}
+
+.import-summary p,
+.detail-panel p {
+  margin: 0;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.invalid-row td {
+  background: #fff7f7;
+}
+
+.detail-grid strong {
+  color: #0f172a;
+}
+
+.form-panel textarea {
+  resize: vertical;
+}

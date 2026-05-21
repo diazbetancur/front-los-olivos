@@ -1,0 +1,35 @@
+.placeholder-page {
+  display: grid;
+  gap: 1rem;
+}
+
+header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #0f172a;
+}
+
+header p {
+  margin: 0.35rem 0 0;
+  color: #475569;
+}
+
+.permission-box {
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  background: #eef2ff;
+  padding: 0.85rem 1rem;
+}
+
+.permission-box h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #312e81;
+}
+
+.permission-box p {
+  margin: 0.4rem 0 0;
+  color: #3730a3;
+  word-break: break-word;
+}
+

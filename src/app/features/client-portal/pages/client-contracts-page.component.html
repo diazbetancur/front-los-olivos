@@ -1,0 +1,110 @@
+<section class="contracts-page">
+  <header class="page-header">
+    <div>
+      <h2>Mis contratos</h2>
+      <p>Consulta tus contratos activos e historicos.</p>
+    </div>
+  </header>
+
+  <section class="filters-panel">
+    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <label>
+        Estado
+        <select formControlName="status">
+          <option value="">Todos</option>
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Buscar
+        <input type="text" formControlName="search" placeholder="Numero de contrato" />
+      </label>
+
+      <label>
+        Desde
+        <input type="date" formControlName="fromDate" />
+      </label>
+
+      <label>
+        Hasta
+        <input type="date" formControlName="toDate" />
+      </label>
+
+      <label>
+        Tamano pagina
+        <select formControlName="pageSize">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+
+      <div class="actions">
+        <button type="submit" class="btn-primary" [disabled]="isLoading">Aplicar</button>
+        <button type="button" class="btn-secondary" [disabled]="isLoading" (click)="clearFilters()">Limpiar</button>
+      </div>
+    </form>
+  </section>
+
+  @if (errorMessage) {
+    <section class="error-box">
+      <p>{{ errorMessage }}</p>
+    </section>
+  }
+
+  @if (isLoading) {
+    <app-loading-state message="Cargando contratos..." />
+  } @else if (contracts.length === 0) {
+    <app-empty-state title="Sin contratos" message="No hay contratos para los filtros seleccionados." />
+  } @else {
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Contrato</th>
+            <th>Fecha</th>
+            <th>Monto</th>
+            <th>Moneda</th>
+            <th>Estado</th>
+            <th>Accion</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (contract of contracts; track contract.id) {
+            <tr>
+              <td>{{ contract.contractNumber }}</td>
+              <td>{{ contract.contractDate }}</td>
+              <td>{{ contract.contractAmount | number: '1.2-2' }}</td>
+              <td>{{ contract.currency }}</td>
+              <td><span [class]="statusClass(contract.status)">{{ contract.status }}</span></td>
+              <td>
+                <a class="btn-secondary" [routerLink]="['/client/contracts', contract.id]">Ver detalle</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    <section class="pagination">
+      <span>Pagina {{ currentPage }} de {{ totalPages() }} | Total {{ totalCount }}</span>
+      <div class="actions">
+        <button type="button" class="btn-secondary" [disabled]="currentPage <= 1 || isLoading" (click)="previousPage()">
+          Anterior
+        </button>
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="currentPage >= totalPages() || isLoading"
+          (click)="nextPage()"
+        >
+          Siguiente
+        </button>
+      </div>
+    </section>
+  }
+</section>

@@ -1,0 +1,23 @@
+<section class="dashboard">
+  <header class="dashboard-header">
+    <h2>Inicio</h2>
+    <p>Accesos rapidos para operar los modulos administrativos del MVP.</p>
+  </header>
+
+  @if (visibleCards().length === 0) {
+    <p class="empty-message">
+      No hay modulos visibles para tu usuario en este momento.
+    </p>
+  } @else {
+    <div class="cards">
+      @for (card of visibleCards(); track card.route) {
+        <a class="card" [routerLink]="card.route">
+          <span class="card-label">Modulo</span>
+          <h3>{{ card.title }}</h3>
+          <p>{{ card.description }}</p>
+          <small>Modulo disponible</small>
+        </a>
+      }
+    </div>
+  }
+</section>

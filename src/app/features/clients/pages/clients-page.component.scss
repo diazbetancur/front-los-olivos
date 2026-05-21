@@ -1,0 +1,36 @@
+.clients-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header > button {
+  min-width: 9.8rem;
+}
+
+.detail-grid strong {
+  color: #0f172a;
+}
+
+.subsection h4 {
+  margin: 0;
+  color: #1e293b;
+}
+
+.nested-form {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.chip {
+  background: #f8fbff;
+}
+
+small {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.form-panel textarea {
+  resize: vertical;
+}

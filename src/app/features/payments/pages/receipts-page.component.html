@@ -1,0 +1,347 @@
+<section class="receipts-page">
+  <header class="page-header">
+    <div>
+      <h2>Recibos</h2>
+      <p>Consulta, emision manual, descarga y anulacion de recibos.</p>
+    </div>
+
+    <button type="button" (click)="openManualForm()" *appHasPermission="['Receipts.Generate']">
+      Nuevo recibo manual
+    </button>
+  </header>
+
+  <section class="filters">
+    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <label>
+        Contrato
+        <select formControlName="contractId">
+          <option value="">Todos</option>
+          @for (contract of contractOptions; track contract.id) {
+            <option [value]="contract.id">{{ contract.contractNumber }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Cliente
+        <select formControlName="clientId">
+          <option value="">Todos</option>
+          @for (client of clientOptions; track client.id) {
+            <option [value]="client.id">{{ client.fullName }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Pago
+        <select formControlName="paymentId">
+          <option value="">Todos</option>
+          @for (payment of paymentOptions; track payment.id) {
+            <option [value]="payment.id">{{ payment.paymentNumber }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Estado
+        <select formControlName="status">
+          <option value="">Todos</option>
+          @for (status of receiptStatuses; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Buscar
+        <input type="text" formControlName="search" placeholder="Numero o notas" />
+      </label>
+
+      <label>
+        Desde
+        <input type="date" formControlName="fromDate" />
+      </label>
+
+      <label>
+        Hasta
+        <input type="date" formControlName="toDate" />
+      </label>
+
+      <label>
+        Tamano pagina
+        <select formControlName="pageSize">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+
+      <div class="filter-actions">
+        <button type="submit">Aplicar</button>
+        <button type="button" class="ghost" (click)="clearFilters()">Limpiar</button>
+      </div>
+    </form>
+  </section>
+
+  @if (listError) {
+    <section class="error-box">
+      <p>{{ listError }}</p>
+    </section>
+  }
+
+  @if (isLoading) {
+    <app-loading-state message="Cargando recibos..." />
+  } @else if (receipts.length === 0) {
+    <app-empty-state title="Sin recibos" message="No hay recibos que coincidan con el filtro actual." />
+  } @else {
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Numero</th>
+            <th>Fecha</th>
+            <th>Contrato</th>
+            <th>Cliente</th>
+            <th>Pago</th>
+            <th>Monto</th>
+            <th>Moneda</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (receipt of receipts; track receipt.id) {
+            <tr>
+              <td>{{ receipt.receiptNumber }}</td>
+              <td>{{ receipt.receiptDate }}</td>
+              <td>{{ resolveContractLabel(receipt.contractId) }}</td>
+              <td>{{ resolveClientLabel(receipt.clientId) }}</td>
+              <td>{{ resolvePaymentLabel(receipt.paymentId) }}</td>
+              <td>{{ receipt.amount | number: '1.2-2' }}</td>
+              <td>{{ receipt.currency }}</td>
+              <td><span [class]="statusClass(receipt.status)">{{ receipt.status }}</span></td>
+              <td class="row-actions">
+                <button type="button" class="ghost" (click)="viewReceiptDetail(receipt.id)">Ver</button>
+                <button
+                  type="button"
+                  class="ghost"
+                  (click)="downloadPdf(receipt.id, receipt.receiptNumber)"
+                  [disabled]="isDownloading"
+                  *appHasPermission="['Receipts.Print']"
+                >
+                  PDF
+                </button>
+                <button
+                  type="button"
+                  class="ghost"
+                  (click)="downloadDocx(receipt.id, receipt.receiptNumber)"
+                  [disabled]="isDownloading"
+                  *appHasPermission="['Receipts.Print']"
+                >
+                  DOCX
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  <section class="pagination">
+    <span>Pagina {{ currentPage }} de {{ totalPages() }} | Total {{ totalCount }}</span>
+    <div>
+      <button type="button" (click)="goToPreviousPage()" [disabled]="currentPage <= 1">Anterior</button>
+      <button type="button" (click)="goToNextPage()" [disabled]="currentPage >= totalPages()">Siguiente</button>
+    </div>
+  </section>
+
+  @if (showManualForm) {
+    <app-modal (closed)="cancelManualForm()">
+      <section class="form-panel">
+      <header>
+        <h3>Recibo manual</h3>
+        <button type="button" class="ghost" (click)="cancelManualForm()">Cerrar</button>
+      </header>
+
+      @if (manualError) {
+        <p class="error-text">{{ manualError }}</p>
+      }
+
+      <form [formGroup]="manualReceiptForm" (ngSubmit)="submitManualReceipt()" novalidate>
+        <div class="grid">
+          <h4 class="form-section-title full-width">Referencia</h4>
+
+          <label>
+            Pago (opcional)
+            <select formControlName="paymentId">
+              <option value="">Sin pago</option>
+              @for (payment of paymentOptions; track payment.id) {
+                <option [value]="payment.id">{{ payment.paymentNumber }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Contrato (opcional)
+            <select formControlName="contractId">
+              <option value="">Sin contrato</option>
+              @for (contract of contractOptions; track contract.id) {
+                <option [value]="contract.id">{{ contract.contractNumber }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Cliente (opcional)
+            <select formControlName="clientId">
+              <option value="">Sin cliente</option>
+              @for (client of clientOptions; track client.id) {
+                <option [value]="client.id">{{ client.fullName }}</option>
+              }
+            </select>
+          </label>
+
+          <h4 class="form-section-title full-width">Datos del recibo</h4>
+
+          <label class="required">
+            Fecha recibo
+            <input type="date" formControlName="receiptDate" />
+          </label>
+
+          <label class="required">
+            Monto
+            <input type="number" formControlName="amount" min="0" step="0.01" />
+          </label>
+
+          <label>
+            Moneda
+            <input type="text" formControlName="currency" />
+          </label>
+
+          <label class="full-width">
+            Notas
+            <textarea rows="2" formControlName="notes"></textarea>
+          </label>
+        </div>
+
+        @if (!hasManualReferences()) {
+          <p class="warning-text">Debes indicar al menos paymentId, contractId o clientId.</p>
+        }
+
+        <p class="field-error" *ngIf="manualReceiptForm.invalid && (manualReceiptForm.touched || manualSubmitted)">
+          Revisa campos requeridos y formatos antes de guardar.
+        </p>
+
+        <div class="form-actions">
+          <button type="button" class="ghost" (click)="cancelManualForm()">Cancelar</button>
+          <button
+            type="submit"
+            [disabled]="isSubmitting || manualReceiptForm.invalid || !hasManualReferences()"
+          >
+            Crear recibo
+          </button>
+        </div>
+      </form>
+      </section>
+    </app-modal>
+  }
+
+  @if (isDetailLoading) {
+    <app-loading-state message="Cargando detalle del recibo..." />
+  } @else if (detailError) {
+    <section class="error-box">
+      <p>{{ detailError }}</p>
+    </section>
+  } @else if (selectedReceiptDetail; as detail) {
+    <section class="detail-panel">
+      <header class="detail-header">
+        <div>
+          <h3>Detalle de recibo</h3>
+          <p>{{ detail.receiptNumber }}</p>
+        </div>
+        <span [class]="statusClass(detail.status)">{{ detail.status }}</span>
+      </header>
+
+      <div class="detail-grid">
+        <div><strong>Fecha:</strong> {{ detail.receiptDate }}</div>
+        <div><strong>Contrato:</strong> {{ resolveContractLabel(detail.contractId) }}</div>
+        <div><strong>Cliente:</strong> {{ resolveClientLabel(detail.clientId) }}</div>
+        <div><strong>Pago:</strong> {{ resolvePaymentLabel(detail.paymentId) }}</div>
+        <div><strong>Monto:</strong> {{ detail.amount | number: '1.2-2' }}</div>
+        <div><strong>Moneda:</strong> {{ detail.currency }}</div>
+        <div><strong>Generado:</strong> {{ detail.generatedAtUtc | date: 'short' }}</div>
+        <div><strong>Generado por:</strong> {{ detail.generatedBy }}</div>
+        <div><strong>Anulado en:</strong> {{ detail.voidedAtUtc ? (detail.voidedAtUtc | date: 'short') : '-' }}</div>
+        <div class="full-width"><strong>Notas:</strong> {{ detail.notes || '-' }}</div>
+        <div class="full-width"><strong>Razon anulacion:</strong> {{ detail.voidReason || '-' }}</div>
+      </div>
+
+      <section class="action-bar">
+        <button
+          type="button"
+          class="ghost"
+          (click)="downloadPdf(detail.id, detail.receiptNumber)"
+          [disabled]="isDownloading"
+          *appHasPermission="['Receipts.Print']"
+        >
+          Descargar PDF
+        </button>
+        <button
+          type="button"
+          class="ghost"
+          (click)="downloadDocx(detail.id, detail.receiptNumber)"
+          [disabled]="isDownloading"
+          *appHasPermission="['Receipts.Print']"
+        >
+          Descargar DOCX
+        </button>
+        <button
+          type="button"
+          class="danger"
+          (click)="openVoidForm()"
+          [disabled]="detail.status === 'Anulado'"
+          *appHasPermission="['Receipts.Void']"
+        >
+          Anular recibo
+        </button>
+      </section>
+
+      @if (showVoidForm) {
+        <app-modal (closed)="cancelVoidForm()">
+          <section class="form-panel nested-form">
+          <header>
+            <h5>Anular recibo</h5>
+            <button type="button" class="ghost" (click)="cancelVoidForm()">Cerrar</button>
+          </header>
+
+          @if (voidError) {
+            <p class="error-text">{{ voidError }}</p>
+          }
+
+          <form [formGroup]="voidForm" (ngSubmit)="submitVoidReceipt()" novalidate>
+            <div class="grid">
+              <label class="required full-width">
+                Razon de anulacion (obligatoria)
+                <textarea rows="3" formControlName="reason"></textarea>
+              </label>
+            </div>
+
+            <p class="field-error" *ngIf="voidForm.invalid && (voidForm.touched || voidSubmitted)">
+              Debes ingresar una razon valida para anular el recibo.
+            </p>
+
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelVoidForm()">Cancelar</button>
+              <button type="submit" class="danger" [disabled]="isSubmitting || voidForm.invalid">
+                Confirmar anulacion
+              </button>
+            </div>
+          </form>
+          </section>
+        </app-modal>
+      }
+    </section>
+  }
+</section>

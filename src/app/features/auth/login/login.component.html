@@ -1,0 +1,64 @@
+<main class="login-page">
+  <section class="login-panel">
+    <h1>Constructora Admin</h1>
+    <p>Inicia sesion para continuar.</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label for="login-identifier">
+        Usuario o correo
+        <input
+          id="login-identifier"
+          type="text"
+          formControlName="identifier"
+          autocomplete="username"
+          maxlength="128"
+          [attr.aria-invalid]="form.controls.identifier.invalid && form.controls.identifier.touched ? 'true' : null"
+          aria-describedby="login-identifier-error"
+        />
+      </label>
+      @if (form.controls.identifier.invalid && form.controls.identifier.touched) {
+        <small id="login-identifier-error" class="field-error" role="alert">
+          @if (form.controls.identifier.hasError('required')) {
+            El identificador es requerido.
+          } @else if (form.controls.identifier.hasError('maxlength')) {
+            El identificador no puede exceder 128 caracteres.
+          }
+        </small>
+      }
+
+      <label for="login-password">
+        Contrasena
+        <input
+          id="login-password"
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          maxlength="256"
+          [attr.aria-invalid]="form.controls.password.invalid && form.controls.password.touched ? 'true' : null"
+          aria-describedby="login-password-error"
+        />
+      </label>
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <small id="login-password-error" class="field-error" role="alert">
+          @if (form.controls.password.hasError('required')) {
+            La contrasena es requerida.
+          } @else if (form.controls.password.hasError('maxlength')) {
+            La contrasena no puede exceder 256 caracteres.
+          }
+        </small>
+      }
+
+      @if (errorMessage()) {
+        <p class="error-banner" role="alert" aria-live="polite">{{ errorMessage() }}</p>
+      }
+
+      <button type="submit" [disabled]="isSubmitting()">
+        @if (isSubmitting()) {
+          <span>Ingresando...</span>
+        } @else {
+          <span>Entrar</span>
+        }
+      </button>
+    </form>
+  </section>
+</main>

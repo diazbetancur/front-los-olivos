@@ -1,0 +1,82 @@
+.dashboard {
+  display: grid;
+  gap: 1.05rem;
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.dashboard-header p {
+  margin: 0.4rem 0 0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #d7dee7;
+  border-radius: 10px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.12);
+  transform: translateY(-1px);
+}
+
+.card-label {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 0.16rem 0.52rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  background: #eff6ff;
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 1.04rem;
+  color: #1e293b;
+}
+
+.card p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.92rem;
+}
+
+.card small {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.empty-message {
+  margin: 0;
+  color: #64748b;
+  border: 1px dashed #94a3b8;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 1rem;
+}

@@ -1,0 +1,195 @@
+<section class="projects-page">
+  <header class="page-header">
+    <div>
+      <h2>Proyectos</h2>
+      <p>Gestion administrativa de proyectos inmobiliarios.</p>
+    </div>
+
+    <button type="button" (click)="openCreateForm()" *appHasPermission="['Projects.Create']">
+      Nuevo proyecto
+    </button>
+  </header>
+
+  <section class="filters">
+    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <label>
+        Buscar
+        <input type="text" formControlName="search" placeholder="Codigo o nombre" />
+      </label>
+
+      <label>
+        Estado
+        <select formControlName="status">
+          <option value="">Todos</option>
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Tamano pagina
+        <select formControlName="pageSize">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </label>
+
+      <div class="filter-actions">
+        <button type="submit">Aplicar</button>
+        <button type="button" class="ghost" (click)="clearFilters()">Limpiar</button>
+      </div>
+    </form>
+  </section>
+
+  @if (listError) {
+    <section class="error-box">
+      <p>{{ listError }}</p>
+    </section>
+  }
+
+  @if (isLoading) {
+    <app-loading-state message="Cargando proyectos..." />
+  } @else if (projects.length === 0) {
+    <app-empty-state
+      title="Sin proyectos"
+      message="No hay proyectos que coincidan con el filtro actual."
+    />
+  } @else {
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Nombre</th>
+            <th>Departamento</th>
+            <th>Municipio</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (project of projects; track project.id) {
+            <tr>
+              <td>{{ project.code }}</td>
+              <td>{{ project.name }}</td>
+              <td>{{ project.department }}</td>
+              <td>{{ project.municipality }}</td>
+              <td><span class="chip">{{ project.status }}</span></td>
+              <td class="row-actions">
+                <button
+                  type="button"
+                  class="ghost"
+                  (click)="openEditForm(project.id)"
+                  *appHasPermission="['Projects.Update']"
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  class="danger"
+                  (click)="disableProject(project)"
+                  *appHasPermission="['Projects.Disable']"
+                >
+                  Deshabilitar
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  <section class="pagination">
+    <span>Pagina {{ currentPage }} de {{ totalPages() }} | Total {{ totalCount }}</span>
+    <div>
+      <button type="button" (click)="goToPreviousPage()" [disabled]="currentPage <= 1">Anterior</button>
+      <button type="button" (click)="goToNextPage()" [disabled]="currentPage >= totalPages()">Siguiente</button>
+    </div>
+  </section>
+
+  @if (showForm) {
+    <app-modal (closed)="cancelForm()">
+      <section class="form-panel">
+      <header>
+        <h3>{{ editingProjectId ? 'Editar proyecto' : 'Nuevo proyecto' }}</h3>
+        <button type="button" class="ghost" (click)="cancelForm()">Cerrar</button>
+      </header>
+
+      @if (formError) {
+        <p class="error-text">{{ formError }}</p>
+      }
+
+      <form [formGroup]="projectForm" (ngSubmit)="submitProject()" novalidate>
+        <div class="grid">
+          <h4 class="form-section-title full-width">Identificacion</h4>
+
+          <label class="required">
+            Codigo
+            <input type="text" formControlName="code" />
+          </label>
+          <label class="required">
+            Nombre
+            <input type="text" formControlName="name" />
+          </label>
+          <label class="required">
+            Departamento
+            <input type="text" formControlName="department" />
+          </label>
+          <label class="required">
+            Municipio
+            <input type="text" formControlName="municipality" />
+          </label>
+          <label class="required">
+            Clave catastral
+            <input type="text" formControlName="cadastralKey" />
+          </label>
+          <label class="required">
+            Area total (m2)
+            <input type="number" formControlName="totalAreaM2" min="0" step="0.01" />
+          </label>
+
+          <h4 class="form-section-title full-width">Ubicacion y estado</h4>
+
+          <label class="required">
+            Estado
+            <select formControlName="status">
+              @for (status of statuses; track status) {
+                <option [value]="status">{{ status }}</option>
+              }
+            </select>
+          </label>
+
+          <h4 class="form-section-title full-width">Descripcion</h4>
+
+          <label class="required full-width">
+            Referencia de ubicacion
+            <input type="text" formControlName="locationReference" />
+          </label>
+          <label class="required full-width">
+            Descripcion
+            <textarea rows="2" formControlName="description"></textarea>
+          </label>
+          <label class="full-width">
+            Notas
+            <textarea rows="2" formControlName="notes"></textarea>
+          </label>
+        </div>
+
+        <p class="field-error" *ngIf="projectForm.invalid && (projectForm.touched || projectFormSubmitted)">
+          Revisa los campos requeridos y rangos validos antes de guardar.
+        </p>
+
+        <div class="form-actions">
+          <button type="button" class="ghost" (click)="cancelForm()">Cancelar</button>
+          <button type="submit" [disabled]="isSubmitting || projectForm.invalid">
+            {{ editingProjectId ? 'Guardar cambios' : 'Crear proyecto' }}
+          </button>
+        </div>
+      </form>
+      </section>
+    </app-modal>
+  }
+</section>

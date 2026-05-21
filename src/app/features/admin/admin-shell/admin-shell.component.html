@@ -1,0 +1,79 @@
+<section class="admin-layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">C</span>
+      <div class="brand-copy">
+        <h1>Constructora</h1>
+        <p>Panel administrativo</p>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Navegacion principal">
+      <ul class="menu-root">
+        @for (item of visibleNavItems(); track item.label) {
+          <li class="menu-item">
+            @if (item.children && item.children.length > 0) {
+              <button
+                type="button"
+                class="menu-parent"
+                [class.active]="isGroupActive(item)"
+                (click)="toggleGroup(item.label)"
+              >
+                <span>{{ item.label }}</span>
+                <span class="caret">{{ isExpanded(item.label) ? '▾' : '▸' }}</span>
+              </button>
+
+              @if (isExpanded(item.label)) {
+                <ul class="submenu">
+                  @for (child of item.children; track child.route) {
+                    @if (canSeeItem(child)) {
+                      <li>
+                        <a
+                          class="menu-link"
+                          [routerLink]="child.route"
+                          routerLinkActive="active"
+                          [routerLinkActiveOptions]="{ exact: true }"
+                        >
+                          {{ child.label }}
+                        </a>
+                      </li>
+                    }
+                  }
+                </ul>
+              }
+            } @else {
+              <a
+                class="menu-link"
+                [routerLink]="item.route"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+              >
+                {{ item.label }}
+              </a>
+            }
+          </li>
+        }
+      </ul>
+    </nav>
+  </aside>
+
+  <section class="main-area">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h2>Inicio</h2>
+        <p>Gestion operativa y seguimiento administrativo.</p>
+      </div>
+
+      <div class="user-summary">
+        <h3>{{ currentUser()?.firstName }} {{ currentUser()?.lastName }}</h3>
+        <p>{{ currentUser()?.userName }} · {{ roles().length }} rol(es)</p>
+      </div>
+
+      <button type="button" class="logout-btn" (click)="logout()">Cerrar sesion</button>
+    </header>
+
+    <main class="workspace">
+      <router-outlet />
+    </main>
+  </section>
+</section>

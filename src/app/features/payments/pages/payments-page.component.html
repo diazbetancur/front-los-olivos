@@ -1,0 +1,472 @@
+<section class="payments-page">
+  <header class="page-header">
+    <div>
+      <h2>Pagos</h2>
+      <p>Registro, aplicacion y anulacion administrativa de pagos.</p>
+    </div>
+
+    <button type="button" (click)="openRegisterForm()" *appHasPermission="['Payments.Register']">
+      Registrar pago
+    </button>
+  </header>
+
+  <section class="filters">
+    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <label>
+        Contrato
+        <select formControlName="contractId">
+          <option value="">Todos</option>
+          @for (contract of contractOptions; track contract.id) {
+            <option [value]="contract.id">{{ contract.contractNumber }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Cliente
+        <select formControlName="clientId">
+          <option value="">Todos</option>
+          @for (client of clientOptions; track client.id) {
+            <option [value]="client.id">{{ client.fullName }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Estado
+        <select formControlName="status">
+          <option value="">Todos</option>
+          @for (status of paymentStatuses; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Buscar
+        <input type="text" formControlName="search" placeholder="Numero, referencia o concepto" />
+      </label>
+
+      <label>
+        Desde
+        <input type="date" formControlName="fromDate" />
+      </label>
+
+      <label>
+        Hasta
+        <input type="date" formControlName="toDate" />
+      </label>
+
+      <label>
+        Tamano pagina
+        <select formControlName="pageSize">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+
+      <div class="filter-actions">
+        <button type="submit">Aplicar</button>
+        <button type="button" class="ghost" (click)="clearFilters()">Limpiar</button>
+      </div>
+    </form>
+  </section>
+
+  @if (listError) {
+    <section class="error-box">
+      <p>{{ listError }}</p>
+    </section>
+  }
+
+  @if (isLoading) {
+    <app-loading-state message="Cargando pagos..." />
+  } @else if (payments.length === 0) {
+    <app-empty-state title="Sin pagos" message="No hay pagos que coincidan con el filtro actual." />
+  } @else {
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Numero</th>
+            <th>Fecha</th>
+            <th>Contrato</th>
+            <th>Cliente</th>
+            <th>Monto</th>
+            <th>Aplicado</th>
+            <th>No aplicado</th>
+            <th>Estado</th>
+            <th>Metodo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (payment of payments; track payment.id) {
+            <tr>
+              <td>{{ payment.paymentNumber }}</td>
+              <td>{{ payment.paymentDate }}</td>
+              <td>{{ resolveContractLabel(payment.contractId) }}</td>
+              <td>{{ resolveClientLabel(payment.clientId) }}</td>
+              <td>{{ payment.amount | number: '1.2-2' }}</td>
+              <td>{{ payment.appliedAmount | number: '1.2-2' }}</td>
+              <td>{{ payment.unallocatedAmount | number: '1.2-2' }}</td>
+              <td><span [class]="statusClass(payment.status)">{{ payment.status }}</span></td>
+              <td>{{ payment.paymentMethod || '-' }}</td>
+              <td class="row-actions">
+                <button type="button" class="ghost" (click)="viewPaymentDetail(payment.id)">Ver</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  <section class="pagination">
+    <span>Pagina {{ currentPage }} de {{ totalPages() }} | Total {{ totalCount }}</span>
+    <div>
+      <button type="button" (click)="goToPreviousPage()" [disabled]="currentPage <= 1">Anterior</button>
+      <button type="button" (click)="goToNextPage()" [disabled]="currentPage >= totalPages()">Siguiente</button>
+    </div>
+  </section>
+
+  @if (showRegisterForm) {
+    <app-modal (closed)="cancelRegisterForm()">
+      <section class="form-panel">
+      <header>
+        <h3>Registrar pago</h3>
+        <button type="button" class="ghost" (click)="cancelRegisterForm()">Cerrar</button>
+      </header>
+
+      @if (registerError) {
+        <p class="error-text">{{ registerError }}</p>
+      }
+
+      <form [formGroup]="registerForm" (ngSubmit)="submitRegisterPayment()" novalidate>
+        <div class="grid">
+          <h4 class="form-section-title full-width">Referencia</h4>
+
+          <label>
+            Contrato (opcional)
+            <select formControlName="contractId">
+              <option value="">Sin contrato</option>
+              @for (contract of contractOptions; track contract.id) {
+                <option [value]="contract.id">{{ contract.contractNumber }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Cliente (opcional)
+            <select formControlName="clientId">
+              <option value="">Sin cliente</option>
+              @for (client of clientOptions; track client.id) {
+                <option [value]="client.id">{{ client.fullName }}</option>
+              }
+            </select>
+          </label>
+
+          <h4 class="form-section-title full-width">Pago</h4>
+
+          <label class="required">
+            Fecha pago
+            <input type="date" formControlName="paymentDate" />
+          </label>
+
+          <label class="required">
+            Monto
+            <input type="number" formControlName="amount" min="0" step="0.01" />
+          </label>
+
+          <label>
+            Moneda
+            <input type="text" formControlName="currency" />
+          </label>
+
+          <label>
+            Metodo de pago
+            <input type="text" formControlName="paymentMethod" />
+          </label>
+
+          <label>
+            Banco
+            <input type="text" formControlName="bankName" />
+          </label>
+
+          <label>
+            Referencia transaccion
+            <input type="text" formControlName="transactionReference" />
+          </label>
+
+          <h4 class="form-section-title full-width">Detalle</h4>
+
+          <label class="full-width">
+            Concepto
+            <input type="text" formControlName="concept" />
+          </label>
+
+          <label class="full-width">
+            Notas
+            <textarea rows="2" formControlName="notes"></textarea>
+          </label>
+        </div>
+
+        @if (!hasRegisterReferences()) {
+          <p class="warning-text">Debes indicar al menos contrato o cliente para registrar el pago.</p>
+        }
+
+        <p class="field-error" *ngIf="registerForm.invalid && (registerForm.touched || registerSubmitted)">
+          Revisa campos requeridos y formatos antes de guardar.
+        </p>
+
+        <div class="form-actions">
+          <button type="button" class="ghost" (click)="cancelRegisterForm()">Cancelar</button>
+          <button
+            type="submit"
+            [disabled]="isSubmitting || registerForm.invalid || !hasRegisterReferences()"
+          >
+            Guardar pago
+          </button>
+        </div>
+      </form>
+      </section>
+    </app-modal>
+  }
+
+  @if (isDetailLoading) {
+    <app-loading-state message="Cargando detalle del pago..." />
+  } @else if (detailError) {
+    <section class="error-box">
+      <p>{{ detailError }}</p>
+    </section>
+  } @else if (selectedPaymentDetail; as detail) {
+    <section class="detail-panel">
+      <header class="detail-header">
+        <div>
+          <h3>Detalle de pago</h3>
+          <p>{{ detail.paymentNumber }}</p>
+        </div>
+        <span [class]="statusClass(detail.status)">{{ detail.status }}</span>
+      </header>
+
+      <div class="detail-grid">
+        <div><strong>Fecha:</strong> {{ detail.paymentDate }}</div>
+        <div><strong>Contrato:</strong> {{ resolveContractLabel(detail.contractId) }}</div>
+        <div><strong>Cliente:</strong> {{ resolveClientLabel(detail.clientId) }}</div>
+        <div><strong>Monto:</strong> {{ detail.amount | number: '1.2-2' }}</div>
+        <div><strong>Aplicado:</strong> {{ detail.appliedAmount | number: '1.2-2' }}</div>
+        <div><strong>No aplicado:</strong> {{ detail.unallocatedAmount | number: '1.2-2' }}</div>
+        <div><strong>Moneda:</strong> {{ detail.currency }}</div>
+        <div><strong>Metodo:</strong> {{ detail.paymentMethod || '-' }}</div>
+        <div><strong>Banco:</strong> {{ detail.bankName || '-' }}</div>
+        <div><strong>Referencia:</strong> {{ detail.transactionReference || '-' }}</div>
+        <div class="full-width"><strong>Concepto:</strong> {{ detail.concept || '-' }}</div>
+        <div class="full-width"><strong>Notas:</strong> {{ detail.notes || '-' }}</div>
+        <div><strong>Anulado en:</strong> {{ detail.voidedAtUtc ? (detail.voidedAtUtc | date: 'short') : '-' }}</div>
+        <div class="full-width"><strong>Razon anulacion:</strong> {{ detail.voidReason || '-' }}</div>
+      </div>
+
+      @if (detail.allocations.length > 0) {
+        <section class="subsection">
+          <h4>Aplicaciones actuales</h4>
+          <section class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cuota</th>
+                  <th>Monto aplicado</th>
+                  <th>Aplicado en</th>
+                  <th>Anulada</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (allocation of detail.allocations; track allocation.id) {
+                  <tr>
+                    <td>{{ allocation.installmentNumber }}</td>
+                    <td>{{ allocation.amountApplied | number: '1.2-2' }}</td>
+                    <td>{{ allocation.appliedAtUtc | date: 'short' }}</td>
+                    <td>{{ allocation.isVoided ? 'Si' : 'No' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        </section>
+      }
+
+      <section class="action-bar">
+        <button
+          type="button"
+          class="ghost"
+          (click)="openApplyForm()"
+          [disabled]="detail.status === 'Anulado'"
+          *appHasPermission="['Payments.Apply']"
+        >
+          Aplicar pago
+        </button>
+        <button
+          type="button"
+          class="danger"
+          (click)="openVoidForm()"
+          [disabled]="detail.status === 'Anulado'"
+          *appHasPermission="['Payments.Void']"
+        >
+          Anular pago
+        </button>
+      </section>
+
+      @if (showVoidForm) {
+        <app-modal (closed)="cancelVoidForm()">
+          <section class="form-panel nested-form">
+          <header>
+            <h5>Anular pago</h5>
+            <button type="button" class="ghost" (click)="cancelVoidForm()">Cerrar</button>
+          </header>
+
+          @if (voidError) {
+            <p class="error-text">{{ voidError }}</p>
+          }
+
+            <form [formGroup]="voidForm" (ngSubmit)="submitVoidPayment()" novalidate>
+              <div class="grid">
+              <label class="required full-width">
+                Razon de anulacion (obligatoria)
+                <textarea rows="3" formControlName="reason"></textarea>
+              </label>
+            </div>
+
+            <p class="field-error" *ngIf="voidForm.invalid && (voidForm.touched || voidSubmitted)">
+              Debes ingresar una razon valida para anular el pago.
+            </p>
+
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelVoidForm()">Cancelar</button>
+              <button type="submit" class="danger" [disabled]="isSubmitting || voidForm.invalid">
+                Confirmar anulacion
+              </button>
+            </div>
+          </form>
+          </section>
+        </app-modal>
+      }
+
+      @if (showApplyForm) {
+        <app-modal (closed)="cancelApplyForm()">
+          <section class="form-panel nested-form">
+          <header>
+            <h5>Aplicar pago a cuotas</h5>
+            <button type="button" class="ghost" (click)="cancelApplyForm()">Cerrar</button>
+          </header>
+
+          @if (applyError) {
+            <p class="error-text">{{ applyError }}</p>
+          }
+
+          <form [formGroup]="applyForm" (ngSubmit)="submitApplyPayment()" novalidate>
+            <div formArrayName="allocations">
+              <section class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cuota</th>
+                      <th>Vencimiento</th>
+                      <th>Saldo cuota</th>
+                      <th>Monto a aplicar</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (allocation of allocationsArray.controls; track allocation.controls.contractInstallmentId.value; let i = $index) {
+                      <tr [formGroupName]="i">
+                        <td>{{ allocation.controls.installmentNumber.value }}</td>
+                        <td>{{ allocation.controls.dueDate.value }}</td>
+                        <td>{{ allocation.controls.remainingAmount.value | number: '1.2-2' }}</td>
+                        <td>
+                          <input
+                            type="number"
+                            formControlName="amountApplied"
+                            min="0"
+                            step="0.01"
+                            [max]="allocation.controls.remainingAmount.value"
+                          />
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </section>
+            </div>
+
+            <p class="field-error" *ngIf="applySubmitted && allocationsArray.length === 0">
+              No hay cuotas disponibles para aplicar.
+            </p>
+
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelApplyForm()">Cancelar</button>
+              <button type="submit" [disabled]="isSubmitting">Aplicar pago</button>
+            </div>
+          </form>
+          </section>
+        </app-modal>
+      }
+
+      <section class="subsection" *appHasPermission="['PaymentSchedules.View']">
+        <h4>Balance del contrato</h4>
+        @if (financeError) {
+          <p class="error-text">{{ financeError }}</p>
+        }
+
+        @if (isFinanceLoading) {
+          <app-loading-state message="Cargando balance y cronograma..." />
+        } @else if (selectedContractBalance; as balance) {
+          <div class="detail-grid">
+            <div><strong>Total programado:</strong> {{ balance.totalScheduled | number: '1.2-2' }}</div>
+            <div><strong>Total pagado:</strong> {{ balance.totalPaid | number: '1.2-2' }}</div>
+            <div><strong>Total pendiente:</strong> {{ balance.totalRemaining | number: '1.2-2' }}</div>
+            <div><strong>Cuotas totales:</strong> {{ balance.totalInstallments }}</div>
+            <div><strong>Cuotas pagadas:</strong> {{ balance.paidInstallments }}</div>
+            <div><strong>Cuotas pendientes:</strong> {{ balance.pendingInstallments }}</div>
+            <div><strong>Cuotas vencidas:</strong> {{ balance.overdueInstallments }}</div>
+            <div><strong>Moneda:</strong> {{ balance.currency }}</div>
+          </div>
+        } @else {
+          <app-empty-state title="Sin balance" message="No hay balance disponible para este contrato." />
+        }
+      </section>
+
+      <section class="subsection" *appHasPermission="['PaymentSchedules.View']">
+        <h4>Cronograma del contrato</h4>
+        @if (schedule.length === 0) {
+          <app-empty-state title="Sin cronograma" message="No hay cuotas disponibles para este contrato." />
+        } @else {
+          <section class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Vencimiento</th>
+                  <th>Monto</th>
+                  <th>Pagado</th>
+                  <th>Saldo</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (installment of schedule; track installment.id) {
+                  <tr>
+                    <td>{{ installment.installmentNumber }}</td>
+                    <td>{{ installment.dueDate }}</td>
+                    <td>{{ installment.amount | number: '1.2-2' }}</td>
+                    <td>{{ installment.paidAmount | number: '1.2-2' }}</td>
+                    <td>{{ installment.remainingAmount | number: '1.2-2' }}</td>
+                    <td>{{ installment.status }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        }
+      </section>
+    </section>
+  }
+</section>

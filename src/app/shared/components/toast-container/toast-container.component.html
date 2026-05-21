@@ -1,0 +1,10 @@
+@if (feedback.messages().length > 0) {
+  <section class="toast-stack" aria-live="polite" aria-atomic="true">
+    @for (item of feedback.messages(); track item.id) {
+      <article [class]="toastClass(item.level)">
+        <p>{{ item.text }}</p>
+        <button type="button" (click)="dismiss(item.id)" aria-label="Cerrar mensaje">x</button>
+      </article>
+    }
+  </section>
+}

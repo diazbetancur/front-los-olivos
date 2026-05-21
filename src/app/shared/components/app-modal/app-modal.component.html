@@ -1,0 +1,6 @@
+<section class="modal-root" role="dialog" aria-modal="true" [attr.aria-labelledby]="titleId">
+  <button type="button" class="backdrop" (click)="onBackdropClick()" aria-label="Cerrar"></button>
+  <section #panel class="panel" tabindex="-1">
+    <ng-content />
+  </section>
+</section>

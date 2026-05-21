@@ -1,0 +1,529 @@
+<section class="clients-page">
+  <header class="page-header">
+    <div>
+      <h2>Clientes</h2>
+      <p>Gestion administrativa de clientes, beneficiarios y referencias.</p>
+    </div>
+
+    <button type="button" (click)="openCreateClientForm()" *appHasPermission="['Clients.Create']">
+      Nuevo cliente
+    </button>
+  </header>
+
+  <section class="filters">
+    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <label>
+        Buscar
+        <input type="text" formControlName="search" placeholder="Nombre, email o telefono" />
+      </label>
+
+      <label>
+        DNI
+        <input type="text" formControlName="dni" placeholder="DNI" />
+      </label>
+
+      <label>
+        RTN
+        <input type="text" formControlName="rtn" placeholder="RTN" />
+      </label>
+
+      <label>
+        Estado
+        <select formControlName="status">
+          <option value="">Todos</option>
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Departamento
+        <input type="text" formControlName="department" />
+      </label>
+
+      <label>
+        Municipio
+        <input type="text" formControlName="municipality" />
+      </label>
+
+      <label>
+        Tamano pagina
+        <select formControlName="pageSize">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </label>
+
+      <div class="filter-actions">
+        <button type="submit">Aplicar</button>
+        <button type="button" class="ghost" (click)="clearFilters()">Limpiar</button>
+      </div>
+    </form>
+  </section>
+
+  @if (listError) {
+    <section class="error-box">
+      <p>{{ listError }}</p>
+    </section>
+  }
+
+  @if (isLoading) {
+    <app-loading-state message="Cargando clientes..." />
+  } @else if (clients.length === 0) {
+    <app-empty-state
+      title="Sin clientes"
+      message="No hay clientes que coincidan con el filtro actual."
+    />
+  } @else {
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>DNI</th>
+            <th>RTN</th>
+            <th>Telefono</th>
+            <th>Email</th>
+            <th>Departamento</th>
+            <th>Municipio</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (client of clients; track client.id) {
+            <tr>
+              <td>{{ client.fullName }}</td>
+              <td>{{ client.dni || '-' }}</td>
+              <td>{{ client.rtn || '-' }}</td>
+              <td>{{ client.phone || client.mobile || '-' }}</td>
+              <td>{{ client.email || '-' }}</td>
+              <td>{{ client.department || '-' }}</td>
+              <td>{{ client.municipality || '-' }}</td>
+              <td><span class="chip">{{ client.status }}</span></td>
+              <td class="row-actions">
+                <button type="button" class="ghost" (click)="viewClientDetail(client.id)">Ver</button>
+                <button
+                  type="button"
+                  class="ghost"
+                  (click)="openEditClientForm(client.id)"
+                  *appHasPermission="['Clients.Update']"
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  class="danger"
+                  (click)="disableClient(client)"
+                  [disabled]="isSubmitting || client.status === 'Inactivo'"
+                  *appHasPermission="['Clients.Disable']"
+                >
+                  Deshabilitar
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  <section class="pagination">
+    <span>Pagina {{ currentPage }} de {{ totalPages() }} | Total {{ totalCount }}</span>
+    <div>
+      <button type="button" (click)="goToPreviousPage()" [disabled]="currentPage <= 1">Anterior</button>
+      <button type="button" (click)="goToNextPage()" [disabled]="currentPage >= totalPages()">Siguiente</button>
+    </div>
+  </section>
+
+  @if (isDetailLoading) {
+    <app-loading-state message="Cargando detalle del cliente..." />
+  } @else if (detailError) {
+    <section class="error-box">
+      <p>{{ detailError }}</p>
+    </section>
+  } @else if (selectedClientDetail; as detail) {
+    <section class="detail-panel">
+      <header class="detail-header">
+        <h3>Detalle del cliente</h3>
+        <span class="chip">{{ detail.status }}</span>
+      </header>
+
+      <div class="detail-grid">
+        <div><strong>Nombre completo:</strong> {{ detail.fullName }}</div>
+        <div><strong>Tipo de persona:</strong> {{ detail.personType }}</div>
+        <div><strong>Nombres / razon social:</strong> {{ detail.firstName }}</div>
+        <div><strong>Apellidos:</strong> {{ detail.lastName || '-' }}</div>
+        <div><strong>DNI:</strong> {{ detail.dni || '-' }}</div>
+        <div><strong>RTN:</strong> {{ detail.rtn || '-' }}</div>
+        <div><strong>Nacionalidad:</strong> {{ detail.nationality || '-' }}</div>
+        <div><strong>Estado civil:</strong> {{ detail.maritalStatus || '-' }}</div>
+        <div><strong>Fecha nacimiento:</strong> {{ detail.birthDate || '-' }}</div>
+        <div><strong>Telefono:</strong> {{ detail.phone || '-' }}</div>
+        <div><strong>Movil:</strong> {{ detail.mobile || '-' }}</div>
+        <div><strong>Email:</strong> {{ detail.email || '-' }}</div>
+        <div><strong>Departamento:</strong> {{ detail.department || '-' }}</div>
+        <div><strong>Municipio:</strong> {{ detail.municipality || '-' }}</div>
+        <div class="full-width"><strong>Direccion:</strong> {{ detail.address || '-' }}</div>
+        <div class="full-width"><strong>Notas:</strong> {{ detail.notes || '-' }}</div>
+      </div>
+
+      <section class="subsection">
+        <header class="subsection-header">
+          <h4>Beneficiarios</h4>
+          <button type="button" (click)="openCreateBeneficiaryForm()" *appHasPermission="['Clients.Update']">
+            Nuevo beneficiario
+          </button>
+        </header>
+
+        @if (beneficiariesError) {
+          <p class="error-text">{{ beneficiariesError }}</p>
+        }
+
+        @if (isBeneficiariesLoading) {
+          <app-loading-state message="Cargando beneficiarios..." />
+        } @else if (beneficiaries.length === 0) {
+          <app-empty-state title="Sin beneficiarios" message="Este cliente no tiene beneficiarios registrados." />
+        } @else {
+          <section class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>DNI</th>
+                  <th>Telefono</th>
+                  <th>Relacion</th>
+                  <th>Direccion</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (beneficiary of beneficiaries; track beneficiary.id) {
+                  <tr>
+                    <td>{{ beneficiary.fullName }}</td>
+                    <td>{{ beneficiary.dni || '-' }}</td>
+                    <td>{{ beneficiary.phone || '-' }}</td>
+                    <td>{{ beneficiary.relationship || '-' }}</td>
+                    <td>{{ beneficiary.address || '-' }}</td>
+                    <td class="row-actions">
+                      <button
+                        type="button"
+                        class="ghost"
+                        (click)="openEditBeneficiaryForm(beneficiary)"
+                        *appHasPermission="['Clients.Update']"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        class="danger"
+                        (click)="deleteBeneficiary(beneficiary)"
+                        *appHasPermission="['Clients.Update']"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        }
+
+        @if (showBeneficiaryForm) {
+          <app-modal (closed)="cancelBeneficiaryForm()">
+            <section class="form-panel nested-form">
+            <header>
+              <h5>{{ editingBeneficiaryId ? 'Editar beneficiario' : 'Nuevo beneficiario' }}</h5>
+              <button type="button" class="ghost" (click)="cancelBeneficiaryForm()">Cerrar</button>
+            </header>
+
+            @if (beneficiaryFormError) {
+              <p class="error-text">{{ beneficiaryFormError }}</p>
+            }
+
+            <form [formGroup]="beneficiaryForm" (ngSubmit)="submitBeneficiary()" novalidate>
+              <div class="grid">
+                <label class="required">
+                  Nombre completo
+                  <input type="text" formControlName="fullName" />
+                </label>
+                <label>
+                  DNI
+                  <input type="text" formControlName="dni" />
+                </label>
+                <label>
+                  Telefono
+                  <input type="text" formControlName="phone" />
+                </label>
+                <label>
+                  Relacion
+                  <input type="text" formControlName="relationship" />
+                </label>
+                <label class="full-width">
+                  Direccion
+                  <input type="text" formControlName="address" />
+                </label>
+                <label class="full-width">
+                  Notas
+                  <textarea rows="2" formControlName="notes"></textarea>
+                </label>
+              </div>
+
+              <p class="field-error" *ngIf="beneficiaryForm.invalid && (beneficiaryForm.touched || beneficiaryFormSubmitted)">
+                Revisa los campos del beneficiario antes de guardar.
+              </p>
+
+              <div class="form-actions">
+                <button type="button" class="ghost" (click)="cancelBeneficiaryForm()">Cancelar</button>
+                <button type="submit" [disabled]="isSubmitting || beneficiaryForm.invalid">
+                  {{ editingBeneficiaryId ? 'Guardar cambios' : 'Crear beneficiario' }}
+                </button>
+              </div>
+            </form>
+            </section>
+          </app-modal>
+        }
+      </section>
+
+      <section class="subsection">
+        <header class="subsection-header">
+          <h4>Referencias</h4>
+          <button type="button" (click)="openCreateReferenceForm()" *appHasPermission="['Clients.Update']">
+            Nueva referencia
+          </button>
+        </header>
+
+        @if (referencesError) {
+          <p class="error-text">{{ referencesError }}</p>
+        }
+
+        @if (isReferencesLoading) {
+          <app-loading-state message="Cargando referencias..." />
+        } @else if (references.length === 0) {
+          <app-empty-state title="Sin referencias" message="Este cliente no tiene referencias registradas." />
+        } @else {
+          <section class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Telefono</th>
+                  <th>Relacion/Notas</th>
+                  <th>Notas</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (reference of references; track reference.id) {
+                  <tr>
+                    <td>{{ reference.fullName }}</td>
+                    <td>{{ reference.phone || '-' }}</td>
+                    <td>{{ reference.relationshipOrNotes || '-' }}</td>
+                    <td>{{ reference.notes || '-' }}</td>
+                    <td class="row-actions">
+                      <button
+                        type="button"
+                        class="ghost"
+                        (click)="openEditReferenceForm(reference)"
+                        *appHasPermission="['Clients.Update']"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        class="danger"
+                        (click)="deleteReference(reference)"
+                        *appHasPermission="['Clients.Update']"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        }
+
+        @if (showReferenceForm) {
+          <app-modal (closed)="cancelReferenceForm()">
+            <section class="form-panel nested-form">
+            <header>
+              <h5>{{ editingReferenceId ? 'Editar referencia' : 'Nueva referencia' }}</h5>
+              <button type="button" class="ghost" (click)="cancelReferenceForm()">Cerrar</button>
+            </header>
+
+            @if (referenceFormError) {
+              <p class="error-text">{{ referenceFormError }}</p>
+            }
+
+            <form [formGroup]="referenceForm" (ngSubmit)="submitReference()" novalidate>
+              <div class="grid">
+                <label class="required">
+                  Nombre completo
+                  <input type="text" formControlName="fullName" />
+                </label>
+                <label>
+                  Telefono
+                  <input type="text" formControlName="phone" />
+                </label>
+                <label>
+                  Relacion o nota corta
+                  <input type="text" formControlName="relationshipOrNotes" />
+                </label>
+                <label class="full-width">
+                  Notas
+                  <textarea rows="2" formControlName="notes"></textarea>
+                </label>
+              </div>
+
+              <p class="field-error" *ngIf="referenceForm.invalid && (referenceForm.touched || referenceFormSubmitted)">
+                Revisa los campos de referencia antes de guardar.
+              </p>
+
+              <div class="form-actions">
+                <button type="button" class="ghost" (click)="cancelReferenceForm()">Cancelar</button>
+                <button type="submit" [disabled]="isSubmitting || referenceForm.invalid">
+                  {{ editingReferenceId ? 'Guardar cambios' : 'Crear referencia' }}
+                </button>
+              </div>
+            </form>
+            </section>
+          </app-modal>
+        }
+      </section>
+    </section>
+  }
+
+  @if (showClientForm) {
+    <app-modal (closed)="cancelClientForm()">
+      <section class="form-panel">
+      <header>
+        <h3>{{ editingClientId ? 'Editar cliente' : 'Nuevo cliente' }}</h3>
+        <button type="button" class="ghost" (click)="cancelClientForm()">Cerrar</button>
+      </header>
+
+      @if (clientFormError) {
+        <p class="error-text">{{ clientFormError }}</p>
+      }
+
+      <form [formGroup]="clientForm" (ngSubmit)="submitClient()" novalidate>
+        <div class="grid">
+          <h4 class="form-section-title full-width">Identidad</h4>
+
+          <label class="required">
+            Tipo de persona
+            <select formControlName="personType">
+              @for (personType of personTypes; track personType) {
+                <option [value]="personType">{{ personType }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="required">
+            Nombres / razon social
+            <input type="text" formControlName="firstName" />
+            @if (isJuridicaSelected()) {
+              <small>Para persona juridica, usa este campo como razon social.</small>
+            }
+          </label>
+
+          <label [class.required]="!isJuridicaSelected()">
+            LastName
+            <input type="text" formControlName="lastName" />
+          </label>
+
+          <label>
+            DNI
+            <input type="text" formControlName="dni" />
+          </label>
+
+          <label>
+            RTN
+            <input type="text" formControlName="rtn" />
+          </label>
+
+          <label>
+            Nacionalidad
+            <input type="text" formControlName="nationality" />
+          </label>
+
+          <label>
+            Estado civil
+            <input type="text" formControlName="maritalStatus" />
+          </label>
+
+          <label>
+            Fecha de nacimiento
+            <input type="date" formControlName="birthDate" />
+          </label>
+
+          <h4 class="form-section-title full-width">Contacto</h4>
+
+          <label>
+            Telefono
+            <input type="text" formControlName="phone" />
+          </label>
+
+          <label>
+            Movil
+            <input type="text" formControlName="mobile" />
+          </label>
+
+          <label>
+            Email
+            <input type="email" formControlName="email" />
+          </label>
+
+          <h4 class="form-section-title full-width">Ubicacion y estado</h4>
+
+          <label>
+            Departamento
+            <input type="text" formControlName="department" />
+          </label>
+
+          <label>
+            Municipio
+            <input type="text" formControlName="municipality" />
+          </label>
+
+          <label class="required">
+            Estado
+            <select formControlName="status">
+              @for (status of statuses; track status) {
+                <option [value]="status">{{ status }}</option>
+              }
+            </select>
+          </label>
+
+          <h4 class="form-section-title full-width">Notas</h4>
+
+          <label class="full-width">
+            Direccion
+            <textarea rows="2" formControlName="address"></textarea>
+          </label>
+
+          <label class="full-width">
+            Notas
+            <textarea rows="2" formControlName="notes"></textarea>
+          </label>
+        </div>
+
+        <p class="field-error" *ngIf="clientForm.invalid && (clientForm.touched || clientFormSubmitted)">
+          Revisa campos requeridos y formatos antes de guardar.
+        </p>
+
+        <div class="form-actions">
+          <button type="button" class="ghost" (click)="cancelClientForm()">Cancelar</button>
+          <button type="submit" [disabled]="isSubmitting || clientForm.invalid">
+            {{ editingClientId ? 'Guardar cambios' : 'Crear cliente' }}
+          </button>
+        </div>
+      </form>
+      </section>
+    </app-modal>
+  }
+</section>

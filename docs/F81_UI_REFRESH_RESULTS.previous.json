@@ -1,0 +1,133 @@
+{
+  "executedAtUtc": "2026-05-11T15:09:34.784Z",
+  "frontendUrl": "http://localhost:4200",
+  "runtimeErrors": [],
+  "results": [
+    {
+      "step": 1,
+      "title": "Login admin",
+      "status": "PASS",
+      "detail": "Login OK"
+    },
+    {
+      "step": 2,
+      "title": "Crear proyecto y refresco inmediato",
+      "status": "PASS",
+      "detail": "Proyecto PR-F811778512125606 visible sin click extra"
+    },
+    {
+      "step": 3,
+      "title": "Editar proyecto y reflejo inmediato",
+      "status": "PASS",
+      "detail": "Nombre actualizado en tabla sin click extra"
+    },
+    {
+      "step": 4,
+      "title": "Crear lote y refresco inmediato",
+      "status": "PASS",
+      "detail": "Lote LT-F811778512125606 visible sin click extra"
+    },
+    {
+      "step": 5,
+      "title": "Cambiar estado de lote y reflejo inmediato",
+      "status": "PASS",
+      "detail": "Estado Reservado visible inmediatamente"
+    },
+    {
+      "step": 6,
+      "title": "Crear cliente y refresco inmediato",
+      "status": "PASS",
+      "detail": "Cliente ClienteF811778512125606 Demo visible sin click extra"
+    },
+    {
+      "step": 6.1,
+      "title": "Crear cliente Juridica y refresco inmediato",
+      "status": "FAIL",
+      "detail": "locator.waitFor: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tbody tr').filter({ hasText: 'Empresa F811778512125606' }).first() to be visible\u001b[22m\n"
+    },
+    {
+      "step": 7,
+      "title": "Editar cliente y reflejo inmediato",
+      "status": "PASS",
+      "detail": "Telefono actualizado en fila sin click extra"
+    },
+    {
+      "step": 8,
+      "title": "Crear beneficiario y refresco inmediato",
+      "status": "PASS",
+      "detail": "Beneficiario visible sin click extra"
+    },
+    {
+      "step": 9,
+      "title": "Crear referencia y refresco inmediato",
+      "status": "PASS",
+      "detail": "Referencia visible sin click extra"
+    },
+    {
+      "step": 10,
+      "title": "Crear contrato y refresco inmediato",
+      "status": "PASS",
+      "detail": "Contrato visible sin click extra (CTR-20260511-1A0A9F)"
+    },
+    {
+      "step": 11,
+      "title": "Generar documentos y refresco inmediato",
+      "status": "PASS",
+      "detail": "Documentos visibles sin click extra"
+    },
+    {
+      "step": 11.1,
+      "title": "Consultar cronograma sin navegacion adicional",
+      "status": "PASS",
+      "detail": "Cronograma cargado en detalle sin click extra"
+    },
+    {
+      "step": 12,
+      "title": "Registrar pago y refresco inmediato",
+      "status": "PASS",
+      "detail": "Detalle refrescado sin click extra (PAY-20260511-BB3758)"
+    },
+    {
+      "step": 13,
+      "title": "Aplicar pago y refresco inmediato de balance/detalle",
+      "status": "PASS",
+      "detail": "Aplicacion reflejada sin click extra"
+    },
+    {
+      "step": 14,
+      "title": "Crear recibo y refresco inmediato",
+      "status": "PASS",
+      "detail": "Recibo reflejado sin click extra (RCP-20260511-441532)"
+    },
+    {
+      "step": 14.1,
+      "title": "Descargar PDF y DOCX con blob/bearer",
+      "status": "PASS",
+      "detail": "Descargas OK (RCP-20260511-441532.pdf, RCP-20260511-441532.docx)"
+    },
+    {
+      "step": 15,
+      "title": "Aprobar comprobante y refresco inmediato",
+      "status": "PASS",
+      "detail": "Comprobante aprobado visible sin click extra"
+    },
+    {
+      "step": 16,
+      "title": "Rechazar comprobante y refresco inmediato",
+      "status": "BLOCKED",
+      "detail": "No hay comprobantes PendienteRevision en ambiente actual."
+    },
+    {
+      "step": 17,
+      "title": "Anular pago y refresco inmediato",
+      "status": "PASS",
+      "detail": "Pago anulado visible sin click extra"
+    },
+    {
+      "step": 18,
+      "title": "Anular recibo y refresco inmediato",
+      "status": "PASS",
+      "detail": "Recibo anulado visible sin click extra"
+    }
+  ]
+}

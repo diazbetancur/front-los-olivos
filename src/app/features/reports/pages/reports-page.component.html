@@ -1,0 +1,610 @@
+<section class="reports-page">
+  <header class="page-header">
+    <div>
+      <h2>Reportes</h2>
+      <p>Consulta consolidada de lotes, contratos, pagos, saldos, recibos anulados y auditoria.</p>
+    </div>
+  </header>
+
+  @if (!canViewReports() && !canViewAudit()) {
+    <app-empty-state title="Sin permisos" message="No tienes permisos para ver reportes o auditoria." />
+  }
+
+  @if (canViewReports()) {
+    <section class="filters">
+      <form [formGroup]="summaryFilterForm" (ngSubmit)="refreshSummary()">
+        <label>
+          Proyecto
+          <select formControlName="projectId">
+            <option value="">Todos</option>
+            @for (project of projectOptions; track project.id) {
+              <option [value]="project.id">{{ project.code }} - {{ project.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          Contratos desde
+          <input type="date" formControlName="fromDate" />
+        </label>
+
+        <label>
+          Contratos hasta
+          <input type="date" formControlName="toDate" />
+        </label>
+
+        <div class="filter-actions">
+          <button type="submit" class="btn-primary">Refrescar resumen</button>
+        </div>
+      </form>
+    </section>
+
+    @if (summaryError) {
+      <section class="error-box"><p>{{ summaryError }}</p></section>
+    }
+
+    <section class="summary-grid">
+      <article class="summary-panel">
+        <header class="subsection-header">
+          <h3>Resumen de lotes por estado</h3>
+        </header>
+        @if (isSummaryLoading) {
+          <app-loading-state message="Cargando resumen de lotes..." />
+        } @else if (lotSummary.length === 0) {
+          <app-empty-state title="Sin datos" message="No hay lotes para el filtro actual." />
+        } @else {
+          <div class="chips-grid">
+            @for (row of lotSummary; track row.status) {
+              <div class="chip-card">
+                <span [class]="lotStatusClass(row.status)">{{ row.status }}</span>
+                <strong>{{ row.count }}</strong>
+                <small>Area: {{ row.totalAreaM2 | number: '1.2-2' }} m2</small>
+                <small>Precio lista: {{ row.totalListPrice | number: '1.2-2' }}</small>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="summary-panel">
+        <header class="subsection-header">
+          <h3>Resumen de contratos por estado</h3>
+        </header>
+        @if (isSummaryLoading) {
+          <app-loading-state message="Cargando resumen de contratos..." />
+        } @else if (contractSummary.length === 0) {
+          <app-empty-state title="Sin datos" message="No hay contratos para el filtro actual." />
+        } @else {
+          <div class="chips-grid">
+            @for (row of contractSummary; track row.status) {
+              <div class="chip-card">
+                <span [class]="contractStatusClass(row.status)">{{ row.status }}</span>
+                <strong>{{ row.count }}</strong>
+                <small>Monto total: {{ row.totalContractAmount | number: '1.2-2' }}</small>
+              </div>
+            }
+          </div>
+        }
+      </article>
+    </section>
+
+    <section class="detail-panel">
+      <header class="subsection-header">
+        <h3>Contratos en mora o proximos a vencer</h3>
+      </header>
+
+      <section class="filters inline-filters">
+        <form [formGroup]="arrearsFilterForm" (ngSubmit)="applyArrearsFilters()">
+          <label>
+            Fecha corte
+            <input type="date" formControlName="asOfDate" />
+          </label>
+          <label>
+            Dias proximos
+            <input type="number" formControlName="upcomingDays" min="0" max="180" />
+          </label>
+          <label>
+            Proyecto
+            <select formControlName="projectId">
+              <option value="">Todos</option>
+              @for (project of projectOptions; track project.id) {
+                <option [value]="project.id">{{ project.code }} - {{ project.name }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Buscar
+            <input type="text" formControlName="search" placeholder="Contrato, cliente o proyecto" />
+          </label>
+          <label>
+            Tamano pagina
+            <select formControlName="pageSize">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+          <div class="filter-actions">
+            <button type="submit" class="btn-primary">Aplicar</button>
+          </div>
+        </form>
+      </section>
+
+      @if (arrearsError) {
+        <p class="error-text">{{ arrearsError }}</p>
+      }
+
+      @if (isArrearsLoading) {
+        <app-loading-state message="Cargando contratos en mora..." />
+      } @else if (arrearsItems.length === 0) {
+        <app-empty-state title="Sin registros" message="No hay contratos en mora o proximos a vencer para este filtro." />
+      } @else {
+        <section class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Contrato</th>
+                <th>Proyecto</th>
+                <th>Cliente</th>
+                <th>Estado</th>
+                <th>Cuotas vencidas</th>
+                <th>Monto vencido</th>
+                <th>Cuotas proximas</th>
+                <th>Proximo vencimiento</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of arrearsItems; track row.contractId) {
+                <tr>
+                  <td>{{ row.contractNumber }}</td>
+                  <td>{{ row.projectCode }} - {{ row.projectName }}</td>
+                  <td>{{ row.clientFullName }}</td>
+                  <td><span [class]="contractStatusClass(row.contractStatus)">{{ row.contractStatus }}</span></td>
+                  <td>{{ row.overdueInstallments }}</td>
+                  <td>{{ row.overdueAmount | number: '1.2-2' }}</td>
+                  <td>{{ row.upcomingInstallments }}</td>
+                  <td>{{ row.nextDueDate || '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+
+        <section class="pagination">
+          <span>
+            Pagina {{ arrearsPage }} de
+            {{ Math.max(1, Math.ceil(arrearsTotalCount / arrearsFilterForm.controls.pageSize.value)) }}
+            | Total {{ arrearsTotalCount }}
+          </span>
+          <div>
+            <button type="button" class="btn-secondary" (click)="goToPreviousArrearsPage()" [disabled]="arrearsPage <= 1">
+              Anterior
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="goToNextArrearsPage()"
+              [disabled]="
+                arrearsPage >= Math.max(1, Math.ceil(arrearsTotalCount / arrearsFilterForm.controls.pageSize.value))
+              "
+            >
+              Siguiente
+            </button>
+          </div>
+        </section>
+      }
+    </section>
+
+    <section class="detail-panel">
+      <header class="subsection-header">
+        <h3>Pagos por rango de fechas</h3>
+      </header>
+
+      <section class="filters inline-filters">
+        <form [formGroup]="paymentsFilterForm" (ngSubmit)="applyPaymentsFilters()">
+          <label>
+            Desde
+            <input type="date" formControlName="fromDate" />
+          </label>
+          <label>
+            Hasta
+            <input type="date" formControlName="toDate" />
+          </label>
+          <label>
+            Contrato
+            <select formControlName="contractId">
+              <option value="">Todos</option>
+              @for (contract of contractOptions; track contract.id) {
+                <option [value]="contract.id">{{ contract.contractNumber }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Cliente
+            <select formControlName="clientId">
+              <option value="">Todos</option>
+              @for (client of clientOptions; track client.id) {
+                <option [value]="client.id">{{ client.fullName }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Tamano pagina
+            <select formControlName="pageSize">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+          <div class="filter-actions">
+            <button type="submit" class="btn-primary">Aplicar</button>
+          </div>
+        </form>
+      </section>
+
+      @if (paymentsError) {
+        <p class="error-text">{{ paymentsError }}</p>
+      }
+
+      @if (isPaymentsLoading) {
+        <app-loading-state message="Cargando pagos por rango..." />
+      } @else if (!paymentsReport || paymentsReport.items.length === 0) {
+        <app-empty-state title="Sin pagos" message="No hay pagos para el rango seleccionado." />
+      } @else {
+        <div class="summary-inline">
+          <span class="chip">Total pagos: {{ paymentsReport.totalAmount | number: '1.2-2' }}</span>
+          <span class="chip">Total aplicado: {{ paymentsReport.totalAppliedAmount | number: '1.2-2' }}</span>
+          <span class="chip">Total no aplicado: {{ paymentsReport.totalUnallocatedAmount | number: '1.2-2' }}</span>
+          <span class="chip">Anulados: {{ paymentsReport.totalVoidedCount }}</span>
+        </div>
+
+        <section class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Numero</th>
+                <th>Fecha</th>
+                <th>Monto</th>
+                <th>Aplicado</th>
+                <th>No aplicado</th>
+                <th>Estado</th>
+                <th>Metodo</th>
+                <th>Referencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of paymentsReport.items; track row.paymentId) {
+                <tr>
+                  <td>{{ row.paymentNumber }}</td>
+                  <td>{{ row.paymentDate }}</td>
+                  <td>{{ row.amount | number: '1.2-2' }}</td>
+                  <td>{{ row.appliedAmount | number: '1.2-2' }}</td>
+                  <td>{{ row.unallocatedAmount | number: '1.2-2' }}</td>
+                  <td><span [class]="paymentStatusClass(row.status)">{{ row.status }}</span></td>
+                  <td>{{ row.paymentMethod || '-' }}</td>
+                  <td>{{ row.transactionReference || '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+
+        <section class="pagination">
+          <span>
+            Pagina {{ paymentsReport.page }} de {{ Math.max(1, Math.ceil(paymentsReport.totalCount / paymentsReport.pageSize)) }}
+            | Total {{ paymentsReport.totalCount }}
+          </span>
+          <div>
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="goToPreviousPaymentsPage()"
+              [disabled]="paymentsReport.page <= 1"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="goToNextPaymentsPage()"
+              [disabled]="paymentsReport.page >= Math.max(1, Math.ceil(paymentsReport.totalCount / paymentsReport.pageSize))"
+            >
+              Siguiente
+            </button>
+          </div>
+        </section>
+      }
+    </section>
+
+    <section class="detail-panel">
+      <header class="subsection-header">
+        <h3>Saldos por proyecto</h3>
+      </header>
+
+      <section class="filters inline-filters">
+        <form [formGroup]="balancesFilterForm" (ngSubmit)="applyBalancesFilters()">
+          <label>
+            Buscar
+            <input type="text" formControlName="search" placeholder="Codigo o nombre de proyecto" />
+          </label>
+          <label>
+            Tamano pagina
+            <select formControlName="pageSize">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+          <div class="filter-actions">
+            <button type="submit" class="btn-primary">Aplicar</button>
+          </div>
+        </form>
+      </section>
+
+      @if (balancesError) {
+        <p class="error-text">{{ balancesError }}</p>
+      }
+
+      @if (isBalancesLoading) {
+        <app-loading-state message="Cargando saldos por proyecto..." />
+      } @else if (balanceItems.length === 0) {
+        <app-empty-state title="Sin saldos" message="No hay datos de saldos para el filtro actual." />
+      } @else {
+        <section class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Proyecto</th>
+                <th>Contratos</th>
+                <th>En mora</th>
+                <th>Programado</th>
+                <th>Pagado</th>
+                <th>Pendiente</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of balanceItems; track row.projectId) {
+                <tr>
+                  <td>{{ row.projectCode }} - {{ row.projectName }}</td>
+                  <td>{{ row.contractsCount }}</td>
+                  <td>{{ row.inDefaultContracts }}</td>
+                  <td>{{ row.scheduledAmount | number: '1.2-2' }}</td>
+                  <td>{{ row.paidAmount | number: '1.2-2' }}</td>
+                  <td>{{ row.remainingAmount | number: '1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+
+        <section class="pagination">
+          <span>
+            Pagina {{ balancesPage }} de
+            {{ Math.max(1, Math.ceil(balancesTotalCount / balancesFilterForm.controls.pageSize.value)) }}
+            | Total {{ balancesTotalCount }}
+          </span>
+          <div>
+            <button type="button" class="btn-secondary" (click)="goToPreviousBalancesPage()" [disabled]="balancesPage <= 1">
+              Anterior
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="goToNextBalancesPage()"
+              [disabled]="balancesPage >= Math.max(1, Math.ceil(balancesTotalCount / balancesFilterForm.controls.pageSize.value))"
+            >
+              Siguiente
+            </button>
+          </div>
+        </section>
+      }
+    </section>
+
+    <section class="detail-panel">
+      <header class="subsection-header">
+        <h3>Recibos anulados</h3>
+      </header>
+
+      <section class="filters inline-filters">
+        <form [formGroup]="voidedReceiptsFilterForm" (ngSubmit)="applyVoidedReceiptsFilters()">
+          <label>
+            Desde
+            <input type="date" formControlName="fromDate" />
+          </label>
+          <label>
+            Hasta
+            <input type="date" formControlName="toDate" />
+          </label>
+          <label>
+            Buscar
+            <input type="text" formControlName="search" placeholder="Numero, razon o notas" />
+          </label>
+          <label>
+            Tamano pagina
+            <select formControlName="pageSize">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+          <div class="filter-actions">
+            <button type="submit" class="btn-primary">Aplicar</button>
+          </div>
+        </form>
+      </section>
+
+      @if (voidedReceiptsError) {
+        <p class="error-text">{{ voidedReceiptsError }}</p>
+      }
+
+      @if (isVoidedReceiptsLoading) {
+        <app-loading-state message="Cargando recibos anulados..." />
+      } @else if (voidedReceiptItems.length === 0) {
+        <app-empty-state title="Sin recibos anulados" message="No hay registros para este filtro." />
+      } @else {
+        <section class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Recibo</th>
+                <th>Fecha recibo</th>
+                <th>Monto</th>
+                <th>Estado</th>
+                <th>Anulado en</th>
+                <th>Anulado por</th>
+                <th>Razon</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of voidedReceiptItems; track row.receiptId) {
+                <tr>
+                  <td>{{ row.receiptNumber }}</td>
+                  <td>{{ row.receiptDate }}</td>
+                  <td>{{ row.amount | number: '1.2-2' }}</td>
+                  <td><span [class]="receiptStatusClass()">Anulado</span></td>
+                  <td>{{ row.voidedAtUtc ? (row.voidedAtUtc | date: 'short') : '-' }}</td>
+                  <td>{{ row.voidedBy || '-' }}</td>
+                  <td>{{ row.voidReason || '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+
+        <section class="pagination">
+          <span>
+            Pagina {{ voidedReceiptsPage }} de
+            {{ Math.max(1, Math.ceil(voidedReceiptsTotalCount / voidedReceiptsFilterForm.controls.pageSize.value)) }}
+            | Total {{ voidedReceiptsTotalCount }}
+          </span>
+          <div>
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="goToPreviousVoidedReceiptsPage()"
+              [disabled]="voidedReceiptsPage <= 1"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="goToNextVoidedReceiptsPage()"
+              [disabled]="
+                voidedReceiptsPage >= Math.max(1, Math.ceil(voidedReceiptsTotalCount / voidedReceiptsFilterForm.controls.pageSize.value))
+              "
+            >
+              Siguiente
+            </button>
+          </div>
+        </section>
+      }
+    </section>
+  }
+
+  @if (canViewAudit()) {
+    <section class="detail-panel">
+      <header class="subsection-header">
+        <h3>Auditoria</h3>
+      </header>
+
+      <section class="filters inline-filters">
+        <form [formGroup]="auditFilterForm" (ngSubmit)="applyAuditFilters()">
+          <label>
+            Desde (UTC)
+            <input type="datetime-local" formControlName="fromUtc" />
+          </label>
+          <label>
+            Hasta (UTC)
+            <input type="datetime-local" formControlName="toUtc" />
+          </label>
+          <label>
+            Usuario
+            <input type="text" formControlName="userName" placeholder="Nombre de usuario" />
+          </label>
+          <label>
+            Entidad
+            <input type="text" formControlName="entityName" placeholder="Entidad" />
+          </label>
+          <label>
+            Accion
+            <input type="text" formControlName="action" placeholder="Added, Modified, Deleted" />
+          </label>
+          <label>
+            Tamano pagina
+            <select formControlName="pageSize">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+          <div class="filter-actions">
+            <button type="submit" class="btn-primary">Aplicar</button>
+          </div>
+        </form>
+      </section>
+
+      @if (auditError) {
+        <p class="error-text">{{ auditError }}</p>
+      }
+
+      @if (isAuditLoading) {
+        <app-loading-state message="Cargando auditoria..." />
+      } @else if (auditItems.length === 0) {
+        <app-empty-state title="Sin auditoria" message="No hay eventos para el filtro seleccionado." />
+      } @else {
+        <section class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha UTC</th>
+                <th>Usuario</th>
+                <th>Accion</th>
+                <th>Entidad</th>
+                <th>EntityId</th>
+                <th>IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of auditItems; track row.id) {
+                <tr>
+                  <td>{{ row.createdAtUtc | date: 'yyyy-MM-dd HH:mm:ss' }}</td>
+                  <td>{{ row.userName || row.userId || '-' }}</td>
+                  <td>{{ row.action }}</td>
+                  <td>{{ row.entityName }}</td>
+                  <td>{{ row.entityId || '-' }}</td>
+                  <td>{{ row.ipAddress || '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+
+        <section class="pagination">
+          <span>
+            Pagina {{ auditPage }} de {{ Math.max(1, Math.ceil(auditTotalCount / auditFilterForm.controls.pageSize.value)) }}
+            | Total {{ auditTotalCount }}
+          </span>
+          <div>
+            <button type="button" class="btn-secondary" (click)="goToPreviousAuditPage()" [disabled]="auditPage <= 1">
+              Anterior
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="goToNextAuditPage()"
+              [disabled]="auditPage >= Math.max(1, Math.ceil(auditTotalCount / auditFilterForm.controls.pageSize.value))"
+            >
+              Siguiente
+            </button>
+          </div>
+        </section>
+      }
+    </section>
+  }
+</section>

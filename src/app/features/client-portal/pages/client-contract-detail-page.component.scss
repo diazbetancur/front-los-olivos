@@ -1,0 +1,287 @@
+.contract-detail-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.page-header p {
+  margin: 0.2rem 0 0;
+  color: #64748b;
+}
+
+.back-link {
+  text-decoration: none;
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.summary-card,
+.panel,
+.error-box {
+  background: #ffffff;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  padding: 0.85rem;
+}
+
+.summary-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.summary-item {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.summary-label {
+  font-size: 0.78rem;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.section-tabs a {
+  text-decoration: none;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.section-tabs a.active {
+  border-color: #60a5fa;
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.overview-block {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.overview-block h3 {
+  margin: 0;
+  font-size: 0.96rem;
+  color: #0f172a;
+}
+
+dl {
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+dl div {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.6rem;
+}
+
+dt {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+dd {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+
+.conditions-grid {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.notes {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #334155;
+}
+
+.muted {
+  margin: 0;
+  font-size: 0.87rem;
+  color: #64748b;
+}
+
+.table-wrap {
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.62rem 0.58rem;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 0.87rem;
+}
+
+th {
+  background: #f8fafc;
+  font-size: 0.8rem;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+.row-actions {
+  display: inline-flex;
+  gap: 0.42rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.44rem 0.74rem;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.btn-secondary {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.status-badge {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  border-radius: 999px;
+  padding: 0.16rem 0.48rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.status-badge.ok {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.status-badge.warn {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.status-badge.danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.panel-header h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.panel-header p {
+  margin: 0.18rem 0 0;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+.proof-form {
+  margin-top: 0.7rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.72rem;
+}
+
+label {
+  display: grid;
+  gap: 0.28rem;
+  color: #334155;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+input,
+textarea {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.44rem 0.52rem;
+  font-size: 0.89rem;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.field-error,
+.error-text {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #991b1b;
+}
+
+.file-name {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.error-box {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.error-box p {
+  margin: 0;
+  color: #991b1b;
+}
+
+@media (max-width: 860px) {
+  dl div {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+}

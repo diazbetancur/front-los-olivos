@@ -1,0 +1,150 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.client-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  background: #f1f5f9;
+}
+
+.sidebar {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1rem 0.85rem;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border-right: 1px solid #1e293b;
+  gap: 1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.04rem;
+}
+
+.brand p {
+  margin: 0.1rem 0 0;
+  font-size: 0.84rem;
+  color: #94a3b8;
+}
+
+.nav {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+}
+
+.nav a {
+  text-decoration: none;
+  color: #e2e8f0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-weight: 500;
+}
+
+.nav a:hover {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.nav a.active {
+  background: #1e40af;
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+.main-area {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #d7dee7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.topbar h2 {
+  margin: 0;
+  font-size: 1.04rem;
+  color: #0f172a;
+}
+
+.topbar p {
+  margin: 0.15rem 0 0;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+.user-area {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.identity {
+  display: grid;
+  justify-items: end;
+}
+
+.identity strong {
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.identity span {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.logout-btn {
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  background: #fff7f7;
+  color: #991b1b;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+}
+
+.workspace {
+  padding: 1.1rem;
+  overflow: auto;
+}
+
+@media (max-width: 960px) {
+  .client-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid #1e293b;
+  }
+}

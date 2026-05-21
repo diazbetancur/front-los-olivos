@@ -1,0 +1,85 @@
+.roles-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header > button {
+  min-width: 8.9rem;
+}
+
+.status-badge.approved {
+  background: var(--success-soft);
+  border-color: #bbf7d0;
+  color: var(--success);
+}
+
+.status-badge.blocked {
+  background: var(--danger-soft);
+  border-color: #fecaca;
+  color: var(--danger);
+}
+
+.permission-summary {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.permission-summary p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+}
+
+.permission-search {
+  max-width: 420px;
+}
+
+.permission-groups {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.permission-group {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-muted);
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.permission-group h5 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.permission-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.55rem;
+}
+
+.permission-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 0.45rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  padding: 0.5rem 0.6rem;
+}
+
+.permission-code {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.permission-description {
+  grid-column: 2;
+  color: var(--text-soft);
+  font-size: 0.83rem;
+}
+
+.confirm-panel p {
+  margin: 0;
+}

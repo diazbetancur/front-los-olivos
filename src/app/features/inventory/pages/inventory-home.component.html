@@ -1,0 +1,28 @@
+<section class="inventory-home">
+  <header class="inventory-header">
+    <h2>Inventario</h2>
+    <p>Modulo administrativo para gestionar proyectos y lotes.</p>
+  </header>
+
+  <div class="cards">
+    <a
+      class="card"
+      routerLink="/admin/projects"
+      *appHasPermission="['Projects.View']"
+    >
+      <span class="card-label">Modulo</span>
+      <h3>Proyectos</h3>
+      <p>Listado, creacion, actualizacion y deshabilitado de proyectos.</p>
+    </a>
+
+    <a
+      class="card"
+      routerLink="/admin/lots"
+      *appHasPermission="['Lots.View']"
+    >
+      <span class="card-label">Modulo</span>
+      <h3>Lotes</h3>
+      <p>Inventario de lotes, filtros, estados y carga por Excel.</p>
+    </a>
+  </div>
+</section>
