@@ -15,20 +15,38 @@
   width: min(100%, 420px);
   background: #ffffff;
   border: 1px solid #d7dee7;
-  border-radius: 8px;
-  padding: 1.5rem;
+  border-radius: 12px;
+  padding: 2rem 1.75rem 1.75rem;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.brand-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e8f0e0;
+}
+
+.brand-logo {
+  max-height: 140px;
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
 h1 {
   margin: 0;
-  font-size: 1.5rem;
-  color: #1e293b;
+  font-size: 1.4rem;
+  color: #0f172a;
+  font-weight: 700;
 }
 
 p {
-  margin: 0.5rem 0 1.25rem;
+  margin: 0.4rem 0 1.25rem;
   color: #475569;
+  font-size: 0.95rem;
 }
 
 form {
@@ -52,9 +70,9 @@ input {
 }
 
 input:focus {
-  outline: 2px solid #1d4ed8;
+  outline: 2px solid #205326;
   outline-offset: 1px;
-  border-color: #1d4ed8;
+  border-color: #205326;
 }
 
 .field-error {
@@ -75,7 +93,7 @@ button {
   margin-top: 0.35rem;
   border: 0;
   border-radius: 6px;
-  background: #1d4ed8;
+  background: #205326;
   color: #ffffff;
   padding: 0.7rem 0.9rem;
   font-size: 0.95rem;
@@ -84,7 +102,6 @@ button {
 }
 
 button:disabled {
-  background: #93c5fd;
+  background: #5a8a63;
   cursor: not-allowed;
 }
-

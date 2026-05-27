@@ -8,10 +8,16 @@
   --bg-app: #f1f5f9;
   --bg-surface: #ffffff;
   --bg-surface-muted: #f8fafc;
-  --bg-sidebar: #0f172a;
-  --bg-sidebar-hover: #1e293b;
-  --bg-primary: #2563eb;
-  --bg-primary-hover: #1d4ed8;
+  --bg-sidebar: #08342f;
+  --bg-sidebar-hover: #0d4a43;
+  --bg-sidebar-border: #0a3d38;
+  --bg-primary: #205326;
+  --bg-primary-hover: #163d1c;
+  --bg-primary-soft: #f4fce8;
+  --border-primary-soft: #c8e899;
+  --color-brand: #6ca52e;
+  --bg-accent: #f28f16;
+  --bg-accent-hover: #d97b10;
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-soft: #64748b;
@@ -80,7 +86,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #93c5fd;
+  outline: 2px solid #205326;
   outline-offset: 1px;
 }
 
@@ -732,11 +738,11 @@ label {
 }
 
 a {
-  color: #1d4ed8;
+  color: #205326;
 }
 
 a:hover {
-  color: #1e40af;
+  color: #163d1c;
 }
 
 @media (max-width: 760px) {
