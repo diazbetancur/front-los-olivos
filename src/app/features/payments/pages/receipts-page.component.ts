@@ -11,6 +11,7 @@ import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
 import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import {
   ClientLookupItem,
   ContractLookupItem,
@@ -35,7 +36,8 @@ const LOOKUP_PAGE_SIZE = 100;
     AppModalComponent,
     LoadingStateComponent,
     EmptyStateComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    PaginationComponent
   ],
   templateUrl: './receipts-page.component.html',
   styleUrl: './receipts-page.component.scss'
@@ -143,18 +145,9 @@ export class ReceiptsPageComponent implements OnInit {
     this.loadReceipts(1);
   }
 
-  goToPreviousPage(): void {
-    if (this.currentPage <= 1) {
-      return;
-    }
-    this.loadReceipts(this.currentPage - 1);
-  }
-
-  goToNextPage(): void {
-    if (this.currentPage >= this.totalPages()) {
-      return;
-    }
-    this.loadReceipts(this.currentPage + 1);
+  onPageSizeChange(size: number): void {
+    this.filterForm.controls.pageSize.setValue(size);
+    this.loadReceipts(1);
   }
 
   openManualForm(): void {
@@ -383,7 +376,7 @@ export class ReceiptsPageComponent implements OnInit {
     return item ? item.paymentNumber : paymentId;
   }
 
-  private loadReceipts(page: number): void {
+  protected loadReceipts(page: number): void {
     this.listError = null;
     this.isLoading = true;
 

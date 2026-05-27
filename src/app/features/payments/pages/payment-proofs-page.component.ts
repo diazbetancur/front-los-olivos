@@ -10,6 +10,7 @@ import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
 import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import {
   ApprovePaymentProofRequest,
   ClientLookupItem,
@@ -34,7 +35,8 @@ const LOOKUP_PAGE_SIZE = 100;
     AppModalComponent,
     LoadingStateComponent,
     EmptyStateComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    PaginationComponent
   ],
   templateUrl: './payment-proofs-page.component.html',
   styleUrl: './payment-proofs-page.component.scss'
@@ -124,18 +126,9 @@ export class PaymentProofsPageComponent implements OnInit {
     this.loadProofs(1);
   }
 
-  goToPreviousPage(): void {
-    if (this.currentPage <= 1) {
-      return;
-    }
-    this.loadProofs(this.currentPage - 1);
-  }
-
-  goToNextPage(): void {
-    if (this.currentPage >= this.totalPages()) {
-      return;
-    }
-    this.loadProofs(this.currentPage + 1);
+  onPageSizeChange(size: number): void {
+    this.filterForm.controls.pageSize.setValue(size);
+    this.loadProofs(1);
   }
 
   viewProofDetail(proofId: string): void {
@@ -391,7 +384,7 @@ export class PaymentProofsPageComponent implements OnInit {
     return item ? item.paymentNumber : paymentId;
   }
 
-  private loadProofs(page: number): void {
+  protected loadProofs(page: number): void {
     this.listError = null;
     this.isLoading = true;
 

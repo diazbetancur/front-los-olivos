@@ -13,51 +13,22 @@
   <section class="filters">
     <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
       <label>
-        Buscar
-        <input type="text" formControlName="search" placeholder="Nombre, email o telefono" />
+        Nombre
+        <input type="text" formControlName="search" placeholder="Nombre del cliente" />
       </label>
 
       <label>
         DNI
-        <input type="text" formControlName="dni" placeholder="DNI" />
+        <input type="text" formControlName="dni" placeholder="Número de DNI" />
       </label>
 
       <label>
-        RTN
-        <input type="text" formControlName="rtn" placeholder="RTN" />
-      </label>
-
-      <label>
-        Estado
-        <select formControlName="status">
-          <option value="">Todos</option>
-          @for (status of statuses; track status) {
-            <option [value]="status">{{ status }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        Departamento
-        <input type="text" formControlName="department" />
-      </label>
-
-      <label>
-        Municipio
-        <input type="text" formControlName="municipality" />
-      </label>
-
-      <label>
-        Tamano pagina
-        <select formControlName="pageSize">
-          <option value="10">10</option>
-          <option value="20">20</option>
-          <option value="50">50</option>
-        </select>
+        N° de contrato
+        <input type="text" formControlName="contractNumber" placeholder="Ej. CON-2024-001" />
       </label>
 
       <div class="filter-actions">
-        <button type="submit">Aplicar</button>
+        <button type="submit">Buscar</button>
         <button type="button" class="ghost" (click)="clearFilters()">Limpiar</button>
       </div>
     </form>
@@ -130,13 +101,13 @@
     </section>
   }
 
-  <section class="pagination">
-    <span>Pagina {{ currentPage }} de {{ totalPages() }} | Total {{ totalCount }}</span>
-    <div>
-      <button type="button" (click)="goToPreviousPage()" [disabled]="currentPage <= 1">Anterior</button>
-      <button type="button" (click)="goToNextPage()" [disabled]="currentPage >= totalPages()">Siguiente</button>
-    </div>
-  </section>
+  <app-pagination
+    [currentPage]="currentPage"
+    [totalCount]="totalCount"
+    [pageSize]="filterForm.controls.pageSize.value"
+    (pageChange)="loadClients($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
+  />
 
   @if (isDetailLoading) {
     <app-loading-state message="Cargando detalle del cliente..." />
@@ -272,9 +243,9 @@
                 </label>
               </div>
 
-              <p class="field-error" *ngIf="beneficiaryForm.invalid && (beneficiaryForm.touched || beneficiaryFormSubmitted)">
-                Revisa los campos del beneficiario antes de guardar.
-              </p>
+              @if (beneficiaryForm.invalid && (beneficiaryForm.touched || beneficiaryFormSubmitted)) {
+                <p class="field-error">Revisa los campos del beneficiario antes de guardar.</p>
+              }
 
               <div class="form-actions">
                 <button type="button" class="ghost" (click)="cancelBeneficiaryForm()">Cancelar</button>
@@ -380,9 +351,9 @@
                 </label>
               </div>
 
-              <p class="field-error" *ngIf="referenceForm.invalid && (referenceForm.touched || referenceFormSubmitted)">
-                Revisa los campos de referencia antes de guardar.
-              </p>
+              @if (referenceForm.invalid && (referenceForm.touched || referenceFormSubmitted)) {
+                <p class="field-error">Revisa los campos de referencia antes de guardar.</p>
+              }
 
               <div class="form-actions">
                 <button type="button" class="ghost" (click)="cancelReferenceForm()">Cancelar</button>
@@ -512,9 +483,9 @@
           </label>
         </div>
 
-        <p class="field-error" *ngIf="clientForm.invalid && (clientForm.touched || clientFormSubmitted)">
-          Revisa campos requeridos y formatos antes de guardar.
-        </p>
+        @if (clientForm.invalid && (clientForm.touched || clientFormSubmitted)) {
+          <p class="field-error">Revisa campos requeridos y formatos antes de guardar.</p>
+        }
 
         <div class="form-actions">
           <button type="button" class="ghost" (click)="cancelClientForm()">Cancelar</button>

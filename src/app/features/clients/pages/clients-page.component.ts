@@ -10,6 +10,7 @@ import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
 import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import {
   ClientBeneficiaryResponse,
   ClientDetailResponse,
@@ -36,7 +37,8 @@ import { ClientsApiService } from '../services/clients-api.service';
     AppModalComponent,
     LoadingStateComponent,
     EmptyStateComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    PaginationComponent
   ],
   templateUrl: './clients-page.component.html',
   styleUrl: './clients-page.component.scss'
@@ -60,10 +62,7 @@ export class ClientsPageComponent implements OnInit {
   readonly filterForm = this.formBuilder.nonNullable.group({
     search: ['', [Validators.maxLength(256)]],
     dni: ['', [Validators.maxLength(32)]],
-    rtn: ['', [Validators.maxLength(32)]],
-    status: [''],
-    department: ['', [Validators.maxLength(128)]],
-    municipality: ['', [Validators.maxLength(128)]],
+    contractNumber: ['', [Validators.maxLength(64)]],
     pageSize: [20, [Validators.min(1), Validators.max(100)]]
   });
 
@@ -157,29 +156,15 @@ export class ClientsPageComponent implements OnInit {
     this.filterForm.reset({
       search: '',
       dni: '',
-      rtn: '',
-      status: '',
-      department: '',
-      municipality: '',
+      contractNumber: '',
       pageSize: 20
     });
     this.loadClients(1);
   }
 
-  goToPreviousPage(): void {
-    if (this.currentPage <= 1) {
-      return;
-    }
-
-    this.loadClients(this.currentPage - 1);
-  }
-
-  goToNextPage(): void {
-    if (this.currentPage >= this.totalPages()) {
-      return;
-    }
-
-    this.loadClients(this.currentPage + 1);
+  onPageSizeChange(size: number): void {
+    this.filterForm.controls.pageSize.setValue(size);
+    this.loadClients(1);
   }
 
   openCreateClientForm(): void {
@@ -592,7 +577,7 @@ export class ClientsPageComponent implements OnInit {
       });
   }
 
-  private loadClients(page: number): void {
+  protected loadClients(page: number): void {
     this.listError = null;
     this.isLoading = true;
 
@@ -601,10 +586,7 @@ export class ClientsPageComponent implements OnInit {
       pageSize: this.filterForm.controls.pageSize.value,
       search: this.cleanString(this.filterForm.controls.search.value),
       dni: this.cleanString(this.filterForm.controls.dni.value),
-      rtn: this.cleanString(this.filterForm.controls.rtn.value),
-      status: this.cleanString(this.filterForm.controls.status.value),
-      department: this.cleanString(this.filterForm.controls.department.value),
-      municipality: this.cleanString(this.filterForm.controls.municipality.value)
+      contractNumber: this.cleanString(this.filterForm.controls.contractNumber.value)
     };
 
     this.clientsApi
