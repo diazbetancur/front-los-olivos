@@ -38,21 +38,21 @@
 }
 
 .card:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.12);
+  border-color: #6ca52e;
+  box-shadow: 0 14px 30px rgba(32, 83, 38, 0.12);
   transform: translateY(-1px);
 }
 
 .card-label {
   display: inline-flex;
   width: fit-content;
-  border: 1px solid #bfdbfe;
+  border: 1px solid #c8e899;
   border-radius: 999px;
   padding: 0.16rem 0.52rem;
   font-size: 0.76rem;
   font-weight: 700;
-  color: #1e3a8a;
-  background: #eff6ff;
+  color: #205326;
+  background: #f4fce8;
 }
 
 .card h3 {

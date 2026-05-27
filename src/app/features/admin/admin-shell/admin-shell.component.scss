@@ -11,8 +11,8 @@
 }
 
 .sidebar {
-  border-right: 1px solid #1e293b;
-  background: #0f172a;
+  border-right: 1px solid #0a3d38;
+  background: #08342f;
   color: #e2e8f0;
   display: grid;
   grid-template-rows: auto 1fr;
@@ -30,8 +30,8 @@
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #1d4ed8;
-  color: #ffffff;
+  background: #f28f16;
+  color: #08342f;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -88,15 +88,15 @@ ul {
 
 .menu-link:hover,
 .menu-parent:hover {
-  background: #1e293b;
-  border-color: #334155;
+  background: #0d4a43;
+  border-color: #0a3d38;
 }
 
 .menu-link.active,
 .menu-parent.active {
-  background: #1e40af;
-  border-color: #60a5fa;
-  color: #ffffff;
+  background: #f28f16;
+  border-color: #fbbf24;
+  color: #08342f;
 }
 
 .menu-parent {
@@ -124,7 +124,7 @@ ul {
 
 .submenu {
   padding-left: 0.65rem;
-  border-left: 1px dashed #334155;
+  border-left: 1px dashed #0a3d38;
   margin-left: 0.5rem;
 }
 
@@ -211,7 +211,7 @@ ul {
 
   .sidebar {
     border-right: 0;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid #0a3d38;
     padding: 0.85rem;
   }
 
