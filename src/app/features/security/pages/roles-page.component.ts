@@ -10,6 +10,7 @@ import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
 import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import {
   CreateRoleRequest,
   GetRolesQuery,
@@ -36,7 +37,8 @@ interface PermissionGroup {
     AppModalComponent,
     LoadingStateComponent,
     EmptyStateComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    PaginationComponent
   ],
   templateUrl: './roles-page.component.html',
   styleUrl: './roles-page.component.scss'
@@ -112,18 +114,9 @@ export class RolesPageComponent implements OnInit {
     this.loadRoles(1);
   }
 
-  goToPreviousPage(): void {
-    if (this.currentPage <= 1) {
-      return;
-    }
-    this.loadRoles(this.currentPage - 1);
-  }
-
-  goToNextPage(): void {
-    if (this.currentPage >= this.totalPages()) {
-      return;
-    }
-    this.loadRoles(this.currentPage + 1);
+  onPageSizeChange(size: number): void {
+    this.filterForm.controls.pageSize.setValue(size);
+    this.loadRoles(1);
   }
 
   openCreateForm(): void {
@@ -384,7 +377,7 @@ export class RolesPageComponent implements OnInit {
     return isActive ? 'status-badge approved' : 'status-badge blocked';
   }
 
-  private loadRoles(page: number): void {
+  protected loadRoles(page: number): void {
     this.listError = null;
     this.isLoading = true;
 

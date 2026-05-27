@@ -13,10 +13,7 @@ export interface GetClientsQuery {
   pageSize: number;
   search?: string | null;
   dni?: string | null;
-  rtn?: string | null;
-  status?: string | null;
-  department?: string | null;
-  municipality?: string | null;
+  contractNumber?: string | null;
 }
 
 export interface ClientListItemResponse {

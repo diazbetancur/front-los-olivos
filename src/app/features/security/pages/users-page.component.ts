@@ -10,6 +10,8 @@ import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
 import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+
 import {
   CreateUserRequest,
   GetUsersQuery,
@@ -32,7 +34,8 @@ const LOOKUP_PAGE_SIZE = 100;
     AppModalComponent,
     LoadingStateComponent,
     EmptyStateComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    PaginationComponent
   ],
   templateUrl: './users-page.component.html',
   styleUrl: './users-page.component.scss'
@@ -113,18 +116,9 @@ export class UsersPageComponent implements OnInit {
     this.loadUsers(1);
   }
 
-  goToPreviousPage(): void {
-    if (this.currentPage <= 1) {
-      return;
-    }
-    this.loadUsers(this.currentPage - 1);
-  }
-
-  goToNextPage(): void {
-    if (this.currentPage >= this.totalPages()) {
-      return;
-    }
-    this.loadUsers(this.currentPage + 1);
+  onPageSizeChange(size: number): void {
+    this.filterForm.controls.pageSize.setValue(size);
+    this.loadUsers(1);
   }
 
   openCreateForm(): void {
@@ -378,7 +372,7 @@ export class UsersPageComponent implements OnInit {
     }
   }
 
-  private loadUsers(page: number): void {
+  protected loadUsers(page: number): void {
     this.listError = null;
     this.isLoading = true;
 

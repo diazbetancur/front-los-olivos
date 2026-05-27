@@ -10,6 +10,7 @@ import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
 import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import {
   CreateProjectRequest,
   GetProjectsQuery,
@@ -29,7 +30,8 @@ import { InventoryApiService } from '../services/inventory-api.service';
     AppModalComponent,
     LoadingStateComponent,
     EmptyStateComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    PaginationComponent
   ],
   templateUrl: './projects-page.component.html',
   styleUrl: './projects-page.component.scss'
@@ -102,20 +104,9 @@ export class ProjectsPageComponent implements OnInit {
     this.loadProjects(1);
   }
 
-  goToPreviousPage(): void {
-    if (this.currentPage <= 1) {
-      return;
-    }
-
-    this.loadProjects(this.currentPage - 1);
-  }
-
-  goToNextPage(): void {
-    if (this.currentPage >= this.totalPages()) {
-      return;
-    }
-
-    this.loadProjects(this.currentPage + 1);
+  onPageSizeChange(size: number): void {
+    this.filterForm.controls.pageSize.setValue(size);
+    this.loadProjects(1);
   }
 
   openCreateForm(): void {
@@ -249,7 +240,7 @@ export class ProjectsPageComponent implements OnInit {
     this.loadProjects(targetPage);
   }
 
-  private loadProjects(page: number): void {
+  protected loadProjects(page: number): void {
     this.listError = null;
     this.isLoading = true;
 

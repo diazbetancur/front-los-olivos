@@ -17,6 +17,7 @@ import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
 import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import {
   ApplyPaymentRequest,
   ClientLookupItem,
@@ -50,7 +51,8 @@ type AllocationFormGroup = FormGroup<{
     AppModalComponent,
     LoadingStateComponent,
     EmptyStateComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    PaginationComponent
   ],
   templateUrl: './payments-page.component.html',
   styleUrl: './payments-page.component.scss'
@@ -180,18 +182,9 @@ export class PaymentsPageComponent implements OnInit {
     this.loadPayments(1);
   }
 
-  goToPreviousPage(): void {
-    if (this.currentPage <= 1) {
-      return;
-    }
-    this.loadPayments(this.currentPage - 1);
-  }
-
-  goToNextPage(): void {
-    if (this.currentPage >= this.totalPages()) {
-      return;
-    }
-    this.loadPayments(this.currentPage + 1);
+  onPageSizeChange(size: number): void {
+    this.filterForm.controls.pageSize.setValue(size);
+    this.loadPayments(1);
   }
 
   openRegisterForm(): void {
@@ -509,7 +502,7 @@ export class PaymentsPageComponent implements OnInit {
     return option ? option.fullName : clientId;
   }
 
-  private loadPayments(page: number): void {
+  protected loadPayments(page: number): void {
     this.listError = null;
     this.isLoading = true;
 

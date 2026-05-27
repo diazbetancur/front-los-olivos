@@ -67,16 +67,6 @@
         <input type="date" formControlName="toDate" />
       </label>
 
-      <label>
-        Tamano pagina
-        <select formControlName="pageSize">
-          <option value="10">10</option>
-          <option value="20">20</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-      </label>
-
       <div class="filter-actions">
         <button type="submit">Aplicar</button>
         <button type="button" class="ghost" (click)="clearFilters()">Limpiar</button>
@@ -149,13 +139,13 @@
     </section>
   }
 
-  <section class="pagination">
-    <span>Pagina {{ currentPage }} de {{ totalPages() }} | Total {{ totalCount }}</span>
-    <div>
-      <button type="button" (click)="goToPreviousPage()" [disabled]="currentPage <= 1">Anterior</button>
-      <button type="button" (click)="goToNextPage()" [disabled]="currentPage >= totalPages()">Siguiente</button>
-    </div>
-  </section>
+  <app-pagination
+    [currentPage]="currentPage"
+    [totalCount]="totalCount"
+    [pageSize]="filterForm.controls.pageSize.value"
+    (pageChange)="loadReceipts($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
+  />
 
   @if (showManualForm) {
     <app-modal (closed)="cancelManualForm()">
