@@ -1,5 +1,5 @@
-import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
 import { AuthSessionService } from '../auth/auth-session.service';
 import { AppFeedbackService } from '../ui/app-feedback.service';
 
@@ -15,8 +15,7 @@ export const authGuard: CanActivateFn = (_route, state) => {
   feedback.showError('Debes iniciar sesion para continuar.');
   return router.createUrlTree(['/login'], {
     queryParams: {
-      returnUrl: state.url
-    }
+      returnUrl: state.url,
+    },
   });
 };
-

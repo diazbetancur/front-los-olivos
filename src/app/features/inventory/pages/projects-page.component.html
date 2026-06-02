@@ -154,14 +154,20 @@
             <label class="required">
               Municipio
               <input type="text" formControlName="municipality" class="ui-form-control" />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('municipality')">
+              <small
+                class="ui-field-inline-error"
+                [class.visible]="hasControlError('municipality')"
+              >
                 {{ getControlErrorMessage('municipality') }}
               </small>
             </label>
             <label class="required">
               Clave catastral
               <input type="text" formControlName="cadastralKey" class="ui-form-control" />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('cadastralKey')">
+              <small
+                class="ui-field-inline-error"
+                [class.visible]="hasControlError('cadastralKey')"
+              >
                 {{ getControlErrorMessage('cadastralKey') }}
               </small>
             </label>
@@ -197,7 +203,10 @@
                 formControlName="locationReference"
                 class="ui-form-control ui-form-control-textarea"
               ></textarea>
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('locationReference')">
+              <small
+                class="ui-field-inline-error"
+                [class.visible]="hasControlError('locationReference')"
+              >
                 {{ getControlErrorMessage('locationReference') }}
               </small>
             </label>

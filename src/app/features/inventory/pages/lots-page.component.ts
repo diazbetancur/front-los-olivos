@@ -84,16 +84,14 @@ export class LotsPageComponent implements OnInit {
     blockId: [''],
     code: ['', [Validators.required, Validators.maxLength(64)]],
     fullCode: ['', [Validators.required, Validators.maxLength(128)]],
-    number: ['', [Validators.required, Validators.maxLength(64)]],
     areaM2: [0, [Validators.required, Validators.min(0.000001)]],
-    areaV2: [''],
-    northMeasure: [''],
+    northMeasure: ['', [Validators.min(0)]],
     northBoundary: ['', [Validators.maxLength(256)]],
-    southMeasure: [''],
+    southMeasure: ['', [Validators.min(0)]],
     southBoundary: ['', [Validators.maxLength(256)]],
-    eastMeasure: [''],
+    eastMeasure: ['', [Validators.min(0)]],
     eastBoundary: ['', [Validators.maxLength(256)]],
-    westMeasure: [''],
+    westMeasure: ['', [Validators.min(0)]],
     westBoundary: ['', [Validators.maxLength(256)]],
     listPrice: [0, [Validators.required, Validators.min(0)]],
     currency: ['HNL', [Validators.maxLength(16)]],
@@ -122,7 +120,6 @@ export class LotsPageComponent implements OnInit {
   isConfirmLoading = false;
   showForm = false;
   editingLotId: string | null = null;
-  lotFormSubmitted = false;
   listError: string | null = null;
   formError: string | null = null;
   detailError: string | null = null;
@@ -136,6 +133,11 @@ export class LotsPageComponent implements OnInit {
 
   get hasProjectSelected(): boolean {
     return !!this.filterForm.controls.projectId.value;
+  }
+
+  get selectedFormProjectLabel(): string {
+    const projectId = this.lotForm.controls.projectId.value || this.filterForm.controls.projectId.value;
+    return projectId ? this.resolveProjectLabel(projectId) : 'Sin proyecto seleccionado';
   }
 
   ngOnInit(): void {
@@ -189,18 +191,21 @@ export class LotsPageComponent implements OnInit {
   }
 
   openCreateForm(): void {
+    const projectId = this.filterForm.controls.projectId.value;
+    if (!projectId) {
+      this.feedback.showError('Selecciona un proyecto antes de crear un lote.');
+      return;
+    }
+
     this.editingLotId = null;
     this.formError = null;
-    this.lotFormSubmitted = false;
     this.showForm = true;
     this.lotForm.reset({
-      projectId: this.filterForm.controls.projectId.value || this.projectOptions[0]?.id || '',
+      projectId,
       blockId: '',
       code: '',
       fullCode: '',
-      number: '',
       areaM2: 0,
-      areaV2: '',
       northMeasure: '',
       northBoundary: '',
       southMeasure: '',
@@ -220,7 +225,6 @@ export class LotsPageComponent implements OnInit {
   openEditForm(lotId: string): void {
     this.editingLotId = lotId;
     this.formError = null;
-    this.lotFormSubmitted = false;
     this.showForm = true;
     this.isSubmitting = true;
 
@@ -272,15 +276,16 @@ export class LotsPageComponent implements OnInit {
   cancelForm(): void {
     this.showForm = false;
     this.editingLotId = null;
-    this.lotFormSubmitted = false;
     this.formError = null;
   }
 
   submitLot(): void {
-    this.lotFormSubmitted = true;
     this.formError = null;
     if (this.lotForm.invalid) {
       this.lotForm.markAllAsTouched();
+      if (this.lotForm.controls.projectId.invalid) {
+        this.formError = 'Selecciona un proyecto antes de guardar el lote.';
+      }
       return;
     }
 
@@ -394,6 +399,34 @@ export class LotsPageComponent implements OnInit {
     }
 
     return `${option.code} - ${option.name}`;
+  }
+
+  hasControlError(controlName: string): boolean {
+    const control = this.lotForm.get(controlName);
+    return !!control && control.invalid && control.touched;
+  }
+
+  getControlErrorMessage(controlName: string): string {
+    const control = this.lotForm.get(controlName);
+    if (!control?.errors || !control.touched) {
+      return '';
+    }
+
+    if (control.errors['required']) {
+      return 'Este campo es obligatorio.';
+    }
+
+    if (control.errors['min']) {
+      return control.errors['min'].min === 0
+        ? 'Ingresa un valor igual o mayor que 0.'
+        : 'Ingresa un valor mayor que 0.';
+    }
+
+    if (control.errors['maxlength']) {
+      return 'Supera la longitud permitida.';
+    }
+
+    return 'Valor invalido.';
   }
 
   onImportFileSelected(event: Event): void {
@@ -571,9 +604,7 @@ export class LotsPageComponent implements OnInit {
       blockId: lotDetail.blockId ?? '',
       code: lotDetail.code,
       fullCode: lotDetail.fullCode,
-      number: lotDetail.number,
       areaM2: lotDetail.areaM2,
-      areaV2: lotDetail.areaV2?.toString() ?? '',
       northMeasure: lotDetail.northMeasure?.toString() ?? '',
       northBoundary: lotDetail.northBoundary,
       southMeasure: lotDetail.southMeasure?.toString() ?? '',
@@ -597,9 +628,7 @@ export class LotsPageComponent implements OnInit {
       blockId: this.cleanString(raw.blockId),
       code: raw.code.trim(),
       fullCode: raw.fullCode.trim(),
-      number: raw.number.trim(),
       areaM2: Number(raw.areaM2),
-      areaV2: this.toNullableNumber(raw.areaV2),
       northMeasure: this.toNullableNumber(raw.northMeasure),
       northBoundary: raw.northBoundary.trim(),
       southMeasure: this.toNullableNumber(raw.southMeasure),
@@ -623,9 +652,7 @@ export class LotsPageComponent implements OnInit {
       blockId: this.cleanString(raw.blockId),
       code: raw.code.trim(),
       fullCode: raw.fullCode.trim(),
-      number: raw.number.trim(),
       areaM2: Number(raw.areaM2),
-      areaV2: this.toNullableNumber(raw.areaV2),
       northMeasure: this.toNullableNumber(raw.northMeasure),
       northBoundary: raw.northBoundary.trim(),
       southMeasure: this.toNullableNumber(raw.southMeasure),
