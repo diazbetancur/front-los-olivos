@@ -148,32 +148,77 @@
         <div class="grid">
           <h4 class="form-section-title full-width">Seleccion</h4>
 
-          <label class="required">
-            Proyecto
-            <select formControlName="projectId">
-              <option value="">Selecciona proyecto</option>
-              @for (project of projectOptions; track project.id) {
-                <option [value]="project.id">{{ project.code }} - {{ project.name }}</option>
+          <!-- 1. Cliente — combobox, siempre activo -->
+          <div class="combo-field full-width">
+            <span class="combo-label required-label">Cliente</span>
+            <div class="combobox">
+              <input
+                type="text"
+                class="combo-input"
+                [value]="clientSearchInput"
+                (input)="onClientSearchInput($any($event.target).value)"
+                (focus)="onClientFocus()"
+                (blur)="closeClientDropdown()"
+                placeholder="Buscar por nombre o DNI..."
+                autocomplete="off"
+              />
+              @if (showClientDropdown) {
+                <ul class="combo-dropdown">
+                  @for (client of clientDropdownItems; track client.id) {
+                    <li (mousedown)="selectClient(client)">
+                      <span class="combo-item-name">{{ client.fullName }}</span>
+                      @if (client.dni) {
+                        <span class="combo-item-meta">DNI: {{ client.dni }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
               }
-            </select>
-          </label>
+            </div>
+            @if (contractForm.controls.clientId.invalid && (contractForm.controls.clientId.touched || createFormSubmitted)) {
+              <span class="field-error">Selecciona un cliente.</span>
+            }
+          </div>
 
-          <label class="required">
+          <!-- 2. Proyecto — combobox, se habilita al seleccionar cliente -->
+          <div class="combo-field" [class.combo-disabled]="!isClientSelected">
+            <span class="combo-label required-label">Proyecto</span>
+            <div class="combobox">
+              <input
+                type="text"
+                class="combo-input"
+                [value]="projectSearchInput"
+                [attr.disabled]="isClientSelected ? null : true"
+                (input)="onProjectSearchInput($any($event.target).value)"
+                (focus)="openProjectDropdown()"
+                (blur)="closeProjectDropdown()"
+                [placeholder]="isClientSelected ? 'Buscar proyecto...' : 'Selecciona un cliente primero'"
+                autocomplete="off"
+              />
+              @if (showProjectDropdown) {
+                <ul class="combo-dropdown">
+                  @for (project of projectDropdownItems; track project.id) {
+                    <li (mousedown)="selectProject(project)">
+                      {{ project.code }} - {{ project.name }}
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+            @if (isClientSelected && contractForm.controls.projectId.invalid && (contractForm.controls.projectId.touched || createFormSubmitted)) {
+              <span class="field-error">Selecciona un proyecto.</span>
+            }
+          </div>
+
+          <!-- 3. Lote — select, se habilita al seleccionar proyecto (solo Disponible) -->
+          <label class="required" [class.combo-disabled]="!isProjectSelected">
             Lote
-            <select formControlName="lotId">
-              <option value="">Selecciona lote</option>
+            <select formControlName="lotId" title="Lote">
+              <option value="">
+                {{ isProjectSelected ? 'Selecciona lote' : 'Selecciona un proyecto primero' }}
+              </option>
               @for (lot of createLotOptions; track lot.id) {
-                <option [value]="lot.id">{{ lot.fullCode }} ({{ lot.status }})</option>
-              }
-            </select>
-          </label>
-
-          <label class="required">
-            Cliente
-            <select formControlName="clientId">
-              <option value="">Selecciona cliente</option>
-              @for (client of clientOptions; track client.id) {
-                <option [value]="client.id">{{ client.fullName }}</option>
+                <option [value]="lot.id">{{ lot.fullCode }} — {{ lot.listPrice | number: '1.2-2' }} {{ lot.currency }}</option>
               }
             </select>
           </label>
@@ -279,10 +324,8 @@
           <p class="warning-text">Debes seleccionar proyecto, lote y cliente para crear el contrato.</p>
         }
 
-        @if (contractForm.controls.projectId.value && createLotOptions.length === 0) {
-          <p class="warning-text">
-            No hay lotes Disponibles o Reservados para el proyecto seleccionado.
-          </p>
+        @if (isProjectSelected && createLotOptions.length === 0) {
+          <p class="warning-text">No hay lotes disponibles para el proyecto seleccionado.</p>
         }
 
         <p class="field-error" *ngIf="contractForm.invalid && (contractForm.touched || createFormSubmitted)">

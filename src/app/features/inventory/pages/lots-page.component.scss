@@ -3,8 +3,29 @@
   gap: 1rem;
 }
 
-.page-header > button {
+.header-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.project-selector-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.project-selector {
+  min-width: 220px;
+}
+
+.header-actions button {
   min-width: 9rem;
+  align-self: flex-end;
 }
 
 .import-panel {

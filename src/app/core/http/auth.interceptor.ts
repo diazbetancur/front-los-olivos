@@ -12,6 +12,20 @@ const AuthPaths = {
   logout: '/api/v1/auth/logout'
 } as const;
 
+async function redirectToLogin(router: Router): Promise<void> {
+  const currentUrl = router.url;
+  const shouldPreserveReturnUrl = !!currentUrl && currentUrl !== '/' && !currentUrl.startsWith('/login');
+
+  const navigationSucceeded = await router.navigate(['/login'], {
+    replaceUrl: true,
+    queryParams: shouldPreserveReturnUrl ? { returnUrl: currentUrl } : undefined
+  });
+
+  if (!navigationSucceeded && typeof globalThis !== 'undefined' && !!globalThis.location) {
+    globalThis.location.assign('/login');
+  }
+}
+
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const authSession = inject(AuthSessionService);
   const router = inject(Router);
@@ -49,7 +63,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       if (isLoginRequest || isRefreshRequest || isLogoutRequest || isRetriedRequest) {
         authSession.clearSession();
         feedback.showError('Tu sesion no es valida. Inicia sesion nuevamente.');
-        void router.navigate(['/login']);
+        void redirectToLogin(router);
         return throwError(() => error);
       }
 
@@ -67,7 +81,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         catchError((refreshError) => {
           authSession.clearSession();
           feedback.showError('Tu sesion expiro. Inicia sesion nuevamente.');
-          void router.navigate(['/login']);
+          void redirectToLogin(router);
           return throwError(() => refreshError);
         })
       );

@@ -5,23 +5,34 @@
       <p>Inventario operativo de lotes con filtros, estados e importacion masiva.</p>
     </div>
 
-    <button type="button" (click)="openCreateForm()" *appHasPermission="['Lots.Create']">
-      Nuevo lote
-    </button>
-  </header>
-
-  <section class="filters">
-    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
-      <label>
+    <div class="header-actions">
+      <label class="project-selector-label">
         Proyecto
-        <select formControlName="projectId">
-          <option value="">Todos</option>
+        <select
+          [formControl]="filterForm.controls.projectId"
+          (change)="onProjectChange()"
+          class="project-selector"
+        >
+          <option value="">Selecciona un proyecto...</option>
           @for (project of projectOptions; track project.id) {
             <option [value]="project.id">{{ project.code }} - {{ project.name }}</option>
           }
         </select>
       </label>
 
+      <button
+        type="button"
+        (click)="openCreateForm()"
+        [disabled]="!hasProjectSelected"
+        *appHasPermission="['Lots.Create']"
+      >
+        Nuevo lote
+      </button>
+    </div>
+  </header>
+
+  <section class="filters">
+    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
       <label>
         Estado
         <select formControlName="status">
@@ -83,11 +94,7 @@
 
       <label>
         Archivo
-        <input
-          type="file"
-          accept=".xlsx,.xls"
-          (change)="onImportFileSelected($event)"
-        />
+        <input type="file" accept=".xlsx,.xls" (change)="onImportFileSelected($event)" />
       </label>
 
       <div class="import-actions">
@@ -113,12 +120,11 @@
       <section class="import-summary">
         <h4>Resultado preview</h4>
         <p>
-          Preview: {{ importPreview.previewId }} |
-          Expira: {{ importPreview.expiresAtUtc | date: 'short' }}
+          Preview: {{ importPreview.previewId }} | Expira:
+          {{ importPreview.expiresAtUtc | date: 'short' }}
         </p>
         <p>
-          Filas totales: {{ importPreview.totalRows }} |
-          Validas: {{ importPreview.validRows }} |
+          Filas totales: {{ importPreview.totalRows }} | Validas: {{ importPreview.validRows }} |
           Invalidas: {{ importPreview.invalidRows }}
         </p>
       </section>
@@ -157,8 +163,8 @@
       <section class="import-summary">
         <h4>Resultado confirmacion</h4>
         <p>
-          Estado: {{ importConfirmResult.isSuccess ? 'Exitoso' : 'Con conflictos' }} |
-          Filas persistidas: {{ importConfirmResult.persistedRows }}
+          Estado: {{ importConfirmResult.isSuccess ? 'Exitoso' : 'Con conflictos' }} | Filas
+          persistidas: {{ importConfirmResult.persistedRows }}
         </p>
       </section>
     }
@@ -170,24 +176,26 @@
     </section>
   }
 
-  @if (isLoading) {
+  @if (!hasProjectSelected) {
+    <app-empty-state
+      title="Selecciona un proyecto"
+      message="Elige un proyecto para ver sus lotes."
+    />
+  } @else if (isLoading) {
     <app-loading-state message="Cargando lotes..." />
   } @else if (lots.length === 0) {
-    <app-empty-state
-      title="Sin lotes"
-      message="No hay lotes que coincidan con el filtro actual."
-    />
+    <app-empty-state title="Sin lotes" message="No hay lotes que coincidan con el filtro actual." />
   } @else {
     <section class="table-wrap">
       <table>
         <thead>
           <tr>
-              <th>FullCode</th>
-              <th>Numero</th>
-              <th>Proyecto</th>
-              <th>Area m2</th>
-              <th>Precio</th>
-              <th>Moneda</th>
+            <th>FullCode</th>
+            <th>Numero</th>
+            <th>Proyecto</th>
+            <th>Area m2</th>
+            <th>Precio</th>
+            <th>Moneda</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -201,7 +209,9 @@
               <td>{{ lot.areaM2 }}</td>
               <td>{{ lot.listPrice | number: '1.2-2' }}</td>
               <td>{{ lot.currency }}</td>
-              <td><span class="chip">{{ lot.status }}</span></td>
+              <td>
+                <span class="chip">{{ lot.status }}</span>
+              </td>
               <td class="row-actions">
                 <button type="button" class="ghost" (click)="viewLotDetail(lot.id)">Ver</button>
                 <button
@@ -262,13 +272,15 @@
     </section>
   }
 
-  <app-pagination
-    [currentPage]="currentPage"
-    [totalCount]="totalCount"
-    [pageSize]="filterForm.controls.pageSize.value"
-    (pageChange)="loadLots($event)"
-    (pageSizeChange)="onPageSizeChange($event)"
-  />
+  @if (hasProjectSelected) {
+    <app-pagination
+      [currentPage]="currentPage"
+      [totalCount]="totalCount"
+      [pageSize]="filterForm.controls.pageSize.value"
+      (pageChange)="loadLots($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
 
   @if (isDetailLoading) {
     <app-loading-state message="Cargando detalle del lote..." />
@@ -284,17 +296,33 @@
         <div><strong>Code:</strong> {{ selectedLotDetail.code }}</div>
         <div><strong>Numero:</strong> {{ selectedLotDetail.number }}</div>
         <div><strong>Proyecto:</strong> {{ resolveProjectLabel(selectedLotDetail.projectId) }}</div>
-        <div><strong>Bloque:</strong> {{ selectedLotDetail.blockId ? 'Asignado' : 'No asignado' }}</div>
+        <div>
+          <strong>Bloque:</strong> {{ selectedLotDetail.blockId ? 'Asignado' : 'No asignado' }}
+        </div>
         <div><strong>Area m2:</strong> {{ selectedLotDetail.areaM2 }}</div>
         <div><strong>Area v2:</strong> {{ selectedLotDetail.areaV2 ?? '-' }}</div>
         <div><strong>Precio:</strong> {{ selectedLotDetail.listPrice | number: '1.2-2' }}</div>
         <div><strong>Moneda:</strong> {{ selectedLotDetail.currency }}</div>
-        <div><strong>Estado:</strong> <span class="chip">{{ selectedLotDetail.status }}</span></div>
+        <div>
+          <strong>Estado:</strong> <span class="chip">{{ selectedLotDetail.status }}</span>
+        </div>
         <div><strong>Uso:</strong> {{ selectedLotDetail.intendedUse }}</div>
-        <div><strong>Norte:</strong> {{ selectedLotDetail.northMeasure ?? '-' }} / {{ selectedLotDetail.northBoundary || '-' }}</div>
-        <div><strong>Sur:</strong> {{ selectedLotDetail.southMeasure ?? '-' }} / {{ selectedLotDetail.southBoundary || '-' }}</div>
-        <div><strong>Este:</strong> {{ selectedLotDetail.eastMeasure ?? '-' }} / {{ selectedLotDetail.eastBoundary || '-' }}</div>
-        <div><strong>Oeste:</strong> {{ selectedLotDetail.westMeasure ?? '-' }} / {{ selectedLotDetail.westBoundary || '-' }}</div>
+        <div>
+          <strong>Norte:</strong> {{ selectedLotDetail.northMeasure ?? '-' }} /
+          {{ selectedLotDetail.northBoundary || '-' }}
+        </div>
+        <div>
+          <strong>Sur:</strong> {{ selectedLotDetail.southMeasure ?? '-' }} /
+          {{ selectedLotDetail.southBoundary || '-' }}
+        </div>
+        <div>
+          <strong>Este:</strong> {{ selectedLotDetail.eastMeasure ?? '-' }} /
+          {{ selectedLotDetail.eastBoundary || '-' }}
+        </div>
+        <div>
+          <strong>Oeste:</strong> {{ selectedLotDetail.westMeasure ?? '-' }} /
+          {{ selectedLotDetail.westBoundary || '-' }}
+        </div>
       </div>
       <p><strong>Notas:</strong> {{ selectedLotDetail.notes || '-' }}</p>
     </section>
@@ -303,148 +331,148 @@
   @if (showForm) {
     <app-modal (closed)="cancelForm()">
       <section class="form-panel">
-      <header>
-        <h3>{{ editingLotId ? 'Editar lote' : 'Nuevo lote' }}</h3>
-        <button type="button" class="ghost" (click)="cancelForm()">Cerrar</button>
-      </header>
+        <header>
+          <h3>{{ editingLotId ? 'Editar lote' : 'Nuevo lote' }}</h3>
+          <button type="button" class="ghost" (click)="cancelForm()">Cerrar</button>
+        </header>
 
-      @if (formError) {
-        <p class="error-text">{{ formError }}</p>
-      }
+        @if (formError) {
+          <p class="error-text">{{ formError }}</p>
+        }
 
-      <form [formGroup]="lotForm" (ngSubmit)="submitLot()" novalidate>
-        <div class="grid">
-          <h4 class="form-section-title full-width">Identificacion</h4>
+        <form [formGroup]="lotForm" (ngSubmit)="submitLot()" novalidate>
+          <div class="grid">
+            <h4 class="form-section-title full-width">Identificacion</h4>
 
-          <label class="required">
-            Proyecto
-            <select formControlName="projectId">
-              <option value="">Selecciona un proyecto</option>
-              @for (project of projectOptions; track project.id) {
-                <option [value]="project.id">{{ project.code }} - {{ project.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="required">
-            Code
-            <input type="text" formControlName="code" />
-          </label>
-
-          <label class="required">
-            FullCode
-            <input type="text" formControlName="fullCode" />
-          </label>
-
-          <label class="required">
-            Numero
-            <input type="text" formControlName="number" />
-          </label>
-
-          <label class="required">
-            Area m2
-            <input type="number" formControlName="areaM2" min="0" step="0.01" />
-          </label>
-
-          <label>
-            Area v2
-            <input type="number" formControlName="areaV2" min="0" step="0.01" />
-          </label>
-
-          <h4 class="form-section-title full-width">Precio y estado</h4>
-
-          <label class="required">
-            Precio lista
-            <input type="number" formControlName="listPrice" min="0" step="0.01" />
-          </label>
-
-          <label>
-            Moneda
-            <input type="text" formControlName="currency" />
-          </label>
-
-          @if (!editingLotId) {
-            <label>
-              Estado inicial
-              <select formControlName="status">
-                @for (status of lotStatuses; track status) {
-                  <option [value]="status">{{ status }}</option>
+            <label class="required">
+              Proyecto
+              <select formControlName="projectId">
+                <option value="">Selecciona un proyecto</option>
+                @for (project of projectOptions; track project.id) {
+                  <option [value]="project.id">{{ project.code }} - {{ project.name }}</option>
                 }
               </select>
             </label>
-          } @else {
-            <label>
-              Estado actual
-              <input type="text" [value]="lotForm.controls.status.value" readonly />
+
+            <label class="required">
+              Code
+              <input type="text" formControlName="code" />
             </label>
-          }
 
-          <label>
-            Uso previsto
-            <input type="text" formControlName="intendedUse" />
-          </label>
+            <label class="required">
+              FullCode
+              <input type="text" formControlName="fullCode" />
+            </label>
 
-          <h4 class="form-section-title full-width">Medidas y colindancias</h4>
+            <label class="required">
+              Numero
+              <input type="text" formControlName="number" />
+            </label>
 
-          <label>
-            Medida norte
-            <input type="number" formControlName="northMeasure" min="0" step="0.01" />
-          </label>
+            <label class="required">
+              Area m2
+              <input type="number" formControlName="areaM2" min="0" step="0.01" />
+            </label>
 
-          <label>
-            Colindancia norte
-            <input type="text" formControlName="northBoundary" />
-          </label>
+            <label>
+              Area v2
+              <input type="number" formControlName="areaV2" min="0" step="0.01" />
+            </label>
 
-          <label>
-            Medida sur
-            <input type="number" formControlName="southMeasure" min="0" step="0.01" />
-          </label>
+            <h4 class="form-section-title full-width">Precio y estado</h4>
 
-          <label>
-            Colindancia sur
-            <input type="text" formControlName="southBoundary" />
-          </label>
+            <label class="required">
+              Precio lista
+              <input type="number" formControlName="listPrice" min="0" step="0.01" />
+            </label>
 
-          <label>
-            Medida este
-            <input type="number" formControlName="eastMeasure" min="0" step="0.01" />
-          </label>
+            <label>
+              Moneda
+              <input type="text" formControlName="currency" />
+            </label>
 
-          <label>
-            Colindancia este
-            <input type="text" formControlName="eastBoundary" />
-          </label>
+            @if (!editingLotId) {
+              <label>
+                Estado inicial
+                <select formControlName="status">
+                  @for (status of lotStatuses; track status) {
+                    <option [value]="status">{{ status }}</option>
+                  }
+                </select>
+              </label>
+            } @else {
+              <label>
+                Estado actual
+                <input type="text" [value]="lotForm.controls.status.value" readonly />
+              </label>
+            }
 
-          <label>
-            Medida oeste
-            <input type="number" formControlName="westMeasure" min="0" step="0.01" />
-          </label>
+            <label>
+              Uso previsto
+              <input type="text" formControlName="intendedUse" />
+            </label>
 
-          <label>
-            Colindancia oeste
-            <input type="text" formControlName="westBoundary" />
-          </label>
+            <h4 class="form-section-title full-width">Medidas y colindancias</h4>
 
-          <h4 class="form-section-title full-width">Notas</h4>
+            <label>
+              Medida norte
+              <input type="number" formControlName="northMeasure" min="0" step="0.01" />
+            </label>
 
-          <label class="full-width">
-            Notas
-            <textarea rows="2" formControlName="notes"></textarea>
-          </label>
-        </div>
+            <label>
+              Colindancia norte
+              <input type="text" formControlName="northBoundary" />
+            </label>
 
-        <p class="field-error" *ngIf="lotForm.invalid && (lotForm.touched || lotFormSubmitted)">
-          Revisa campos requeridos y valores numericos antes de guardar.
-        </p>
+            <label>
+              Medida sur
+              <input type="number" formControlName="southMeasure" min="0" step="0.01" />
+            </label>
 
-        <div class="form-actions">
-          <button type="button" class="ghost" (click)="cancelForm()">Cancelar</button>
-          <button type="submit" [disabled]="isSubmitting || lotForm.invalid">
-            {{ editingLotId ? 'Guardar cambios' : 'Crear lote' }}
-          </button>
-        </div>
-      </form>
+            <label>
+              Colindancia sur
+              <input type="text" formControlName="southBoundary" />
+            </label>
+
+            <label>
+              Medida este
+              <input type="number" formControlName="eastMeasure" min="0" step="0.01" />
+            </label>
+
+            <label>
+              Colindancia este
+              <input type="text" formControlName="eastBoundary" />
+            </label>
+
+            <label>
+              Medida oeste
+              <input type="number" formControlName="westMeasure" min="0" step="0.01" />
+            </label>
+
+            <label>
+              Colindancia oeste
+              <input type="text" formControlName="westBoundary" />
+            </label>
+
+            <h4 class="form-section-title full-width">Notas</h4>
+
+            <label class="full-width">
+              Notas
+              <textarea rows="2" formControlName="notes"></textarea>
+            </label>
+          </div>
+
+          <p class="field-error" *ngIf="lotForm.invalid && (lotForm.touched || lotFormSubmitted)">
+            Revisa campos requeridos y valores numericos antes de guardar.
+          </p>
+
+          <div class="form-actions">
+            <button type="button" class="ghost" (click)="cancelForm()">Cancelar</button>
+            <button type="submit" [disabled]="isSubmitting || lotForm.invalid">
+              {{ editingLotId ? 'Guardar cambios' : 'Crear lote' }}
+            </button>
+          </div>
+        </form>
       </section>
     </app-modal>
   }

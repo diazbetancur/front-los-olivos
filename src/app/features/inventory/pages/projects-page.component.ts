@@ -1,10 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, ViewRef, computed, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  OnInit,
+  ViewRef,
+  computed,
+  inject,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { AuthSessionService } from '../../../core/auth/auth-session.service';
+import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { ApiErrorService } from '../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
 import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
@@ -18,7 +26,7 @@ import {
   ProjectDetailResponse,
   ProjectListItemResponse,
   ProjectStatus,
-  UpdateProjectRequest
+  UpdateProjectRequest,
 } from '../models/inventory.models';
 import { InventoryApiService } from '../services/inventory-api.service';
 
@@ -31,10 +39,10 @@ import { InventoryApiService } from '../services/inventory-api.service';
     LoadingStateComponent,
     EmptyStateComponent,
     HasPermissionDirective,
-    PaginationComponent
+    PaginationComponent,
   ],
   templateUrl: './projects-page.component.html',
-  styleUrl: './projects-page.component.scss'
+  styleUrl: './projects-page.component.scss',
 })
 export class ProjectsPageComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
@@ -54,20 +62,19 @@ export class ProjectsPageComponent implements OnInit {
   readonly filterForm = this.formBuilder.nonNullable.group({
     search: ['', [Validators.maxLength(256)]],
     status: [''],
-    pageSize: [20, [Validators.min(1), Validators.max(100)]]
+    pageSize: [20, [Validators.min(1), Validators.max(100)]],
   });
 
   readonly projectForm = this.formBuilder.nonNullable.group({
     code: ['', [Validators.required, Validators.maxLength(64)]],
     name: ['', [Validators.required, Validators.maxLength(256)]],
-    description: ['', [Validators.required, Validators.maxLength(1024)]],
+    description: ['', [Validators.maxLength(1024)]],
     department: ['', [Validators.required, Validators.maxLength(128)]],
     municipality: ['', [Validators.required, Validators.maxLength(128)]],
     locationReference: ['', [Validators.required, Validators.maxLength(512)]],
     cadastralKey: ['', [Validators.required, Validators.maxLength(128)]],
     totalAreaM2: [0, [Validators.required, Validators.min(0.000001)]],
     status: ['Activo', [Validators.required, Validators.maxLength(32)]],
-    notes: ['', [Validators.maxLength(2048)]]
   });
 
   projects: ReadonlyArray<ProjectListItemResponse> = [];
@@ -99,7 +106,7 @@ export class ProjectsPageComponent implements OnInit {
     this.filterForm.patchValue({
       search: '',
       status: '',
-      pageSize: 20
+      pageSize: 20,
     });
     this.loadProjects(1);
   }
@@ -124,7 +131,6 @@ export class ProjectsPageComponent implements OnInit {
       cadastralKey: '',
       totalAreaM2: 0,
       status: 'Activo',
-      notes: ''
     });
   }
 
@@ -142,7 +148,7 @@ export class ProjectsPageComponent implements OnInit {
         finalize(() => {
           this.isSubmitting = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: (project) => {
@@ -151,7 +157,7 @@ export class ProjectsPageComponent implements OnInit {
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.formError = normalizedError.userMessage;
-        }
+        },
       });
   }
 
@@ -174,8 +180,8 @@ export class ProjectsPageComponent implements OnInit {
     this.isSubmitting = true;
 
     const request$ = this.editingProjectId
-      ? this.inventoryApi.updateProject(this.editingProjectId, payload as UpdateProjectRequest)
-      : this.inventoryApi.createProject(payload as CreateProjectRequest);
+      ? this.inventoryApi.updateProject(this.editingProjectId, payload)
+      : this.inventoryApi.createProject(payload);
 
     request$
       .pipe(
@@ -183,7 +189,7 @@ export class ProjectsPageComponent implements OnInit {
         finalize(() => {
           this.isSubmitting = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: () => {
@@ -192,7 +198,7 @@ export class ProjectsPageComponent implements OnInit {
             level: 'success',
             text: this.editingProjectId
               ? 'Proyecto actualizado correctamente.'
-              : 'Proyecto creado correctamente.'
+              : 'Proyecto creado correctamente.',
           });
           this.cancelForm();
           this.reloadAfterMutation(targetPage);
@@ -200,7 +206,7 @@ export class ProjectsPageComponent implements OnInit {
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.formError = normalizedError.userMessage;
-        }
+        },
       });
   }
 
@@ -209,7 +215,9 @@ export class ProjectsPageComponent implements OnInit {
       return;
     }
 
-    const confirmed = globalThis.confirm(`Se deshabilitara el proyecto "${project.name}". Deseas continuar?`);
+    const confirmed = globalThis.confirm(
+      `Se deshabilitara el proyecto "${project.name}". Deseas continuar?`,
+    );
     if (!confirmed) {
       return;
     }
@@ -222,7 +230,7 @@ export class ProjectsPageComponent implements OnInit {
         finalize(() => {
           this.isSubmitting = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: () => {
@@ -232,8 +240,34 @@ export class ProjectsPageComponent implements OnInit {
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.feedback.showError(normalizedError.userMessage);
-        }
+        },
       });
+  }
+
+  hasControlError(controlName: string): boolean {
+    const control = this.projectForm.get(controlName);
+    return !!control && control.invalid && control.touched;
+  }
+
+  getControlErrorMessage(controlName: string): string {
+    const control = this.projectForm.get(controlName);
+    if (!control?.errors || !control.touched) {
+      return '';
+    }
+
+    if (control.errors['required']) {
+      return 'Este campo es obligatorio.';
+    }
+
+    if (control.errors['min']) {
+      return 'Ingresa un valor mayor que 0.';
+    }
+
+    if (control.errors['maxlength']) {
+      return 'Supera la longitud permitida.';
+    }
+
+    return 'Valor invalido.';
   }
 
   private reloadAfterMutation(targetPage: number): void {
@@ -248,7 +282,7 @@ export class ProjectsPageComponent implements OnInit {
       page,
       pageSize: this.filterForm.controls.pageSize.value,
       search: this.cleanString(this.filterForm.controls.search.value),
-      status: this.cleanString(this.filterForm.controls.status.value)
+      status: this.cleanString(this.filterForm.controls.status.value),
     };
 
     this.inventoryApi
@@ -258,7 +292,7 @@ export class ProjectsPageComponent implements OnInit {
         finalize(() => {
           this.isLoading = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: (response: PagedResult<ProjectListItemResponse>) => {
@@ -269,7 +303,7 @@ export class ProjectsPageComponent implements OnInit {
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.listError = normalizedError.userMessage;
-        }
+        },
       });
   }
 
@@ -284,14 +318,13 @@ export class ProjectsPageComponent implements OnInit {
     this.projectForm.reset({
       code: project.code,
       name: project.name,
-      description: project.description,
+      description: project.description ?? '',
       department: project.department,
       municipality: project.municipality,
       locationReference: project.locationReference,
       cadastralKey: project.cadastralKey,
       totalAreaM2: project.totalAreaM2,
       status: project.status as ProjectStatus,
-      notes: project.notes ?? ''
     });
   }
 
@@ -300,14 +333,13 @@ export class ProjectsPageComponent implements OnInit {
     return {
       code: raw.code.trim(),
       name: raw.name.trim(),
-      description: raw.description.trim(),
+      description: this.cleanString(raw.description),
       department: raw.department.trim(),
       municipality: raw.municipality.trim(),
       locationReference: raw.locationReference.trim(),
       cadastralKey: raw.cadastralKey.trim(),
       totalAreaM2: Number(raw.totalAreaM2),
       status: raw.status.trim(),
-      notes: this.cleanString(raw.notes)
     };
   }
 

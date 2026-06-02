@@ -6,7 +6,13 @@ export interface PagedResult<TItem> {
 }
 
 export type ProjectStatus = 'Activo' | 'Inactivo';
-export type LotStatus = 'Disponible' | 'Reservado' | 'Contratado' | 'Pagado' | 'Bloqueado' | 'Anulado';
+export type LotStatus =
+  | 'Disponible'
+  | 'Reservado'
+  | 'Contratado'
+  | 'Pagado'
+  | 'Bloqueado'
+  | 'Anulado';
 
 export interface GetProjectsQuery {
   page: number;
@@ -35,20 +41,18 @@ export interface ProjectDetailResponse {
   cadastralKey: string;
   totalAreaM2: number;
   status: string;
-  notes: string;
 }
 
 export interface CreateProjectRequest {
   code: string;
   name: string;
-  description: string;
+  description?: string | null;
   department: string;
   municipality: string;
   locationReference: string;
   cadastralKey: string;
   totalAreaM2: number;
   status: string;
-  notes?: string | null;
 }
 
 export interface UpdateProjectRequest extends CreateProjectRequest {}
@@ -180,4 +184,3 @@ export interface LotImportConfirmResponse {
   persistedRows: number;
   rows: ReadonlyArray<LotImportRowPreviewResponse>;
 }
-

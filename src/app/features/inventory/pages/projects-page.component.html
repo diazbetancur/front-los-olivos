@@ -5,7 +5,12 @@
       <p>Gestion administrativa de proyectos inmobiliarios.</p>
     </div>
 
-    <button type="button" (click)="openCreateForm()" *appHasPermission="['Projects.Create']">
+    <button
+      type="button"
+      class="ui-btn-primary"
+      (click)="openCreateForm()"
+      *appHasPermission="['Projects.Create']"
+    >
       Nuevo proyecto
     </button>
   </header>
@@ -67,7 +72,9 @@
               <td>{{ project.name }}</td>
               <td>{{ project.department }}</td>
               <td>{{ project.municipality }}</td>
-              <td><span class="chip">{{ project.status }}</span></td>
+              <td>
+                <span class="chip">{{ project.status }}</span>
+              </td>
               <td class="row-actions">
                 <button
                   type="button"
@@ -104,82 +111,120 @@
   @if (showForm) {
     <app-modal (closed)="cancelForm()">
       <section class="form-panel">
-      <header>
-        <h3>{{ editingProjectId ? 'Editar proyecto' : 'Nuevo proyecto' }}</h3>
-        <button type="button" class="ghost" (click)="cancelForm()">Cerrar</button>
-      </header>
-
-      @if (formError) {
-        <p class="error-text">{{ formError }}</p>
-      }
-
-      <form [formGroup]="projectForm" (ngSubmit)="submitProject()" novalidate>
-        <div class="grid">
-          <h4 class="form-section-title full-width">Identificacion</h4>
-
-          <label class="required">
-            Codigo
-            <input type="text" formControlName="code" />
-          </label>
-          <label class="required">
-            Nombre
-            <input type="text" formControlName="name" />
-          </label>
-          <label class="required">
-            Departamento
-            <input type="text" formControlName="department" />
-          </label>
-          <label class="required">
-            Municipio
-            <input type="text" formControlName="municipality" />
-          </label>
-          <label class="required">
-            Clave catastral
-            <input type="text" formControlName="cadastralKey" />
-          </label>
-          <label class="required">
-            Area total (m2)
-            <input type="number" formControlName="totalAreaM2" min="0" step="0.01" />
-          </label>
-
-          <h4 class="form-section-title full-width">Ubicacion y estado</h4>
-
-          <label class="required">
-            Estado
-            <select formControlName="status">
-              @for (status of statuses; track status) {
-                <option [value]="status">{{ status }}</option>
-              }
-            </select>
-          </label>
-
-          <h4 class="form-section-title full-width">Descripcion</h4>
-
-          <label class="required full-width">
-            Referencia de ubicacion
-            <input type="text" formControlName="locationReference" />
-          </label>
-          <label class="required full-width">
-            Descripcion
-            <textarea rows="2" formControlName="description"></textarea>
-          </label>
-          <label class="full-width">
-            Notas
-            <textarea rows="2" formControlName="notes"></textarea>
-          </label>
-        </div>
-
-        <p class="field-error" *ngIf="projectForm.invalid && (projectForm.touched || projectFormSubmitted)">
-          Revisa los campos requeridos y rangos validos antes de guardar.
-        </p>
-
-        <div class="form-actions">
-          <button type="button" class="ghost" (click)="cancelForm()">Cancelar</button>
-          <button type="submit" [disabled]="isSubmitting || projectForm.invalid">
-            {{ editingProjectId ? 'Guardar cambios' : 'Crear proyecto' }}
+        <header>
+          <h3>{{ editingProjectId ? 'Editar proyecto' : 'Nuevo proyecto' }}</h3>
+          <button
+            type="button"
+            class="ghost ui-icon-close-btn"
+            (click)="cancelForm()"
+            aria-label="Cerrar"
+            title="Cerrar"
+          >
+            X
           </button>
-        </div>
-      </form>
+        </header>
+
+        @if (formError) {
+          <p class="error-text">{{ formError }}</p>
+        }
+
+        <form [formGroup]="projectForm" (ngSubmit)="submitProject()" novalidate>
+          <div class="grid ui-form-grid-2">
+            <label class="required">
+              Codigo
+              <input type="text" formControlName="code" class="ui-form-control" />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('code')">
+                {{ getControlErrorMessage('code') }}
+              </small>
+            </label>
+            <label class="required">
+              Nombre
+              <input type="text" formControlName="name" class="ui-form-control" />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('name')">
+                {{ getControlErrorMessage('name') }}
+              </small>
+            </label>
+            <label class="required">
+              Departamento
+              <input type="text" formControlName="department" class="ui-form-control" />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('department')">
+                {{ getControlErrorMessage('department') }}
+              </small>
+            </label>
+            <label class="required">
+              Municipio
+              <input type="text" formControlName="municipality" class="ui-form-control" />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('municipality')">
+                {{ getControlErrorMessage('municipality') }}
+              </small>
+            </label>
+            <label class="required">
+              Clave catastral
+              <input type="text" formControlName="cadastralKey" class="ui-form-control" />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('cadastralKey')">
+                {{ getControlErrorMessage('cadastralKey') }}
+              </small>
+            </label>
+
+            <label class="required">
+              Area total (m2)
+              <input
+                type="number"
+                formControlName="totalAreaM2"
+                min="0"
+                step="0.01"
+                class="ui-form-control"
+              />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('totalAreaM2')">
+                {{ getControlErrorMessage('totalAreaM2') }}
+              </small>
+            </label>
+            <label class="required">
+              Estado
+              <select formControlName="status" class="ui-form-control">
+                @for (status of statuses; track status) {
+                  <option [value]="status">{{ status }}</option>
+                }
+              </select>
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('status')">
+                {{ getControlErrorMessage('status') }}
+              </small>
+            </label>
+            <label class="required full-width">
+              Referencia de ubicacion
+              <textarea
+                rows="2"
+                formControlName="locationReference"
+                class="ui-form-control ui-form-control-textarea"
+              ></textarea>
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('locationReference')">
+                {{ getControlErrorMessage('locationReference') }}
+              </small>
+            </label>
+            <label class="full-width">
+              Descripcion
+              <textarea
+                rows="2"
+                formControlName="description"
+                class="ui-form-control ui-form-control-textarea"
+              ></textarea>
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('description')">
+                {{ getControlErrorMessage('description') }}
+              </small>
+            </label>
+          </div>
+
+          <div class="form-actions ui-form-actions">
+            <button type="button" class="ghost" (click)="cancelForm()">Cancelar</button>
+            <button
+              type="submit"
+              class="ui-btn-primary"
+              [disabled]="isSubmitting || projectForm.invalid"
+            >
+              {{ editingProjectId ? 'Guardar cambios' : 'Crear proyecto' }}
+            </button>
+          </div>
+        </form>
       </section>
     </app-modal>
   }

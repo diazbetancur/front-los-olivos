@@ -134,18 +134,36 @@ export class LotsPageComponent implements OnInit {
     return Math.max(1, pages);
   });
 
+  get hasProjectSelected(): boolean {
+    return !!this.filterForm.controls.projectId.value;
+  }
+
   ngOnInit(): void {
     this.loadProjectOptions();
-    this.loadLots(1);
+  }
+
+  onProjectChange(): void {
+    if (this.hasProjectSelected) {
+      this.loadLots(1);
+    } else {
+      this.lots = [];
+      this.totalCount = 0;
+      this.currentPage = 1;
+      this.syncView();
+    }
   }
 
   applyFilters(): void {
+    if (!this.hasProjectSelected) {
+      return;
+    }
     this.loadLots(1);
   }
 
   clearFilters(): void {
+    const projectId = this.filterForm.controls.projectId.value;
     this.filterForm.reset({
-      projectId: '',
+      projectId,
       blockId: '',
       status: '',
       search: '',
@@ -155,7 +173,14 @@ export class LotsPageComponent implements OnInit {
       maxPrice: '',
       pageSize: 20
     });
-    this.loadLots(1);
+    if (projectId) {
+      this.loadLots(1);
+    } else {
+      this.lots = [];
+      this.totalCount = 0;
+      this.currentPage = 1;
+      this.syncView();
+    }
   }
 
   onPageSizeChange(size: number): void {
