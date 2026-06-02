@@ -47,3 +47,76 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+// ---- Combobox (cliente / proyecto) ----
+
+.combo-field {
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+}
+
+.combo-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.required-label::after {
+  content: ' *';
+  color: #ef4444;
+}
+
+.combobox {
+  position: relative;
+}
+
+.combo-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.combo-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.1);
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.combo-dropdown li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.combo-dropdown li:hover {
+  background: #f1f5f9;
+}
+
+.combo-item-name {
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.combo-item-meta {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.combo-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}

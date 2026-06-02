@@ -35,20 +35,18 @@ export interface ProjectDetailResponse {
   cadastralKey: string;
   totalAreaM2: number;
   status: string;
-  notes: string;
 }
 
 export interface CreateProjectRequest {
   code: string;
   name: string;
-  description: string;
+  description?: string | null;
   department: string;
   municipality: string;
   locationReference: string;
   cadastralKey: string;
   totalAreaM2: number;
   status: string;
-  notes?: string | null;
 }
 
 export interface UpdateProjectRequest extends CreateProjectRequest {}

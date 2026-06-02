@@ -125,6 +125,14 @@ export class ContractsPageComponent implements OnInit {
   clientOptions: ReadonlyArray<ClientLookupItem> = [];
   selectedContractDetail: ContractDetailResponse | null = null;
 
+  // Combobox state — create form
+  clientSearchInput = '';
+  clientDropdownItems: ReadonlyArray<ClientLookupItem> = [];
+  showClientDropdown = false;
+  projectSearchInput = '';
+  projectDropdownItems: ReadonlyArray<ProjectLookupItem> = [];
+  showProjectDropdown = false;
+
   currentPage = 1;
   totalCount = 0;
 
@@ -152,6 +160,14 @@ export class ContractsPageComponent implements OnInit {
   statusError: string | null = null;
   cancelError: string | null = null;
 
+  get isClientSelected(): boolean {
+    return !!this.contractForm.controls.clientId.value;
+  }
+
+  get isProjectSelected(): boolean {
+    return !!this.contractForm.controls.projectId.value;
+  }
+
   readonly totalPages = computed(() => {
     const pageSize = this.filterForm.controls.pageSize.value;
     const pages = Math.ceil(this.totalCount / pageSize);
@@ -159,21 +175,11 @@ export class ContractsPageComponent implements OnInit {
   });
 
   hasCreateSelections(): boolean {
-    const projectId = this.contractForm.controls.projectId.value?.trim();
-    const lotId = this.contractForm.controls.lotId.value?.trim();
-    const clientId = this.contractForm.controls.clientId.value?.trim();
-
-    return !!(projectId && lotId && clientId);
+    const raw = this.contractForm.getRawValue();
+    return !!(raw.projectId?.trim() && raw.lotId?.trim() && raw.clientId?.trim());
   }
 
   ngOnInit(): void {
-    this.contractForm.controls.projectId.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((projectId) => {
-        this.loadCreateLotOptions(projectId || null);
-        this.contractForm.controls.lotId.setValue('');
-      });
-
     this.loadLookupOptions();
     this.loadContracts(1);
   }
@@ -232,13 +238,142 @@ export class ContractsPageComponent implements OnInit {
       notes: ''
     });
 
+    this.clientSearchInput = '';
+    this.clientDropdownItems = [];
+    this.showClientDropdown = false;
+    this.projectSearchInput = '';
+    this.projectDropdownItems = [];
+    this.showProjectDropdown = false;
     this.createLotOptions = [];
+    this.contractForm.controls.lotId.disable({ emitEvent: false });
   }
 
   cancelCreateForm(): void {
     this.showCreateForm = false;
     this.createFormSubmitted = false;
     this.createFormError = null;
+  }
+
+  // ---- Client combobox ----
+
+  onClientFocus(): void {
+    if (!this.clientSearchInput.trim() || this.contractForm.controls.clientId.value) {
+      return;
+    }
+    this.onClientSearchInput(this.clientSearchInput);
+  }
+
+  onClientSearchInput(term: string): void {
+    this.clientSearchInput = term;
+
+    if (this.contractForm.controls.clientId.value) {
+      this.contractForm.controls.clientId.setValue('', { emitEvent: false });
+      this.contractForm.controls.projectId.setValue('', { emitEvent: false });
+      this.contractForm.controls.lotId.setValue('', { emitEvent: false });
+      this.contractForm.controls.lotId.disable({ emitEvent: false });
+      this.projectSearchInput = '';
+      this.createLotOptions = [];
+    }
+
+    const lower = term.toLowerCase().trim();
+    if (lower.length < 1) {
+      this.clientDropdownItems = [];
+      this.showClientDropdown = false;
+      return;
+    }
+
+    this.clientDropdownItems = this.clientOptions
+      .filter(
+        (c) =>
+          c.fullName.toLowerCase().includes(lower) ||
+          (c.dni?.toLowerCase() ?? '').includes(lower)
+      )
+      .slice(0, 8);
+    this.showClientDropdown = this.clientDropdownItems.length > 0;
+  }
+
+  selectClient(client: ClientLookupItem): void {
+    this.contractForm.controls.clientId.setValue(client.id, { emitEvent: false });
+    this.contractForm.controls.clientId.markAsDirty();
+    this.contractForm.controls.clientId.markAsTouched();
+    this.clientSearchInput = client.dni ? `${client.fullName} — ${client.dni}` : client.fullName;
+    this.showClientDropdown = false;
+    this.clientDropdownItems = [];
+    this.contractForm.controls.projectId.setValue('', { emitEvent: false });
+    this.contractForm.controls.lotId.setValue('', { emitEvent: false });
+    this.contractForm.controls.lotId.disable({ emitEvent: false });
+    this.projectSearchInput = '';
+    this.createLotOptions = [];
+  }
+
+  closeClientDropdown(): void {
+    setTimeout(() => {
+      this.showClientDropdown = false;
+      if (!this.contractForm.controls.clientId.value) {
+        this.clientSearchInput = '';
+      }
+      this.syncView();
+    }, 150);
+  }
+
+  // ---- Project combobox ----
+
+  openProjectDropdown(): void {
+    if (!this.isClientSelected) {
+      return;
+    }
+    const lower = this.projectSearchInput.toLowerCase().trim();
+    this.projectDropdownItems = (
+      lower.length < 1
+        ? [...this.projectOptions]
+        : this.projectOptions.filter(
+            (p) => p.code.toLowerCase().includes(lower) || p.name.toLowerCase().includes(lower)
+          )
+    ).slice(0, 8);
+    this.showProjectDropdown = this.projectDropdownItems.length > 0;
+  }
+
+  onProjectSearchInput(term: string): void {
+    this.projectSearchInput = term;
+
+    if (this.contractForm.controls.projectId.value) {
+      this.contractForm.controls.projectId.setValue('', { emitEvent: false });
+      this.contractForm.controls.lotId.setValue('', { emitEvent: false });
+      this.contractForm.controls.lotId.disable({ emitEvent: false });
+      this.createLotOptions = [];
+    }
+
+    const lower = term.toLowerCase().trim();
+    this.projectDropdownItems = (
+      lower.length < 1
+        ? [...this.projectOptions]
+        : this.projectOptions.filter(
+            (p) => p.code.toLowerCase().includes(lower) || p.name.toLowerCase().includes(lower)
+          )
+    ).slice(0, 8);
+    this.showProjectDropdown = this.projectDropdownItems.length > 0;
+  }
+
+  selectProject(project: ProjectLookupItem): void {
+    this.contractForm.controls.projectId.setValue(project.id, { emitEvent: false });
+    this.contractForm.controls.projectId.markAsDirty();
+    this.contractForm.controls.projectId.markAsTouched();
+    this.projectSearchInput = `${project.code} - ${project.name}`;
+    this.showProjectDropdown = false;
+    this.projectDropdownItems = [];
+    this.contractForm.controls.lotId.setValue('', { emitEvent: false });
+    this.contractForm.controls.lotId.enable({ emitEvent: false });
+    this.loadCreateLotOptions(project.id);
+  }
+
+  closeProjectDropdown(): void {
+    setTimeout(() => {
+      this.showProjectDropdown = false;
+      if (!this.contractForm.controls.projectId.value) {
+        this.projectSearchInput = '';
+      }
+      this.syncView();
+    }, 150);
   }
 
   submitCreateContract(): void {
@@ -704,9 +839,7 @@ export class ContractsPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
-          this.createLotOptions = response.items.filter((item) =>
-            item.status === 'Disponible' || item.status === 'Reservado'
-          );
+          this.createLotOptions = response.items.filter((item) => item.status === 'Disponible');
           this.syncView();
         },
         error: () => {

@@ -60,14 +60,13 @@ export class ProjectsPageComponent implements OnInit {
   readonly projectForm = this.formBuilder.nonNullable.group({
     code: ['', [Validators.required, Validators.maxLength(64)]],
     name: ['', [Validators.required, Validators.maxLength(256)]],
-    description: ['', [Validators.required, Validators.maxLength(1024)]],
+    description: ['', [Validators.maxLength(1024)]],
     department: ['', [Validators.required, Validators.maxLength(128)]],
     municipality: ['', [Validators.required, Validators.maxLength(128)]],
     locationReference: ['', [Validators.required, Validators.maxLength(512)]],
     cadastralKey: ['', [Validators.required, Validators.maxLength(128)]],
     totalAreaM2: [0, [Validators.required, Validators.min(0.000001)]],
-    status: ['Activo', [Validators.required, Validators.maxLength(32)]],
-    notes: ['', [Validators.maxLength(2048)]]
+    status: ['Activo', [Validators.required, Validators.maxLength(32)]]
   });
 
   projects: ReadonlyArray<ProjectListItemResponse> = [];
@@ -123,8 +122,7 @@ export class ProjectsPageComponent implements OnInit {
       locationReference: '',
       cadastralKey: '',
       totalAreaM2: 0,
-      status: 'Activo',
-      notes: ''
+      status: 'Activo'
     });
   }
 
@@ -284,14 +282,13 @@ export class ProjectsPageComponent implements OnInit {
     this.projectForm.reset({
       code: project.code,
       name: project.name,
-      description: project.description,
+      description: project.description ?? '',
       department: project.department,
       municipality: project.municipality,
       locationReference: project.locationReference,
       cadastralKey: project.cadastralKey,
       totalAreaM2: project.totalAreaM2,
-      status: project.status as ProjectStatus,
-      notes: project.notes ?? ''
+      status: project.status as ProjectStatus
     });
   }
 
@@ -300,14 +297,13 @@ export class ProjectsPageComponent implements OnInit {
     return {
       code: raw.code.trim(),
       name: raw.name.trim(),
-      description: raw.description.trim(),
+      description: this.cleanString(raw.description),
       department: raw.department.trim(),
       municipality: raw.municipality.trim(),
       locationReference: raw.locationReference.trim(),
       cadastralKey: raw.cadastralKey.trim(),
       totalAreaM2: Number(raw.totalAreaM2),
-      status: raw.status.trim(),
-      notes: this.cleanString(raw.notes)
+      status: raw.status.trim()
     };
   }
 
