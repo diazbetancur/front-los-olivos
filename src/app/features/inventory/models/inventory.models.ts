@@ -6,7 +6,13 @@ export interface PagedResult<TItem> {
 }
 
 export type ProjectStatus = 'Activo' | 'Inactivo';
-export type LotStatus = 'Disponible' | 'Reservado' | 'Contratado' | 'Pagado' | 'Bloqueado' | 'Anulado';
+export type LotStatus =
+  | 'Disponible'
+  | 'Reservado'
+  | 'Contratado'
+  | 'Pagado'
+  | 'Bloqueado'
+  | 'Anulado';
 
 export interface GetProjectsQuery {
   page: number;
@@ -178,4 +184,3 @@ export interface LotImportConfirmResponse {
   persistedRows: number;
   rows: ReadonlyArray<LotImportRowPreviewResponse>;
 }
-
