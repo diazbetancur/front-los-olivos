@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { AuthSessionService } from '../auth/auth-session.service';
 import { AppFeedbackService } from '../ui/app-feedback.service';
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (_route, state) => {
   const authSession = inject(AuthSessionService);
   const router = inject(Router);
   const feedback = inject(AppFeedbackService);
@@ -13,6 +13,10 @@ export const authGuard: CanActivateFn = () => {
   }
 
   feedback.showError('Debes iniciar sesion para continuar.');
-  return router.createUrlTree(['/login']);
+  return router.createUrlTree(['/login'], {
+    queryParams: {
+      returnUrl: state.url
+    }
+  });
 };
 

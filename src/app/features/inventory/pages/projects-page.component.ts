@@ -180,8 +180,8 @@ export class ProjectsPageComponent implements OnInit {
     this.isSubmitting = true;
 
     const request$ = this.editingProjectId
-      ? this.inventoryApi.updateProject(this.editingProjectId, payload as UpdateProjectRequest)
-      : this.inventoryApi.createProject(payload as CreateProjectRequest);
+      ? this.inventoryApi.updateProject(this.editingProjectId, payload)
+      : this.inventoryApi.createProject(payload);
 
     request$
       .pipe(
@@ -242,6 +242,32 @@ export class ProjectsPageComponent implements OnInit {
           this.feedback.showError(normalizedError.userMessage);
         },
       });
+  }
+
+  hasControlError(controlName: string): boolean {
+    const control = this.projectForm.get(controlName);
+    return !!control && control.invalid && control.touched;
+  }
+
+  getControlErrorMessage(controlName: string): string {
+    const control = this.projectForm.get(controlName);
+    if (!control?.errors || !control.touched) {
+      return '';
+    }
+
+    if (control.errors['required']) {
+      return 'Este campo es obligatorio.';
+    }
+
+    if (control.errors['min']) {
+      return 'Ingresa un valor mayor que 0.';
+    }
+
+    if (control.errors['maxlength']) {
+      return 'Supera la longitud permitida.';
+    }
+
+    return 'Valor invalido.';
   }
 
   private reloadAfterMutation(targetPage: number): void {
