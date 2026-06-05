@@ -5,7 +5,6 @@
   "outputDirectory": "dist/frontend/browser",
   "installCommand": "npm ci",
   "trailingSlash": false,
-  "cleanUrls": true,
   "headers": [
     {
       "source": "/(.*)",
