@@ -61,7 +61,7 @@ export class AuthSessionService {
 
     this.refreshInFlight$ = this.authApi.refresh({ refreshToken }).pipe(
       timeout(15_000),
-      switchMap((response) => this.enrichWithCurrentUser(response)),
+      map((response) => this.toSessionState(response)),
       tap((session) => this.setSession(session)),
       catchError((error) => {
         this.refreshInFlight$ = null;

@@ -9,16 +9,17 @@ const RefreshAttemptHeader = 'x-refresh-attempt';
 const AuthPaths = {
   login: '/api/v1/auth/login',
   refresh: '/api/v1/auth/refresh',
-  logout: '/api/v1/auth/logout'
+  logout: '/api/v1/auth/logout',
 } as const;
 
 async function redirectToLogin(router: Router): Promise<void> {
   const currentUrl = router.url;
-  const shouldPreserveReturnUrl = !!currentUrl && currentUrl !== '/' && !currentUrl.startsWith('/login');
+  const shouldPreserveReturnUrl =
+    !!currentUrl && currentUrl !== '/' && !currentUrl.startsWith('/login');
 
   const navigationSucceeded = await router.navigate(['/login'], {
     replaceUrl: true,
-    queryParams: shouldPreserveReturnUrl ? { returnUrl: currentUrl } : undefined
+    queryParams: shouldPreserveReturnUrl ? { returnUrl: currentUrl } : undefined,
   });
 
   if (!navigationSucceeded && typeof globalThis !== 'undefined' && !!globalThis.location) {
@@ -37,13 +38,14 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const isLogoutRequest = request.url.includes(AuthPaths.logout);
   const isRetriedRequest = request.headers.get(RefreshAttemptHeader) === '1';
 
-  const requestWithToken = hasAccessToken && !isLoginRequest && !isRefreshRequest
-    ? request.clone({
-        setHeaders: {
-          Authorization: `Bearer ${authSession.getAccessToken()!}`
-        }
-      })
-    : request;
+  const requestWithToken =
+    hasAccessToken && !isLoginRequest && !isRefreshRequest
+      ? request.clone({
+          setHeaders: {
+            Authorization: `Bearer ${authSession.getAccessToken()!}`,
+          },
+        })
+      : request;
 
   return next(requestWithToken).pipe(
     catchError((error: unknown) => {
@@ -72,8 +74,8 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
           const retriedRequest = request.clone({
             setHeaders: {
               Authorization: `Bearer ${refreshedSession.accessToken}`,
-              [RefreshAttemptHeader]: '1'
-            }
+              [RefreshAttemptHeader]: '1',
+            },
           });
 
           return next(retriedRequest);
@@ -83,9 +85,8 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
           feedback.showError('Tu sesion expiro. Inicia sesion nuevamente.');
           void redirectToLogin(router);
           return throwError(() => refreshError);
-        })
+        }),
       );
-    })
+    }),
   );
 };
-

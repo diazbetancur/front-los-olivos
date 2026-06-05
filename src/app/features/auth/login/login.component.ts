@@ -1,9 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthSessionService } from '../../../core/auth/auth-session.service';
 import { ApiErrorService } from '../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
@@ -12,7 +12,7 @@ import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
   selector: 'app-login',
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.scss'
+  styleUrl: './login.component.scss',
 })
 export class LoginComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
@@ -28,7 +28,7 @@ export class LoginComponent implements OnInit {
 
   readonly form = this.formBuilder.nonNullable.group({
     identifier: ['', [Validators.required, Validators.maxLength(128)]],
-    password: ['', [Validators.required, Validators.maxLength(256)]]
+    password: ['', [Validators.required, Validators.maxLength(256)]],
   });
 
   ngOnInit(): void {
@@ -52,7 +52,7 @@ export class LoginComponent implements OnInit {
       .login(request)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.isSubmitting.set(false))
+        finalize(() => this.isSubmitting.set(false)),
       )
       .subscribe({
         next: () => {
@@ -63,7 +63,7 @@ export class LoginComponent implements OnInit {
           const normalizedError = this.apiErrorService.normalize(error);
           const firstFieldError = normalizedError.fieldErrors[0];
           this.errorMessage.set(firstFieldError ?? normalizedError.userMessage);
-        }
+        },
       });
   }
 

@@ -7,7 +7,10 @@
   </header>
 
   @if (!canViewReports() && !canViewAudit()) {
-    <app-empty-state title="Sin permisos" message="No tienes permisos para ver reportes o auditoria." />
+    <app-empty-state
+      title="Sin permisos"
+      message="No tienes permisos para ver reportes o auditoria."
+    />
   }
 
   @if (canViewReports()) {
@@ -40,7 +43,9 @@
     </section>
 
     @if (summaryError) {
-      <section class="error-box"><p>{{ summaryError }}</p></section>
+      <section class="error-box">
+        <p>{{ summaryError }}</p>
+      </section>
     }
 
     <section class="summary-grid">
@@ -59,7 +64,7 @@
                 <span [class]="lotStatusClass(row.status)">{{ row.status }}</span>
                 <strong>{{ row.count }}</strong>
                 <small>Area: {{ row.totalAreaM2 | number: '1.2-2' }} m2</small>
-                <small>Precio lista: {{ row.totalListPrice | number: '1.2-2' }}</small>
+                <small>Valor del terreno : {{ row.totalListPrice | number: '1.2-2' }}</small>
               </div>
             }
           </div>
@@ -114,7 +119,11 @@
           </label>
           <label>
             Buscar
-            <input type="text" formControlName="search" placeholder="Contrato, cliente o proyecto" />
+            <input
+              type="text"
+              formControlName="search"
+              placeholder="Contrato, cliente o proyecto"
+            />
           </label>
           <label>
             Tamano pagina
@@ -138,7 +147,10 @@
       @if (isArrearsLoading) {
         <app-loading-state message="Cargando contratos en mora..." />
       } @else if (arrearsItems.length === 0) {
-        <app-empty-state title="Sin registros" message="No hay contratos en mora o proximos a vencer para este filtro." />
+        <app-empty-state
+          title="Sin registros"
+          message="No hay contratos en mora o proximos a vencer para este filtro."
+        />
       } @else {
         <section class="table-wrap">
           <table>
@@ -160,7 +172,11 @@
                   <td>{{ row.contractNumber }}</td>
                   <td>{{ row.projectCode }} - {{ row.projectName }}</td>
                   <td>{{ row.clientFullName }}</td>
-                  <td><span [class]="contractStatusClass(row.contractStatus)">{{ row.contractStatus }}</span></td>
+                  <td>
+                    <span [class]="contractStatusClass(row.contractStatus)">{{
+                      row.contractStatus
+                    }}</span>
+                  </td>
                   <td>{{ row.overdueInstallments }}</td>
                   <td>{{ row.overdueAmount | number: '1.2-2' }}</td>
                   <td>{{ row.upcomingInstallments }}</td>
@@ -174,11 +190,18 @@
         <section class="pagination">
           <span>
             Pagina {{ arrearsPage }} de
-            {{ Math.max(1, Math.ceil(arrearsTotalCount / arrearsFilterForm.controls.pageSize.value)) }}
+            {{
+              Math.max(1, Math.ceil(arrearsTotalCount / arrearsFilterForm.controls.pageSize.value))
+            }}
             | Total {{ arrearsTotalCount }}
           </span>
           <div>
-            <button type="button" class="btn-secondary" (click)="goToPreviousArrearsPage()" [disabled]="arrearsPage <= 1">
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="goToPreviousArrearsPage()"
+              [disabled]="arrearsPage <= 1"
+            >
               Anterior
             </button>
             <button
@@ -186,7 +209,11 @@
               class="btn-secondary"
               (click)="goToNextArrearsPage()"
               [disabled]="
-                arrearsPage >= Math.max(1, Math.ceil(arrearsTotalCount / arrearsFilterForm.controls.pageSize.value))
+                arrearsPage >=
+                Math.max(
+                  1,
+                  Math.ceil(arrearsTotalCount / arrearsFilterForm.controls.pageSize.value)
+                )
               "
             >
               Siguiente
@@ -255,8 +282,12 @@
       } @else {
         <div class="summary-inline">
           <span class="chip">Total pagos: {{ paymentsReport.totalAmount | number: '1.2-2' }}</span>
-          <span class="chip">Total aplicado: {{ paymentsReport.totalAppliedAmount | number: '1.2-2' }}</span>
-          <span class="chip">Total no aplicado: {{ paymentsReport.totalUnallocatedAmount | number: '1.2-2' }}</span>
+          <span class="chip"
+            >Total aplicado: {{ paymentsReport.totalAppliedAmount | number: '1.2-2' }}</span
+          >
+          <span class="chip"
+            >Total no aplicado: {{ paymentsReport.totalUnallocatedAmount | number: '1.2-2' }}</span
+          >
           <span class="chip">Anulados: {{ paymentsReport.totalVoidedCount }}</span>
         </div>
 
@@ -282,7 +313,9 @@
                   <td>{{ row.amount | number: '1.2-2' }}</td>
                   <td>{{ row.appliedAmount | number: '1.2-2' }}</td>
                   <td>{{ row.unallocatedAmount | number: '1.2-2' }}</td>
-                  <td><span [class]="paymentStatusClass(row.status)">{{ row.status }}</span></td>
+                  <td>
+                    <span [class]="paymentStatusClass(row.status)">{{ row.status }}</span>
+                  </td>
                   <td>{{ row.paymentMethod || '-' }}</td>
                   <td>{{ row.transactionReference || '-' }}</td>
                 </tr>
@@ -293,8 +326,9 @@
 
         <section class="pagination">
           <span>
-            Pagina {{ paymentsReport.page }} de {{ Math.max(1, Math.ceil(paymentsReport.totalCount / paymentsReport.pageSize)) }}
-            | Total {{ paymentsReport.totalCount }}
+            Pagina {{ paymentsReport.page }} de
+            {{ Math.max(1, Math.ceil(paymentsReport.totalCount / paymentsReport.pageSize)) }} |
+            Total {{ paymentsReport.totalCount }}
           </span>
           <div>
             <button
@@ -309,7 +343,10 @@
               type="button"
               class="btn-secondary"
               (click)="goToNextPaymentsPage()"
-              [disabled]="paymentsReport.page >= Math.max(1, Math.ceil(paymentsReport.totalCount / paymentsReport.pageSize))"
+              [disabled]="
+                paymentsReport.page >=
+                Math.max(1, Math.ceil(paymentsReport.totalCount / paymentsReport.pageSize))
+              "
             >
               Siguiente
             </button>
@@ -351,7 +388,10 @@
       @if (isBalancesLoading) {
         <app-loading-state message="Cargando saldos por proyecto..." />
       } @else if (balanceItems.length === 0) {
-        <app-empty-state title="Sin saldos" message="No hay datos de saldos para el filtro actual." />
+        <app-empty-state
+          title="Sin saldos"
+          message="No hay datos de saldos para el filtro actual."
+        />
       } @else {
         <section class="table-wrap">
           <table>
@@ -383,18 +423,34 @@
         <section class="pagination">
           <span>
             Pagina {{ balancesPage }} de
-            {{ Math.max(1, Math.ceil(balancesTotalCount / balancesFilterForm.controls.pageSize.value)) }}
+            {{
+              Math.max(
+                1,
+                Math.ceil(balancesTotalCount / balancesFilterForm.controls.pageSize.value)
+              )
+            }}
             | Total {{ balancesTotalCount }}
           </span>
           <div>
-            <button type="button" class="btn-secondary" (click)="goToPreviousBalancesPage()" [disabled]="balancesPage <= 1">
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="goToPreviousBalancesPage()"
+              [disabled]="balancesPage <= 1"
+            >
               Anterior
             </button>
             <button
               type="button"
               class="btn-secondary"
               (click)="goToNextBalancesPage()"
-              [disabled]="balancesPage >= Math.max(1, Math.ceil(balancesTotalCount / balancesFilterForm.controls.pageSize.value))"
+              [disabled]="
+                balancesPage >=
+                Math.max(
+                  1,
+                  Math.ceil(balancesTotalCount / balancesFilterForm.controls.pageSize.value)
+                )
+              "
             >
               Siguiente
             </button>
@@ -444,7 +500,10 @@
       @if (isVoidedReceiptsLoading) {
         <app-loading-state message="Cargando recibos anulados..." />
       } @else if (voidedReceiptItems.length === 0) {
-        <app-empty-state title="Sin recibos anulados" message="No hay registros para este filtro." />
+        <app-empty-state
+          title="Sin recibos anulados"
+          message="No hay registros para este filtro."
+        />
       } @else {
         <section class="table-wrap">
           <table>
@@ -478,7 +537,14 @@
         <section class="pagination">
           <span>
             Pagina {{ voidedReceiptsPage }} de
-            {{ Math.max(1, Math.ceil(voidedReceiptsTotalCount / voidedReceiptsFilterForm.controls.pageSize.value)) }}
+            {{
+              Math.max(
+                1,
+                Math.ceil(
+                  voidedReceiptsTotalCount / voidedReceiptsFilterForm.controls.pageSize.value
+                )
+              )
+            }}
             | Total {{ voidedReceiptsTotalCount }}
           </span>
           <div>
@@ -495,7 +561,13 @@
               class="btn-secondary"
               (click)="goToNextVoidedReceiptsPage()"
               [disabled]="
-                voidedReceiptsPage >= Math.max(1, Math.ceil(voidedReceiptsTotalCount / voidedReceiptsFilterForm.controls.pageSize.value))
+                voidedReceiptsPage >=
+                Math.max(
+                  1,
+                  Math.ceil(
+                    voidedReceiptsTotalCount / voidedReceiptsFilterForm.controls.pageSize.value
+                  )
+                )
               "
             >
               Siguiente
@@ -556,7 +628,10 @@
       @if (isAuditLoading) {
         <app-loading-state message="Cargando auditoria..." />
       } @else if (auditItems.length === 0) {
-        <app-empty-state title="Sin auditoria" message="No hay eventos para el filtro seleccionado." />
+        <app-empty-state
+          title="Sin auditoria"
+          message="No hay eventos para el filtro seleccionado."
+        />
       } @else {
         <section class="table-wrap">
           <table>
@@ -587,18 +662,27 @@
 
         <section class="pagination">
           <span>
-            Pagina {{ auditPage }} de {{ Math.max(1, Math.ceil(auditTotalCount / auditFilterForm.controls.pageSize.value)) }}
+            Pagina {{ auditPage }} de
+            {{ Math.max(1, Math.ceil(auditTotalCount / auditFilterForm.controls.pageSize.value)) }}
             | Total {{ auditTotalCount }}
           </span>
           <div>
-            <button type="button" class="btn-secondary" (click)="goToPreviousAuditPage()" [disabled]="auditPage <= 1">
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="goToPreviousAuditPage()"
+              [disabled]="auditPage <= 1"
+            >
               Anterior
             </button>
             <button
               type="button"
               class="btn-secondary"
               (click)="goToNextAuditPage()"
-              [disabled]="auditPage >= Math.max(1, Math.ceil(auditTotalCount / auditFilterForm.controls.pageSize.value))"
+              [disabled]="
+                auditPage >=
+                Math.max(1, Math.ceil(auditTotalCount / auditFilterForm.controls.pageSize.value))
+              "
             >
               Siguiente
             </button>
