@@ -295,7 +295,8 @@
         <div><strong>Bloque:</strong> {{ selectedLotDetail.code }}</div>
         <div><strong>Proyecto:</strong> {{ resolveProjectLabel(selectedLotDetail.projectId) }}</div>
         <div>
-          <strong>Bloque asociado:</strong> {{ selectedLotDetail.blockId ? 'Asignado' : 'No asignado' }}
+          <strong>Bloque asociado:</strong>
+          {{ selectedLotDetail.blockId ? 'Asignado' : 'No asignado' }}
         </div>
         <div><strong>Area m2:</strong> {{ selectedLotDetail.areaM2 }}</div>
         <div><strong>Precio:</strong> {{ selectedLotDetail.listPrice | number: '1.2-2' }}</div>
@@ -444,7 +445,10 @@
                 step="0.01"
                 class="ui-form-control"
               />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('northMeasure')">
+              <small
+                class="ui-field-inline-error"
+                [class.visible]="hasControlError('northMeasure')"
+              >
                 {{ getControlErrorMessage('northMeasure') }}
               </small>
             </label>
@@ -452,7 +456,10 @@
             <label>
               Colindancia norte
               <input type="text" formControlName="northBoundary" class="ui-form-control" />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('northBoundary')">
+              <small
+                class="ui-field-inline-error"
+                [class.visible]="hasControlError('northBoundary')"
+              >
                 {{ getControlErrorMessage('northBoundary') }}
               </small>
             </label>
@@ -466,7 +473,10 @@
                 step="0.01"
                 class="ui-form-control"
               />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('southMeasure')">
+              <small
+                class="ui-field-inline-error"
+                [class.visible]="hasControlError('southMeasure')"
+              >
                 {{ getControlErrorMessage('southMeasure') }}
               </small>
             </label>
@@ -474,7 +484,10 @@
             <label>
               Colindancia sur
               <input type="text" formControlName="southBoundary" class="ui-form-control" />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('southBoundary')">
+              <small
+                class="ui-field-inline-error"
+                [class.visible]="hasControlError('southBoundary')"
+              >
                 {{ getControlErrorMessage('southBoundary') }}
               </small>
             </label>
@@ -496,7 +509,10 @@
             <label>
               Colindancia este
               <input type="text" formControlName="eastBoundary" class="ui-form-control" />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('eastBoundary')">
+              <small
+                class="ui-field-inline-error"
+                [class.visible]="hasControlError('eastBoundary')"
+              >
                 {{ getControlErrorMessage('eastBoundary') }}
               </small>
             </label>
@@ -518,7 +534,10 @@
             <label>
               Colindancia oeste
               <input type="text" formControlName="westBoundary" class="ui-form-control" />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('westBoundary')">
+              <small
+                class="ui-field-inline-error"
+                [class.visible]="hasControlError('westBoundary')"
+              >
                 {{ getControlErrorMessage('westBoundary') }}
               </small>
             </label>
@@ -538,7 +557,11 @@
 
           <div class="form-actions ui-form-actions">
             <button type="button" class="ghost" (click)="cancelForm()">Cancelar</button>
-            <button type="submit" class="ui-btn-primary" [disabled]="isSubmitting || lotForm.invalid">
+            <button
+              type="submit"
+              class="ui-btn-primary"
+              [disabled]="isSubmitting || lotForm.invalid"
+            >
               {{ editingLotId ? 'Guardar cambios' : 'Crear lote' }}
             </button>
           </div>

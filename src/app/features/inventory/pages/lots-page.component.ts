@@ -1,11 +1,19 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, ViewRef, computed, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  OnInit,
+  ViewRef,
+  computed,
+  inject,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { AuthSessionService } from '../../../core/auth/auth-session.service';
+import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { ApiErrorService } from '../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
 import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
@@ -23,7 +31,7 @@ import {
   LotStatus,
   PagedResult,
   ProjectListItemResponse,
-  UpdateLotRequest
+  UpdateLotRequest,
 } from '../models/inventory.models';
 import { InventoryApiService } from '../services/inventory-api.service';
 
@@ -39,10 +47,10 @@ const LOOKUP_PAGE_SIZE = 100;
     LoadingStateComponent,
     EmptyStateComponent,
     HasPermissionDirective,
-    PaginationComponent
+    PaginationComponent,
   ],
   templateUrl: './lots-page.component.html',
-  styleUrl: './lots-page.component.scss'
+  styleUrl: './lots-page.component.scss',
 })
 export class LotsPageComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
@@ -64,7 +72,7 @@ export class LotsPageComponent implements OnInit {
     'Contratado',
     'Pagado',
     'Bloqueado',
-    'Anulado'
+    'Anulado',
   ];
 
   readonly filterForm = this.formBuilder.nonNullable.group({
@@ -76,7 +84,7 @@ export class LotsPageComponent implements OnInit {
     maxArea: [''],
     minPrice: [''],
     maxPrice: [''],
-    pageSize: [20, [Validators.min(1), Validators.max(100)]]
+    pageSize: [20, [Validators.min(1), Validators.max(100)]],
   });
 
   readonly lotForm = this.formBuilder.nonNullable.group({
@@ -97,11 +105,11 @@ export class LotsPageComponent implements OnInit {
     currency: ['HNL', [Validators.maxLength(16)]],
     status: ['Disponible', [Validators.maxLength(32)]],
     intendedUse: ['', [Validators.maxLength(128)]],
-    notes: ['', [Validators.maxLength(2048)]]
+    notes: ['', [Validators.maxLength(2048)]],
   });
 
   readonly importForm = this.formBuilder.nonNullable.group({
-    projectId: ['', [Validators.required]]
+    projectId: ['', [Validators.required]],
   });
 
   lots: ReadonlyArray<LotListItemResponse> = [];
@@ -136,7 +144,8 @@ export class LotsPageComponent implements OnInit {
   }
 
   get selectedFormProjectLabel(): string {
-    const projectId = this.lotForm.controls.projectId.value || this.filterForm.controls.projectId.value;
+    const projectId =
+      this.lotForm.controls.projectId.value || this.filterForm.controls.projectId.value;
     return projectId ? this.resolveProjectLabel(projectId) : 'Sin proyecto seleccionado';
   }
 
@@ -173,7 +182,7 @@ export class LotsPageComponent implements OnInit {
       maxArea: '',
       minPrice: '',
       maxPrice: '',
-      pageSize: 20
+      pageSize: 20,
     });
     if (projectId) {
       this.loadLots(1);
@@ -218,7 +227,7 @@ export class LotsPageComponent implements OnInit {
       currency: 'HNL',
       status: 'Disponible',
       intendedUse: '',
-      notes: ''
+      notes: '',
     });
   }
 
@@ -235,7 +244,7 @@ export class LotsPageComponent implements OnInit {
         finalize(() => {
           this.isSubmitting = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: (lotDetail) => {
@@ -244,7 +253,7 @@ export class LotsPageComponent implements OnInit {
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.formError = normalizedError.userMessage;
-        }
+        },
       });
   }
 
@@ -260,7 +269,7 @@ export class LotsPageComponent implements OnInit {
         finalize(() => {
           this.isDetailLoading = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: (lotDetail) => {
@@ -269,7 +278,7 @@ export class LotsPageComponent implements OnInit {
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.detailError = normalizedError.userMessage;
-        }
+        },
       });
   }
 
@@ -303,7 +312,7 @@ export class LotsPageComponent implements OnInit {
         finalize(() => {
           this.isSubmitting = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: (response) => {
@@ -312,19 +321,19 @@ export class LotsPageComponent implements OnInit {
             level: 'success',
             text: this.editingLotId
               ? 'Lote actualizado correctamente.'
-              : 'Lote creado correctamente.'
+              : 'Lote creado correctamente.',
           });
 
           this.cancelForm();
           this.reloadAfterMutation({
             page: targetPage,
-            lotId: response.id
+            lotId: response.id,
           });
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.formError = normalizedError.userMessage;
-        }
+        },
       });
   }
 
@@ -334,8 +343,11 @@ export class LotsPageComponent implements OnInit {
     }
 
     const actionLabel = this.getActionLabel(action);
-    const notes = globalThis.prompt(`Ingresa una nota opcional para la accion "${actionLabel}"`, '') ?? '';
-    const confirmed = globalThis.confirm(`Se ejecutara la accion "${actionLabel}" sobre lote ${lot.fullCode}. Continuar?`);
+    const notes =
+      globalThis.prompt(`Ingresa una nota opcional para la accion "${actionLabel}"`, '') ?? '';
+    const confirmed = globalThis.confirm(
+      `Se ejecutara la accion "${actionLabel}" sobre lote ${lot.fullCode}. Continuar?`,
+    );
     if (!confirmed) {
       return;
     }
@@ -350,17 +362,17 @@ export class LotsPageComponent implements OnInit {
         finalize(() => {
           this.isSubmitting = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: (response) => {
           this.feedback.show({
             level: 'success',
-            text: `Accion "${actionLabel}" aplicada correctamente.`
+            text: `Accion "${actionLabel}" aplicada correctamente.`,
           });
           this.reloadAfterMutation({
             page: this.currentPage,
-            lotId: response.id
+            lotId: response.id,
           });
         },
         error: (error) => {
@@ -371,7 +383,7 @@ export class LotsPageComponent implements OnInit {
           }
 
           this.feedback.showError(normalizedError.userMessage);
-        }
+        },
       });
   }
 
@@ -461,20 +473,20 @@ export class LotsPageComponent implements OnInit {
         finalize(() => {
           this.isPreviewLoading = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: (response) => {
           this.importPreview = response;
           this.feedback.show({
             level: 'info',
-            text: `Preview listo. Filas validas: ${response.validRows} / ${response.totalRows}.`
+            text: `Preview listo. Filas validas: ${response.validRows} / ${response.totalRows}.`,
           });
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.importError = normalizedError.userMessage;
-        }
+        },
       });
   }
 
@@ -493,7 +505,7 @@ export class LotsPageComponent implements OnInit {
         finalize(() => {
           this.isConfirmLoading = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: (response) => {
@@ -501,11 +513,11 @@ export class LotsPageComponent implements OnInit {
           if (response.isSuccess) {
             this.feedback.show({
               level: 'success',
-              text: `Importacion completada. Filas persistidas: ${response.persistedRows}.`
+              text: `Importacion completada. Filas persistidas: ${response.persistedRows}.`,
             });
             this.reloadAfterMutation({
               page: 1,
-              refreshLookups: true
+              refreshLookups: true,
             });
           } else {
             this.feedback.showError('La importacion reporto conflictos en algunas filas.');
@@ -520,11 +532,15 @@ export class LotsPageComponent implements OnInit {
 
           const normalizedError = this.apiErrorService.normalize(error);
           this.importError = normalizedError.userMessage;
-        }
+        },
       });
   }
 
-  private reloadAfterMutation(options: { page: number; lotId?: string; refreshLookups?: boolean }): void {
+  private reloadAfterMutation(options: {
+    page: number;
+    lotId?: string;
+    refreshLookups?: boolean;
+  }): void {
     if (options.refreshLookups) {
       this.loadProjectOptions();
     }
@@ -549,7 +565,7 @@ export class LotsPageComponent implements OnInit {
       minPrice: this.toNullableNumber(this.filterForm.controls.minPrice.value),
       maxPrice: this.toNullableNumber(this.filterForm.controls.maxPrice.value),
       page,
-      pageSize: this.filterForm.controls.pageSize.value
+      pageSize: this.filterForm.controls.pageSize.value,
     };
 
     this.inventoryApi
@@ -559,7 +575,7 @@ export class LotsPageComponent implements OnInit {
         finalize(() => {
           this.isLoading = false;
           this.syncView();
-        })
+        }),
       )
       .subscribe({
         next: (response: PagedResult<LotListItemResponse>) => {
@@ -570,7 +586,7 @@ export class LotsPageComponent implements OnInit {
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.listError = normalizedError.userMessage;
-        }
+        },
       });
   }
 
@@ -580,7 +596,7 @@ export class LotsPageComponent implements OnInit {
         page: 1,
         pageSize: LOOKUP_PAGE_SIZE,
         search: null,
-        status: null
+        status: null,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -594,7 +610,7 @@ export class LotsPageComponent implements OnInit {
         error: () => {
           this.projectOptions = [];
           this.syncView();
-        }
+        },
       });
   }
 
@@ -617,7 +633,7 @@ export class LotsPageComponent implements OnInit {
       currency: lotDetail.currency,
       status: lotDetail.status,
       intendedUse: lotDetail.intendedUse,
-      notes: lotDetail.notes ?? ''
+      notes: lotDetail.notes ?? '',
     });
   }
 
@@ -641,7 +657,7 @@ export class LotsPageComponent implements OnInit {
       currency: this.cleanString(raw.currency) ?? 'HNL',
       status: this.cleanString(raw.status) ?? 'Disponible',
       intendedUse: raw.intendedUse.trim(),
-      notes: this.cleanString(raw.notes)
+      notes: this.cleanString(raw.notes),
     };
   }
 
@@ -664,11 +680,15 @@ export class LotsPageComponent implements OnInit {
       listPrice: Number(raw.listPrice),
       currency: this.cleanString(raw.currency) ?? 'HNL',
       intendedUse: raw.intendedUse.trim(),
-      notes: this.cleanString(raw.notes)
+      notes: this.cleanString(raw.notes),
     };
   }
 
-  private getStatusOperation(lotId: string, action: LotStatusAction, request: ChangeLotStatusRequest) {
+  private getStatusOperation(
+    lotId: string,
+    action: LotStatusAction,
+    request: ChangeLotStatusRequest,
+  ) {
     switch (action) {
       case 'reserve':
         return this.inventoryApi.reserveLot(lotId, request);
