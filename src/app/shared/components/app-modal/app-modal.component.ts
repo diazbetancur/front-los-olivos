@@ -25,6 +25,7 @@ export class AppModalComponent implements AfterViewInit, OnDestroy {
   private readonly document = inject(DOCUMENT);
 
   @Input() closeOnBackdrop = true;
+  @Input() maxWidth = '1020px';
   @Input() titleId: string = `app-modal-title-${++nextModalId}`;
   @Output() closed = new EventEmitter<void>();
 

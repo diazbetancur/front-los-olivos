@@ -15,7 +15,7 @@
         >
           <option value="">Selecciona un proyecto...</option>
           @for (project of projectOptions; track project.id) {
-            <option [value]="project.id">{{ project.code }} - {{ project.name }}</option>
+            <option [value]="project.id">{{ project.name }}</option>
           }
         </select>
       </label>
@@ -88,7 +88,7 @@
         <select formControlName="projectId">
           <option value="">Selecciona un proyecto</option>
           @for (project of projectOptions; track project.id) {
-            <option [value]="project.id">{{ project.code }} - {{ project.name }}</option>
+            <option [value]="project.id">{{ project.name }}</option>
           }
         </select>
       </label>
