@@ -22,16 +22,6 @@
         <input type="text" formControlName="search" placeholder="Nombre" />
       </label>
 
-      <label>
-        Estado
-        <select formControlName="status">
-          <option value="">Todos</option>
-          @for (status of statuses; track status) {
-            <option [value]="status">{{ status }}</option>
-          }
-        </select>
-      </label>
-
       <div class="filter-actions">
         <button type="submit">Aplicar</button>
         <button type="button" class="ghost" (click)="clearFilters()">Limpiar</button>
