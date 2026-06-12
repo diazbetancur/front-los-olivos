@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter, finalize } from 'rxjs';
 import { AuthSessionService } from '../../../core/auth/auth-session.service';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { ApiErrorService } from '../../../core/http/api-error.service';
@@ -61,7 +61,6 @@ export class ProjectsPageComponent implements OnInit {
 
   readonly filterForm = this.formBuilder.nonNullable.group({
     search: ['', [Validators.maxLength(256)]],
-    status: [''],
     pageSize: [20, [Validators.min(1), Validators.max(100)]],
   });
 
@@ -94,6 +93,14 @@ export class ProjectsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProjects(1);
+    this.filterForm.controls.search.valueChanges
+      .pipe(
+        debounceTime(350),
+        distinctUntilChanged(),
+        filter(v => v.length === 0 || v.length >= 3),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => this.loadProjects(1));
   }
 
   applyFilters(): void {
@@ -103,7 +110,6 @@ export class ProjectsPageComponent implements OnInit {
   clearFilters(): void {
     this.filterForm.patchValue({
       search: '',
-      status: '',
       pageSize: 20,
     });
     this.loadProjects(1);
@@ -278,7 +284,6 @@ export class ProjectsPageComponent implements OnInit {
       page,
       pageSize: this.filterForm.controls.pageSize.value,
       search: this.cleanString(this.filterForm.controls.search.value),
-      status: this.cleanString(this.filterForm.controls.status.value),
     };
 
     this.inventoryApi
