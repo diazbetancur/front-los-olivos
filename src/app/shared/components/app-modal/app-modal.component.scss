@@ -22,7 +22,12 @@
   width: min(1020px, calc(100vw - 2rem));
   max-height: calc(100vh - 2rem);
   overflow: auto;
+  scrollbar-width: none;
   animation: modal-in 0.18s ease;
+}
+
+.panel::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes modal-in {

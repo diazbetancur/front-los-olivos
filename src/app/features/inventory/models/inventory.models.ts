@@ -84,6 +84,7 @@ export interface LotDetailResponse {
   code: string;
   fullCode: string;
   areaM2: number;
+  areaVr2?: number | null;
   northMeasure?: number | null;
   northBoundary: string;
   southMeasure?: number | null;
@@ -95,7 +96,6 @@ export interface LotDetailResponse {
   listPrice: number;
   currency: string;
   status: string;
-  intendedUse: string;
   notes: string;
 }
 
@@ -105,6 +105,7 @@ export interface CreateLotRequest {
   code: string;
   fullCode: string;
   areaM2: number;
+  areaVr2?: number | null;
   northMeasure?: number | null;
   northBoundary: string;
   southMeasure?: number | null;
@@ -116,7 +117,6 @@ export interface CreateLotRequest {
   listPrice: number;
   currency?: string | null;
   status?: string | null;
-  intendedUse: string;
   notes?: string | null;
 }
 
@@ -126,6 +126,7 @@ export interface UpdateLotRequest {
   code: string;
   fullCode: string;
   areaM2: number;
+  areaVr2?: number | null;
   northMeasure?: number | null;
   northBoundary: string;
   southMeasure?: number | null;
@@ -136,7 +137,6 @@ export interface UpdateLotRequest {
   westBoundary: string;
   listPrice: number;
   currency?: string | null;
-  intendedUse: string;
   notes?: string | null;
 }
 
@@ -149,6 +149,8 @@ export interface LotImportRowPreviewResponse {
   fullCode: string;
   code: string;
   blockCode?: string | null;
+  areaM2: number;
+  areaVr2?: number | null;
   isValid: boolean;
   errors: ReadonlyArray<string>;
 }
