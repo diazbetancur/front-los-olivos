@@ -19,7 +19,7 @@
     <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
       <label>
         Buscar
-        <input type="text" formControlName="search" placeholder="Codigo o nombre" />
+        <input type="text" formControlName="search" placeholder="Nombre" />
       </label>
 
       <label>
@@ -57,7 +57,6 @@
       <table>
         <thead>
           <tr>
-            <th>Codigo</th>
             <th>Nombre</th>
             <th>Departamento</th>
             <th>Municipio</th>
@@ -68,7 +67,6 @@
         <tbody>
           @for (project of projects; track project.id) {
             <tr>
-              <td>{{ project.code }}</td>
               <td>{{ project.name }}</td>
               <td>{{ project.department }}</td>
               <td>{{ project.municipality }}</td>
@@ -109,7 +107,7 @@
   />
 
   @if (showForm) {
-    <app-modal (closed)="cancelForm()">
+    <app-modal maxWidth="720px" (closed)="cancelForm()">
       <section class="form-panel">
         <header>
           <h3>{{ editingProjectId ? 'Editar proyecto' : 'Nuevo proyecto' }}</h3>
@@ -129,14 +127,7 @@
         }
 
         <form [formGroup]="projectForm" (ngSubmit)="submitProject()" novalidate>
-          <div class="grid ui-form-grid-2">
-            <label class="required">
-              Codigo
-              <input type="text" formControlName="code" class="ui-form-control" />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('code')">
-                {{ getControlErrorMessage('code') }}
-              </small>
-            </label>
+          <div class="grid ui-form-grid-3">
             <label class="required">
               Nombre
               <input type="text" formControlName="name" class="ui-form-control" />
@@ -161,7 +152,7 @@
                 {{ getControlErrorMessage('municipality') }}
               </small>
             </label>
-            <label class="required">
+            <label>
               Clave catastral
               <input type="text" formControlName="cadastralKey" class="ui-form-control" />
               <small
@@ -172,7 +163,7 @@
               </small>
             </label>
 
-            <label class="required">
+            <label>
               Area total (m2)
               <input
                 type="number"
@@ -208,17 +199,6 @@
                 [class.visible]="hasControlError('locationReference')"
               >
                 {{ getControlErrorMessage('locationReference') }}
-              </small>
-            </label>
-            <label class="full-width">
-              Descripcion
-              <textarea
-                rows="2"
-                formControlName="description"
-                class="ui-form-control ui-form-control-textarea"
-              ></textarea>
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('description')">
-                {{ getControlErrorMessage('description') }}
               </small>
             </label>
           </div>

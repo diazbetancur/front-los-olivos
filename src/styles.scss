@@ -651,8 +651,13 @@ label {
   grid-column: 1 / -1;
 }
 
-.ui-form-grid-2 {
+.grid.ui-form-grid-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 0.95rem;
+}
+
+.grid.ui-form-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.8rem 0.95rem;
 }
 
@@ -901,7 +906,8 @@ a:hover {
     align-items: flex-start;
   }
 
-  .ui-form-grid-2 {
+  .grid.ui-form-grid-2,
+  .grid.ui-form-grid-3 {
     grid-template-columns: 1fr;
   }
 }

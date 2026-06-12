@@ -410,7 +410,7 @@ export class LotsPageComponent implements OnInit {
       return projectId;
     }
 
-    return `${option.code} - ${option.name}`;
+    return option.name;
   }
 
   hasControlError(controlName: string): boolean {

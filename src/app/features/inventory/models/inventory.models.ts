@@ -23,7 +23,6 @@ export interface GetProjectsQuery {
 
 export interface ProjectListItemResponse {
   id: string;
-  code: string;
   name: string;
   department: string;
   municipality: string;
@@ -32,26 +31,22 @@ export interface ProjectListItemResponse {
 
 export interface ProjectDetailResponse {
   id: string;
-  code: string;
   name: string;
-  description: string;
   department: string;
   municipality: string;
   locationReference: string;
-  cadastralKey: string;
-  totalAreaM2: number;
+  cadastralKey?: string | null;
+  totalAreaM2?: number | null;
   status: string;
 }
 
 export interface CreateProjectRequest {
-  code: string;
   name: string;
-  description?: string | null;
   department: string;
   municipality: string;
   locationReference: string;
-  cadastralKey: string;
-  totalAreaM2: number;
+  cadastralKey?: string | null;
+  totalAreaM2?: number | null;
   status: string;
 }
 
