@@ -8,10 +8,11 @@ import {
   ViewRef,
   computed,
   inject,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, fromEvent } from 'rxjs';
 import { AuthSessionService } from '../../../core/auth/auth-session.service';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { ApiErrorService } from '../../../core/http/api-error.service';
@@ -61,6 +62,10 @@ export class LotsPageComponent implements OnInit {
   private readonly feedback = inject(AppFeedbackService);
   private readonly authSession = inject(AuthSessionService);
 
+  readonly activeTab = signal<'lots' | 'import'>('lots');
+  readonly openActionsLotId = signal<string | null>(null);
+  readonly actionsMenuPosition = signal<{ top: number; right: number } | null>(null);
+
   readonly canCreate = computed(() => this.authSession.hasPermission('Lots.Create'));
   readonly canUpdate = computed(() => this.authSession.hasPermission('Lots.Update'));
   readonly canChangeStatus = computed(() => this.authSession.hasPermission('Lots.ChangeStatus'));
@@ -93,6 +98,7 @@ export class LotsPageComponent implements OnInit {
     code: ['', [Validators.required, Validators.maxLength(64)]],
     fullCode: ['', [Validators.required, Validators.maxLength(128)]],
     areaM2: [0, [Validators.required, Validators.min(0.000001)]],
+    areaVr2: [null as number | null, [Validators.min(0)]],
     northMeasure: ['', [Validators.min(0)]],
     northBoundary: ['', [Validators.maxLength(256)]],
     southMeasure: ['', [Validators.min(0)]],
@@ -104,17 +110,12 @@ export class LotsPageComponent implements OnInit {
     listPrice: [0, [Validators.required, Validators.min(0)]],
     currency: ['HNL', [Validators.maxLength(16)]],
     status: ['Disponible', [Validators.maxLength(32)]],
-    intendedUse: ['', [Validators.maxLength(128)]],
     notes: ['', [Validators.maxLength(2048)]],
-  });
-
-  readonly importForm = this.formBuilder.nonNullable.group({
-    projectId: ['', [Validators.required]],
   });
 
   lots: ReadonlyArray<LotListItemResponse> = [];
   projectOptions: ReadonlyArray<ProjectListItemResponse> = [];
-  selectedLotDetail: LotDetailResponse | null = null;
+  readonly selectedLotDetail = signal<LotDetailResponse | null>(null);
   importPreview: LotImportPreviewResponse | null = null;
   importConfirmResult: LotImportConfirmResponse | null = null;
   selectedImportFile: File | null = null;
@@ -123,14 +124,15 @@ export class LotsPageComponent implements OnInit {
   totalCount = 0;
   isLoading = false;
   isSubmitting = false;
-  isDetailLoading = false;
+  readonly isDetailLoading = signal(false);
   isPreviewLoading = false;
   isConfirmLoading = false;
   showForm = false;
+  readonly showDetailModal = signal(false);
   editingLotId: string | null = null;
   listError: string | null = null;
   formError: string | null = null;
-  detailError: string | null = null;
+  readonly detailError = signal<string | null>(null);
   importError: string | null = null;
 
   readonly totalPages = computed(() => {
@@ -138,6 +140,10 @@ export class LotsPageComponent implements OnInit {
     const pages = Math.ceil(this.totalCount / pageSize);
     return Math.max(1, pages);
   });
+
+  setTab(tab: 'lots' | 'import'): void {
+    this.activeTab.set(tab);
+  }
 
   get hasProjectSelected(): boolean {
     return !!this.filterForm.controls.projectId.value;
@@ -151,6 +157,15 @@ export class LotsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProjectOptions();
+    fromEvent(document, 'click')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.openActionsLotId() !== null) {
+          this.openActionsLotId.set(null);
+          this.actionsMenuPosition.set(null);
+          this.syncView();
+        }
+      });
   }
 
   onProjectChange(): void {
@@ -215,6 +230,7 @@ export class LotsPageComponent implements OnInit {
       code: '',
       fullCode: '',
       areaM2: 0,
+      areaVr2: null,
       northMeasure: '',
       northBoundary: '',
       southMeasure: '',
@@ -226,7 +242,6 @@ export class LotsPageComponent implements OnInit {
       listPrice: 0,
       currency: 'HNL',
       status: 'Disponible',
-      intendedUse: '',
       notes: '',
     });
   }
@@ -258,26 +273,23 @@ export class LotsPageComponent implements OnInit {
   }
 
   viewLotDetail(lotId: string): void {
-    this.selectedLotDetail = null;
-    this.detailError = null;
-    this.isDetailLoading = true;
+    this.selectedLotDetail.set(null);
+    this.detailError.set(null);
+    this.isDetailLoading.set(true);
+    this.showDetailModal.set(true);
 
     this.inventoryApi
       .getLotById(lotId)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => {
-          this.isDetailLoading = false;
-          this.syncView();
-        }),
-      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (lotDetail) => {
-          this.selectedLotDetail = lotDetail;
+          this.selectedLotDetail.set(lotDetail);
+          this.isDetailLoading.set(false);
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
-          this.detailError = normalizedError.userMessage;
+          this.detailError.set(normalizedError.userMessage);
+          this.isDetailLoading.set(false);
         },
       });
   }
@@ -286,6 +298,28 @@ export class LotsPageComponent implements OnInit {
     this.showForm = false;
     this.editingLotId = null;
     this.formError = null;
+  }
+
+  closeDetail(): void {
+    this.showDetailModal.set(false);
+    this.selectedLotDetail.set(null);
+    this.detailError.set(null);
+  }
+
+  toggleActionsMenu(lotId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.openActionsLotId() === lotId) {
+      this.openActionsLotId.set(null);
+      this.actionsMenuPosition.set(null);
+      return;
+    }
+    const btn = event.currentTarget as HTMLElement;
+    const rect = btn.getBoundingClientRect();
+    const menuHeight = 185;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow < menuHeight ? rect.top - menuHeight - 4 : rect.bottom + 4;
+    this.actionsMenuPosition.set({ top, right: window.innerWidth - rect.right });
+    this.openActionsLotId.set(lotId);
   }
 
   submitLot(): void {
@@ -338,6 +372,8 @@ export class LotsPageComponent implements OnInit {
   }
 
   changeLotStatus(lot: LotListItemResponse, action: LotStatusAction): void {
+    this.openActionsLotId.set(null);
+    this.actionsMenuPosition.set(null);
     if (!this.canChangeStatus()) {
       return;
     }
@@ -453,8 +489,10 @@ export class LotsPageComponent implements OnInit {
   previewImport(): void {
     this.importError = null;
     this.importConfirmResult = null;
-    if (this.importForm.invalid) {
-      this.importForm.markAllAsTouched();
+
+    const projectId = this.filterForm.controls.projectId.value;
+    if (!projectId) {
+      this.importError = 'Selecciona un proyecto en el selector de la cabecera.';
       return;
     }
 
@@ -462,8 +500,6 @@ export class LotsPageComponent implements OnInit {
       this.importError = 'Selecciona un archivo Excel para generar el preview.';
       return;
     }
-
-    const projectId = this.importForm.controls.projectId.value;
     this.isPreviewLoading = true;
 
     this.inventoryApi
@@ -602,9 +638,6 @@ export class LotsPageComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.projectOptions = response.items;
-          if (!this.importForm.controls.projectId.value && response.items.length > 0) {
-            this.importForm.patchValue({ projectId: response.items[0].id });
-          }
           this.syncView();
         },
         error: () => {
@@ -621,6 +654,7 @@ export class LotsPageComponent implements OnInit {
       code: lotDetail.code,
       fullCode: lotDetail.fullCode,
       areaM2: lotDetail.areaM2,
+      areaVr2: lotDetail.areaVr2 ?? null,
       northMeasure: lotDetail.northMeasure?.toString() ?? '',
       northBoundary: lotDetail.northBoundary,
       southMeasure: lotDetail.southMeasure?.toString() ?? '',
@@ -632,7 +666,6 @@ export class LotsPageComponent implements OnInit {
       listPrice: lotDetail.listPrice,
       currency: lotDetail.currency,
       status: lotDetail.status,
-      intendedUse: lotDetail.intendedUse,
       notes: lotDetail.notes ?? '',
     });
   }
@@ -645,6 +678,7 @@ export class LotsPageComponent implements OnInit {
       code: raw.code.trim(),
       fullCode: raw.fullCode.trim(),
       areaM2: Number(raw.areaM2),
+      areaVr2: this.toNullableNumber(raw.areaVr2),
       northMeasure: this.toNullableNumber(raw.northMeasure),
       northBoundary: raw.northBoundary.trim(),
       southMeasure: this.toNullableNumber(raw.southMeasure),
@@ -656,7 +690,6 @@ export class LotsPageComponent implements OnInit {
       listPrice: Number(raw.listPrice),
       currency: this.cleanString(raw.currency) ?? 'HNL',
       status: this.cleanString(raw.status) ?? 'Disponible',
-      intendedUse: raw.intendedUse.trim(),
       notes: this.cleanString(raw.notes),
     };
   }
@@ -669,6 +702,7 @@ export class LotsPageComponent implements OnInit {
       code: raw.code.trim(),
       fullCode: raw.fullCode.trim(),
       areaM2: Number(raw.areaM2),
+      areaVr2: this.toNullableNumber(raw.areaVr2),
       northMeasure: this.toNullableNumber(raw.northMeasure),
       northBoundary: raw.northBoundary.trim(),
       southMeasure: this.toNullableNumber(raw.southMeasure),
@@ -679,7 +713,6 @@ export class LotsPageComponent implements OnInit {
       westBoundary: raw.westBoundary.trim(),
       listPrice: Number(raw.listPrice),
       currency: this.cleanString(raw.currency) ?? 'HNL',
-      intendedUse: raw.intendedUse.trim(),
       notes: this.cleanString(raw.notes),
     };
   }

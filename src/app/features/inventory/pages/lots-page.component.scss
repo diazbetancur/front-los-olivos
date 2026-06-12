@@ -28,6 +28,35 @@
   align-self: flex-end;
 }
 
+.page-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 0.25rem;
+}
+
+.page-tabs button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.page-tabs button:hover {
+  color: #0f172a;
+}
+
+.page-tabs button.active {
+  color: #1d4ed8;
+  border-bottom-color: #1d4ed8;
+}
+
 .import-panel {
   display: grid;
   gap: 0.85rem;
@@ -99,3 +128,200 @@
 .form-panel textarea {
   resize: vertical;
 }
+
+.action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  min-width: 0;
+  padding: 0;
+  border-radius: 6px;
+  border-color: transparent;
+  background: transparent;
+  color: #64748b;
+  transition: color 0.15s, background 0.15s;
+}
+
+.action-icon-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: transparent;
+  color: #0f172a;
+}
+
+.lot-actions-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.lot-actions-menu {
+  position: fixed;
+  z-index: 1000;
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem 0;
+  min-width: 148px;
+  background: #ffffff;
+  border: 1px solid #d7dee7;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+}
+
+.lot-actions-menu li {
+  display: block;
+}
+
+.lot-actions-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 0;
+  background: none;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.87rem;
+  font-weight: 500;
+  color: #0f172a;
+  transition: background 0.12s;
+}
+
+.lot-actions-menu button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: transparent;
+}
+
+.lot-actions-menu button.danger {
+  color: #b91c1c;
+  background: transparent;
+}
+
+.lot-actions-menu button.danger:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.detail-notes {
+  margin: 0.6rem 0 0;
+  color: #334155;
+  font-size: 0.92rem;
+}
+
+/* ── Lot detail modal ── */
+
+.lot-detail-modal {
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.lot-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.lot-detail-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.lot-detail-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 0.25rem;
+}
+
+.lot-detail-code {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.01em;
+}
+
+.lot-detail-body {
+  padding: 1rem 1.25rem 1.25rem;
+  display: grid;
+  gap: 0;
+}
+
+.lot-detail-dl {
+  display: grid;
+  gap: 0;
+}
+
+.lot-detail-row {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  align-items: baseline;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #f8fafc;
+  gap: 0.5rem;
+}
+
+.lot-detail-row:last-child {
+  border-bottom: none;
+}
+
+.lot-detail-dt {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lot-detail-dd {
+  font-size: 0.92rem;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.lot-detail-sep {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.9rem 0 0.4rem;
+}
+
+.lot-detail-notes {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.6;
+  padding-top: 0.4rem;
+}
+
+.lot-detail-placeholder {
+  padding: 2rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+/* Status chips for lots */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.lot-chip-disponible  { background: #dcfce7; color: #166534; }
+.lot-chip-reservado   { background: #fef9c3; color: #854d0e; }
+.lot-chip-contratado  { background: #dbeafe; color: #1e40af; }
+.lot-chip-pagado      { background: #e0e7ff; color: #3730a3; }
+.lot-chip-bloqueado   { background: #fee2e2; color: #991b1b; }
+.lot-chip-anulado     { background: #f1f5f9; color: #334155; }

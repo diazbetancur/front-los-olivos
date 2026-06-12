@@ -32,125 +32,121 @@
     </div>
   </header>
 
-  <section class="filters">
-    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
-      <label>
-        Estado
-        <select formControlName="status">
-          <option value="">Todos</option>
-          @for (status of lotStatuses; track status) {
-            <option [value]="status">{{ status }}</option>
-          }
-        </select>
-      </label>
+  <nav class="page-tabs">
+    <button
+      type="button"
+      [class.active]="activeTab() === 'lots'"
+      (click)="setTab('lots')"
+    >
+      Lotes
+    </button>
+    <button
+      type="button"
+      [class.active]="activeTab() === 'import'"
+      (click)="setTab('import')"
+      *appHasPermission="['Lots.Import']"
+    >
+      Importar
+    </button>
+  </nav>
 
-      <label>
-        Buscar
-        <input type="text" formControlName="search" placeholder="Bloque, numero o uso" />
-      </label>
-
-      <label>
-        Area minima (m2)
-        <input type="number" formControlName="minArea" min="0" step="0.01" />
-      </label>
-
-      <label>
-        Area maxima (m2)
-        <input type="number" formControlName="maxArea" min="0" step="0.01" />
-      </label>
-
-      <label>
-        Precio minimo
-        <input type="number" formControlName="minPrice" min="0" step="0.01" />
-      </label>
-
-      <label>
-        Precio maximo
-        <input type="number" formControlName="maxPrice" min="0" step="0.01" />
-      </label>
-
-      <div class="filter-actions">
-        <button type="submit">Aplicar</button>
-        <button type="button" class="ghost" (click)="clearFilters()">Limpiar</button>
-      </div>
-    </form>
-  </section>
-
-  <section class="import-panel" *appHasPermission="['Lots.Import']">
-    <header>
-      <h3>Importacion Excel</h3>
-      <p>Primero genera preview, luego confirma cuando todas las filas validen.</p>
-    </header>
-
-    <form [formGroup]="importForm" class="import-form">
-      <label>
-        Proyecto destino
-        <select formControlName="projectId">
-          <option value="">Selecciona un proyecto</option>
-          @for (project of projectOptions; track project.id) {
-            <option [value]="project.id">{{ project.name }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        Archivo
-        <input type="file" accept=".xlsx,.xls" (change)="onImportFileSelected($event)" />
-      </label>
-
-      <div class="import-actions">
-        <button type="button" (click)="previewImport()" [disabled]="isPreviewLoading">
-          {{ isPreviewLoading ? 'Procesando...' : 'Generar preview' }}
-        </button>
-        <button
-          type="button"
-          class="ghost"
-          (click)="confirmImport()"
-          [disabled]="isConfirmLoading || !importPreview || importPreview.invalidRows > 0"
-        >
-          {{ isConfirmLoading ? 'Confirmando...' : 'Confirmar importacion' }}
-        </button>
-      </div>
-    </form>
-
-    @if (importError) {
-      <p class="error-text">{{ importError }}</p>
+  @if (activeTab() === 'lots') {
+    @if (listError) {
+      <section class="error-box">
+        <p>{{ listError }}</p>
+      </section>
     }
 
-    @if (importPreview) {
-      <section class="import-summary">
-        <h4>Resultado preview</h4>
-        <p>
-          Preview: {{ importPreview.previewId }} | Expira:
-          {{ importPreview.expiresAtUtc | date: 'short' }}
-        </p>
-        <p>
-          Filas totales: {{ importPreview.totalRows }} | Validas: {{ importPreview.validRows }} |
-          Invalidas: {{ importPreview.invalidRows }}
-        </p>
-      </section>
-
+    @if (!hasProjectSelected) {
+      <app-empty-state
+        title="Selecciona un proyecto"
+        message="Elige un proyecto para ver sus lotes."
+      />
+    } @else if (isLoading) {
+      <app-loading-state message="Cargando lotes..." />
+    } @else if (lots.length === 0) {
+      <app-empty-state title="Sin lotes" message="No hay lotes que coincidan con el filtro actual." />
+    } @else {
       <section class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Fila</th>
               <th>Numero</th>
               <th>Bloque</th>
-              <th>BlockCode</th>
-              <th>Valida</th>
-              <th>Errores</th>
+              <th>Proyecto</th>
+              <th>Area m2</th>
+              <th>Precio</th>
+              <th>Moneda</th>
+              <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            @for (row of importPreview.rows; track row.rowNumber) {
-              <tr [class.invalid-row]="!row.isValid">
-                <td>{{ row.rowNumber }}</td>
-                <td>{{ row.fullCode }}</td>
-                <td>{{ row.code }}</td>
-                <td>{{ row.blockCode ?? '-' }}</td>
-                <td>{{ row.isValid ? 'Si' : 'No' }}</td>
-                <td>{{ row.errors.length > 0 ? row.errors.join(', ') : '-' }}</td>
+            @for (lot of lots; track lot.id) {
+              <tr>
+                <td>{{ lot.fullCode }}</td>
+                <td>{{ lot.code }}</td>
+                <td>{{ resolveProjectLabel(lot.projectId) }}</td>
+                <td>{{ lot.areaM2 }}</td>
+                <td>{{ lot.listPrice | number: '1.2-2' }}</td>
+                <td>{{ lot.currency }}</td>
+                <td>
+                  <span class="chip">{{ lot.status }}</span>
+                </td>
+                <td class="row-actions">
+                  <button
+                    type="button"
+                    class="action-icon-btn"
+                    title="Ver detalle"
+                    (click)="viewLotDetail(lot.id)"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <button
+                    type="button"
+                    class="action-icon-btn"
+                    title="Editar"
+                    (click)="openEditForm(lot.id)"
+                    *appHasPermission="['Lots.Update']"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  @if (canChangeStatus()) {
+                    <div class="lot-actions-dropdown">
+                      <button
+                        type="button"
+                        class="action-icon-btn"
+                        title="Mas acciones"
+                        (click)="toggleActionsMenu(lot.id, $event)"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                      </button>
+                      @if (openActionsLotId() === lot.id && actionsMenuPosition()) {
+                        <ul
+                          class="lot-actions-menu"
+                          [style.top.px]="actionsMenuPosition()!.top"
+                          [style.right.px]="actionsMenuPosition()!.right"
+                        >
+                          <li>
+                            <button type="button" [disabled]="!canRunAction(lot.status, 'reserve') || isSubmitting" (click)="changeLotStatus(lot, 'reserve')">Reservar</button>
+                          </li>
+                          <li>
+                            <button type="button" [disabled]="!canRunAction(lot.status, 'release') || isSubmitting" (click)="changeLotStatus(lot, 'release')">Liberar</button>
+                          </li>
+                          <li>
+                            <button type="button" [disabled]="!canRunAction(lot.status, 'block') || isSubmitting" (click)="changeLotStatus(lot, 'block')">Bloquear</button>
+                          </li>
+                          <li>
+                            <button type="button" [disabled]="!canRunAction(lot.status, 'unblock') || isSubmitting" (click)="changeLotStatus(lot, 'unblock')">Desbloquear</button>
+                          </li>
+                          <li>
+                            <button type="button" class="danger" [disabled]="!canRunAction(lot.status, 'cancel') || isSubmitting" (click)="changeLotStatus(lot, 'cancel')">Anular</button>
+                          </li>
+                        </ul>
+                      }
+                    </div>
+                  }
+                </td>
               </tr>
             }
           </tbody>
@@ -158,172 +154,197 @@
       </section>
     }
 
-    @if (importConfirmResult) {
-      <section class="import-summary">
-        <h4>Resultado confirmacion</h4>
-        <p>
-          Estado: {{ importConfirmResult.isSuccess ? 'Exitoso' : 'Con conflictos' }} | Filas
-          persistidas: {{ importConfirmResult.persistedRows }}
-        </p>
-      </section>
+    @if (hasProjectSelected) {
+      <app-pagination
+        [currentPage]="currentPage"
+        [totalCount]="totalCount"
+        [pageSize]="filterForm.controls.pageSize.value"
+        (pageChange)="loadLots($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      />
     }
-  </section>
 
-  @if (listError) {
-    <section class="error-box">
-      <p>{{ listError }}</p>
-    </section>
   }
 
-  @if (!hasProjectSelected) {
-    <app-empty-state
-      title="Selecciona un proyecto"
-      message="Elige un proyecto para ver sus lotes."
-    />
-  } @else if (isLoading) {
-    <app-loading-state message="Cargando lotes..." />
-  } @else if (lots.length === 0) {
-    <app-empty-state title="Sin lotes" message="No hay lotes que coincidan con el filtro actual." />
-  } @else {
-    <section class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Numero</th>
-            <th>Bloque</th>
-            <th>Proyecto</th>
-            <th>Area m2</th>
-            <th>Precio</th>
-            <th>Moneda</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (lot of lots; track lot.id) {
-            <tr>
-              <td>{{ lot.fullCode }}</td>
-              <td>{{ lot.code }}</td>
-              <td>{{ resolveProjectLabel(lot.projectId) }}</td>
-              <td>{{ lot.areaM2 }}</td>
-              <td>{{ lot.listPrice | number: '1.2-2' }}</td>
-              <td>{{ lot.currency }}</td>
-              <td>
-                <span class="chip">{{ lot.status }}</span>
-              </td>
-              <td class="row-actions">
-                <button type="button" class="ghost" (click)="viewLotDetail(lot.id)">Ver</button>
-                <button
-                  type="button"
-                  class="ghost"
-                  (click)="openEditForm(lot.id)"
-                  *appHasPermission="['Lots.Update']"
-                >
-                  Editar
-                </button>
-                @if (canChangeStatus()) {
-                  <button
-                    type="button"
-                    class="ghost"
-                    (click)="changeLotStatus(lot, 'reserve')"
-                    [disabled]="!canRunAction(lot.status, 'reserve') || isSubmitting"
-                  >
-                    Reservar
-                  </button>
-                  <button
-                    type="button"
-                    class="ghost"
-                    (click)="changeLotStatus(lot, 'release')"
-                    [disabled]="!canRunAction(lot.status, 'release') || isSubmitting"
-                  >
-                    Liberar
-                  </button>
-                  <button
-                    type="button"
-                    class="ghost"
-                    (click)="changeLotStatus(lot, 'block')"
-                    [disabled]="!canRunAction(lot.status, 'block') || isSubmitting"
-                  >
-                    Bloquear
-                  </button>
-                  <button
-                    type="button"
-                    class="ghost"
-                    (click)="changeLotStatus(lot, 'unblock')"
-                    [disabled]="!canRunAction(lot.status, 'unblock') || isSubmitting"
-                  >
-                    Desbloquear
-                  </button>
-                  <button
-                    type="button"
-                    class="danger"
-                    (click)="changeLotStatus(lot, 'cancel')"
-                    [disabled]="!canRunAction(lot.status, 'cancel') || isSubmitting"
-                  >
-                    Anular
-                  </button>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </section>
-  }
+  @if (activeTab() === 'import') {
+    <section class="import-panel" *appHasPermission="['Lots.Import']">
+      <header>
+        <h3>Importacion Excel</h3>
+        <p>Primero genera preview, luego confirma cuando todas las filas validen.</p>
+      </header>
 
-  @if (hasProjectSelected) {
-    <app-pagination
-      [currentPage]="currentPage"
-      [totalCount]="totalCount"
-      [pageSize]="filterForm.controls.pageSize.value"
-      (pageChange)="loadLots($event)"
-      (pageSizeChange)="onPageSizeChange($event)"
-    />
-  }
+      <div class="import-form">
+        <label>
+          Archivo
+          <input type="file" accept=".xlsx,.xls" (change)="onImportFileSelected($event)" />
+        </label>
 
-  @if (isDetailLoading) {
-    <app-loading-state message="Cargando detalle del lote..." />
-  } @else if (detailError) {
-    <section class="error-box">
-      <p>{{ detailError }}</p>
-    </section>
-  } @else if (selectedLotDetail) {
-    <section class="detail-panel">
-      <h3>Detalle del lote</h3>
-      <div class="detail-grid">
-        <div><strong>Numero:</strong> {{ selectedLotDetail.fullCode }}</div>
-        <div><strong>Bloque:</strong> {{ selectedLotDetail.code }}</div>
-        <div><strong>Proyecto:</strong> {{ resolveProjectLabel(selectedLotDetail.projectId) }}</div>
-        <div>
-          <strong>Bloque asociado:</strong>
-          {{ selectedLotDetail.blockId ? 'Asignado' : 'No asignado' }}
-        </div>
-        <div><strong>Area m2:</strong> {{ selectedLotDetail.areaM2 }}</div>
-        <div><strong>Precio:</strong> {{ selectedLotDetail.listPrice | number: '1.2-2' }}</div>
-        <div><strong>Moneda:</strong> {{ selectedLotDetail.currency }}</div>
-        <div>
-          <strong>Estado:</strong> <span class="chip">{{ selectedLotDetail.status }}</span>
-        </div>
-        <div><strong>Uso:</strong> {{ selectedLotDetail.intendedUse }}</div>
-        <div>
-          <strong>Norte:</strong> {{ selectedLotDetail.northMeasure ?? '-' }} /
-          {{ selectedLotDetail.northBoundary || '-' }}
-        </div>
-        <div>
-          <strong>Sur:</strong> {{ selectedLotDetail.southMeasure ?? '-' }} /
-          {{ selectedLotDetail.southBoundary || '-' }}
-        </div>
-        <div>
-          <strong>Este:</strong> {{ selectedLotDetail.eastMeasure ?? '-' }} /
-          {{ selectedLotDetail.eastBoundary || '-' }}
-        </div>
-        <div>
-          <strong>Oeste:</strong> {{ selectedLotDetail.westMeasure ?? '-' }} /
-          {{ selectedLotDetail.westBoundary || '-' }}
+        <div class="import-actions">
+          <button type="button" (click)="previewImport()" [disabled]="isPreviewLoading">
+            {{ isPreviewLoading ? 'Procesando...' : 'Generar preview' }}
+          </button>
+          <button
+            type="button"
+            class="ghost"
+            (click)="confirmImport()"
+            [disabled]="isConfirmLoading || !importPreview || importPreview.invalidRows > 0"
+          >
+            {{ isConfirmLoading ? 'Confirmando...' : 'Confirmar importacion' }}
+          </button>
         </div>
       </div>
-      <p><strong>Notas:</strong> {{ selectedLotDetail.notes || '-' }}</p>
+
+      @if (importError) {
+        <p class="error-text">{{ importError }}</p>
+      }
+
+      @if (importPreview) {
+        <section class="import-summary">
+          <h4>Resultado preview</h4>
+          <p>
+            Preview: {{ importPreview.previewId }} | Expira:
+            {{ importPreview.expiresAtUtc | date: 'short' }}
+          </p>
+          <p>
+            Filas totales: {{ importPreview.totalRows }} | Validas: {{ importPreview.validRows }} |
+            Invalidas: {{ importPreview.invalidRows }}
+          </p>
+        </section>
+
+        <section class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fila</th>
+                <th>Bloque</th>
+                <th>Lote</th>
+                <th>M2</th>
+                <th>VR2</th>
+                <th>Valida</th>
+                <th>Errores</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of importPreview.rows; track row.rowNumber) {
+                <tr [class.invalid-row]="!row.isValid">
+                  <td>{{ row.rowNumber }}</td>
+                  <td>{{ row.blockCode ?? '-' }}</td>
+                  <td>{{ row.code }}</td>
+                  <td>{{ row.areaM2 }}</td>
+                  <td>{{ row.areaVr2 ?? '-' }}</td>
+                  <td>{{ row.isValid ? 'Si' : 'No' }}</td>
+                  <td>{{ row.errors.length > 0 ? row.errors.join(', ') : '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+
+      @if (importConfirmResult) {
+        <section class="import-summary">
+          <h4>Resultado confirmacion</h4>
+          <p>
+            Estado: {{ importConfirmResult.isSuccess ? 'Exitoso' : 'Con conflictos' }} | Filas
+            persistidas: {{ importConfirmResult.persistedRows }}
+          </p>
+        </section>
+      }
     </section>
+  }
+
+  @if (showDetailModal()) {
+    <app-modal (closed)="closeDetail()" [maxWidth]="'500px'">
+      <div class="lot-detail-modal">
+        @if (isDetailLoading()) {
+          <div class="lot-detail-placeholder">
+            <app-loading-state message="Cargando detalle..." />
+          </div>
+        } @else if (detailError(); as err) {
+          <div class="lot-detail-placeholder">
+            <p class="error-text">{{ err }}</p>
+          </div>
+        } @else if (selectedLotDetail(); as detail) {
+          <div class="lot-detail-header">
+            <span class="lot-detail-title">Detalle del lote</span>
+            <button
+              type="button"
+              class="action-icon-btn"
+              (click)="closeDetail()"
+              aria-label="Cerrar"
+              title="Cerrar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="lot-detail-body">
+            <div class="lot-detail-identity">
+              <span class="lot-detail-code">{{ detail.fullCode }}</span>
+              <span class="chip lot-chip-{{ detail.status | lowercase }}">{{ detail.status }}</span>
+            </div>
+
+            <div class="lot-detail-dl">
+              <div class="lot-detail-row">
+                <span class="lot-detail-dt">Proyecto</span>
+                <span class="lot-detail-dd">{{ resolveProjectLabel(detail.projectId) }}</span>
+              </div>
+              <div class="lot-detail-row">
+                <span class="lot-detail-dt">Area m²</span>
+                <span class="lot-detail-dd">{{ detail.areaM2 | number: '1.0-2' }} m²</span>
+              </div>
+              @if (detail.areaVr2) {
+                <div class="lot-detail-row">
+                  <span class="lot-detail-dt">Area vr²</span>
+                  <span class="lot-detail-dd">{{ detail.areaVr2 | number: '1.0-2' }} vr²</span>
+                </div>
+              }
+              <div class="lot-detail-row">
+                <span class="lot-detail-dt">Precio</span>
+                <span class="lot-detail-dd">{{ detail.currency }} {{ detail.listPrice | number: '1.2-2' }}</span>
+              </div>
+            </div>
+
+            <div class="lot-detail-sep">Colindancias</div>
+            <div class="lot-detail-dl">
+              <div class="lot-detail-row">
+                <span class="lot-detail-dt">Norte</span>
+                <span class="lot-detail-dd">
+                  @if (detail.northMeasure) { {{ detail.northMeasure }} m — }
+                  {{ detail.northBoundary || '—' }}
+                </span>
+              </div>
+              <div class="lot-detail-row">
+                <span class="lot-detail-dt">Sur</span>
+                <span class="lot-detail-dd">
+                  @if (detail.southMeasure) { {{ detail.southMeasure }} m — }
+                  {{ detail.southBoundary || '—' }}
+                </span>
+              </div>
+              <div class="lot-detail-row">
+                <span class="lot-detail-dt">Este</span>
+                <span class="lot-detail-dd">
+                  @if (detail.eastMeasure) { {{ detail.eastMeasure }} m — }
+                  {{ detail.eastBoundary || '—' }}
+                </span>
+              </div>
+              <div class="lot-detail-row">
+                <span class="lot-detail-dt">Oeste</span>
+                <span class="lot-detail-dd">
+                  @if (detail.westMeasure) { {{ detail.westMeasure }} m — }
+                  {{ detail.westBoundary || '—' }}
+                </span>
+              </div>
+            </div>
+
+            @if (detail.notes) {
+              <div class="lot-detail-sep">Notas</div>
+              <p class="lot-detail-notes">{{ detail.notes }}</p>
+            }
+          </div>
+        }
+      </div>
+    </app-modal>
   }
 
   @if (showForm) {
@@ -351,7 +372,7 @@
             Proyecto seleccionado: <strong>{{ selectedFormProjectLabel }}</strong>
           </p>
 
-          <div class="grid ui-form-grid-2">
+          <div class="grid ui-form-grid-3">
             <label class="required">
               Bloque
               <input type="text" formControlName="code" class="ui-form-control" />
@@ -365,42 +386,6 @@
               <input type="text" formControlName="fullCode" class="ui-form-control" />
               <small class="ui-field-inline-error" [class.visible]="hasControlError('fullCode')">
                 {{ getControlErrorMessage('fullCode') }}
-              </small>
-            </label>
-
-            <label class="required">
-              Area m2
-              <input
-                type="number"
-                formControlName="areaM2"
-                min="0"
-                step="0.01"
-                class="ui-form-control"
-              />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('areaM2')">
-                {{ getControlErrorMessage('areaM2') }}
-              </small>
-            </label>
-
-            <label class="required">
-              Valor del terreno
-              <input
-                type="number"
-                formControlName="listPrice"
-                min="0"
-                step="0.01"
-                class="ui-form-control"
-              />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('listPrice')">
-                {{ getControlErrorMessage('listPrice') }}
-              </small>
-            </label>
-
-            <label>
-              Moneda
-              <input type="text" formControlName="currency" class="ui-form-control" />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('currency')">
-                {{ getControlErrorMessage('currency') }}
               </small>
             </label>
 
@@ -428,27 +413,62 @@
               </label>
             }
 
-            <label>
-              Uso previsto
-              <input type="text" formControlName="intendedUse" class="ui-form-control" />
-              <small class="ui-field-inline-error" [class.visible]="hasControlError('intendedUse')">
-                {{ getControlErrorMessage('intendedUse') }}
-              </small>
-            </label>
-
-            <label>
-              Medida norte
+            <label class="required">
+              Area m2
               <input
                 type="number"
-                formControlName="northMeasure"
+                formControlName="areaM2"
                 min="0"
                 step="0.01"
                 class="ui-form-control"
               />
-              <small
-                class="ui-field-inline-error"
-                [class.visible]="hasControlError('northMeasure')"
-              >
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('areaM2')">
+                {{ getControlErrorMessage('areaM2') }}
+              </small>
+            </label>
+
+            <label>
+              Area vr2
+              <input
+                type="number"
+                formControlName="areaVr2"
+                min="0"
+                step="0.01"
+                class="ui-form-control"
+              />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('areaVr2')">
+                {{ getControlErrorMessage('areaVr2') }}
+              </small>
+            </label>
+
+            <label class="required">
+              Valor del terreno
+              <input
+                type="number"
+                formControlName="listPrice"
+                min="0"
+                step="0.01"
+                class="ui-form-control"
+              />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('listPrice')">
+                {{ getControlErrorMessage('listPrice') }}
+              </small>
+            </label>
+
+            <label>
+              Moneda
+              <input type="text" formControlName="currency" class="ui-form-control" />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('currency')">
+                {{ getControlErrorMessage('currency') }}
+              </small>
+            </label>
+
+            <h5 class="form-section-title full-width">Colindancias</h5>
+
+            <label>
+              Medida norte
+              <input type="number" formControlName="northMeasure" min="0" step="0.01" class="ui-form-control" />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('northMeasure')">
                 {{ getControlErrorMessage('northMeasure') }}
               </small>
             </label>
@@ -456,27 +476,15 @@
             <label>
               Colindancia norte
               <input type="text" formControlName="northBoundary" class="ui-form-control" />
-              <small
-                class="ui-field-inline-error"
-                [class.visible]="hasControlError('northBoundary')"
-              >
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('northBoundary')">
                 {{ getControlErrorMessage('northBoundary') }}
               </small>
             </label>
 
             <label>
               Medida sur
-              <input
-                type="number"
-                formControlName="southMeasure"
-                min="0"
-                step="0.01"
-                class="ui-form-control"
-              />
-              <small
-                class="ui-field-inline-error"
-                [class.visible]="hasControlError('southMeasure')"
-              >
+              <input type="number" formControlName="southMeasure" min="0" step="0.01" class="ui-form-control" />
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('southMeasure')">
                 {{ getControlErrorMessage('southMeasure') }}
               </small>
             </label>
@@ -484,23 +492,14 @@
             <label>
               Colindancia sur
               <input type="text" formControlName="southBoundary" class="ui-form-control" />
-              <small
-                class="ui-field-inline-error"
-                [class.visible]="hasControlError('southBoundary')"
-              >
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('southBoundary')">
                 {{ getControlErrorMessage('southBoundary') }}
               </small>
             </label>
 
             <label>
               Medida este
-              <input
-                type="number"
-                formControlName="eastMeasure"
-                min="0"
-                step="0.01"
-                class="ui-form-control"
-              />
+              <input type="number" formControlName="eastMeasure" min="0" step="0.01" class="ui-form-control" />
               <small class="ui-field-inline-error" [class.visible]="hasControlError('eastMeasure')">
                 {{ getControlErrorMessage('eastMeasure') }}
               </small>
@@ -509,23 +508,14 @@
             <label>
               Colindancia este
               <input type="text" formControlName="eastBoundary" class="ui-form-control" />
-              <small
-                class="ui-field-inline-error"
-                [class.visible]="hasControlError('eastBoundary')"
-              >
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('eastBoundary')">
                 {{ getControlErrorMessage('eastBoundary') }}
               </small>
             </label>
 
             <label>
               Medida oeste
-              <input
-                type="number"
-                formControlName="westMeasure"
-                min="0"
-                step="0.01"
-                class="ui-form-control"
-              />
+              <input type="number" formControlName="westMeasure" min="0" step="0.01" class="ui-form-control" />
               <small class="ui-field-inline-error" [class.visible]="hasControlError('westMeasure')">
                 {{ getControlErrorMessage('westMeasure') }}
               </small>
@@ -534,10 +524,7 @@
             <label>
               Colindancia oeste
               <input type="text" formControlName="westBoundary" class="ui-form-control" />
-              <small
-                class="ui-field-inline-error"
-                [class.visible]="hasControlError('westBoundary')"
-              >
+              <small class="ui-field-inline-error" [class.visible]="hasControlError('westBoundary')">
                 {{ getControlErrorMessage('westBoundary') }}
               </small>
             </label>
