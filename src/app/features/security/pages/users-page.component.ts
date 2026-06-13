@@ -184,6 +184,19 @@ export class UsersPageComponent implements OnInit {
     this.editingUserId = null;
     this.formSubmitted = false;
     this.formError = null;
+    this.syncView();
+  }
+
+  isRoleSelected(roleId: string): boolean {
+    return this.userForm.controls.roleIds.value.includes(roleId);
+  }
+
+  toggleRole(roleId: string, checked: boolean): void {
+    const current = this.selectedRoleIds();
+    const updated = checked ? [...new Set([...current, roleId])] : current.filter((id) => id !== roleId);
+    this.userForm.controls.roleIds.setValue(updated);
+    this.userForm.controls.roleIds.markAsDirty();
+    this.userForm.controls.roleIds.updateValueAndValidity();
   }
 
   submitUser(): void {
@@ -322,18 +335,6 @@ export class UsersPageComponent implements OnInit {
           this.feedback.showError(normalizedError.userMessage);
         }
       });
-  }
-
-  isRoleSelected(roleId: string): boolean {
-    return this.userForm.controls.roleIds.value.includes(roleId);
-  }
-
-  toggleRole(roleId: string, checked: boolean): void {
-    const current = this.selectedRoleIds();
-    const updated = checked ? [...new Set([...current, roleId])] : current.filter((id) => id !== roleId);
-    this.userForm.controls.roleIds.setValue(updated);
-    this.userForm.controls.roleIds.markAsDirty();
-    this.userForm.controls.roleIds.updateValueAndValidity();
   }
 
   fullName(user: { firstName?: string | null; lastName?: string | null }): string {

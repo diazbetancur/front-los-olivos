@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, ViewRef, computed, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ViewRef, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
@@ -28,6 +28,23 @@ interface PermissionGroup {
   category: string;
   permissions: ReadonlyArray<PermissionResponse>;
 }
+
+// Solo se muestran permisos de funcionalidades activas en el frontend.
+// Blocks.* y Audit.View se excluyen porque no tienen sección visible en el panel admin actual.
+const VISIBLE_PERMISSION_CODES = new Set<string>([
+  'Projects.View', 'Projects.Create', 'Projects.Update', 'Projects.Disable',
+  'Lots.View', 'Lots.Create', 'Lots.Update', 'Lots.ChangeStatus', 'Lots.Import',
+  'Clients.View', 'Clients.Create', 'Clients.Update', 'Clients.Disable',
+  'Contracts.View', 'Contracts.Create', 'Contracts.Approve', 'Contracts.Cancel', 'Contracts.GenerateDocument',
+  'PaymentSchedules.View',
+  'Documents.View',
+  'Payments.View', 'Payments.Register', 'Payments.Apply', 'Payments.Void', 'Payments.ReviewProof',
+  'Receipts.View', 'Receipts.Generate', 'Receipts.Print', 'Receipts.Void',
+  'Users.View', 'Users.Create', 'Users.Update', 'Users.Disable',
+  'Roles.View', 'Roles.Manage',
+  'Permissions.View',
+  'Reports.View',
+]);
 
 @Component({
   selector: 'app-roles-page',
@@ -71,7 +88,7 @@ export class RolesPageComponent implements OnInit {
   permissionCatalog: ReadonlyArray<PermissionResponse> = [];
   selectedRoleDetail: RoleDetailResponse | null = null;
   selectedPermissionCodes: ReadonlyArray<string> = [];
-  permissionSearchTerm = '';
+  private readonly expandedCategories = signal<Set<string>>(new Set());
 
   currentPage = 1;
   totalCount = 0;
@@ -217,7 +234,7 @@ export class RolesPageComponent implements OnInit {
     this.permissionsError = null;
     this.selectedRoleDetail = null;
     this.selectedPermissionCodes = [];
-    this.permissionSearchTerm = '';
+    this.expandedCategories.set(new Set());
     this.isDetailLoading = true;
     this.showRoleDetailModal = true;
 
@@ -252,11 +269,25 @@ export class RolesPageComponent implements OnInit {
     this.permissionsError = null;
     this.selectedRoleDetail = null;
     this.selectedPermissionCodes = [];
-    this.permissionSearchTerm = '';
+    this.expandedCategories.set(new Set());
   }
 
-  setPermissionSearchTerm(value: string): void {
-    this.permissionSearchTerm = value.trim().toLowerCase();
+  isCategoryExpanded(category: string): boolean {
+    return this.expandedCategories().has(category);
+  }
+
+  toggleCategory(category: string): void {
+    const next = new Set(this.expandedCategories());
+    if (next.has(category)) {
+      next.delete(category);
+    } else {
+      next.add(category);
+    }
+    this.expandedCategories.set(next);
+  }
+
+  selectedCountInCategory(permissions: ReadonlyArray<PermissionResponse>): number {
+    return permissions.filter((p) => p.code && this.isPermissionSelected(p.code)).length;
   }
 
   isPermissionSelected(code: string | null | undefined): boolean {
@@ -337,40 +368,15 @@ export class RolesPageComponent implements OnInit {
   }
 
   permissionGroups(): ReadonlyArray<PermissionGroup> {
-    return this.groupPermissions(this.permissionCatalog, this.permissionSearchTerm);
+    return this.groupPermissions(this.permissionCatalog);
   }
 
   selectedPermissionCount(): number {
-    return this.selectedPermissionCodes.length;
+    return this.selectedPermissionCodes.filter((code) => VISIBLE_PERMISSION_CODES.has(code)).length;
   }
 
   visiblePermissionCount(): number {
     return this.permissionGroups().reduce((total, group) => total + group.permissions.length, 0);
-  }
-
-  permissionGroupLabel(category: string): string {
-    const normalized = category.trim();
-    if (!normalized) {
-      return 'General';
-    }
-
-    const aliases: Record<string, string> = {
-      users: 'Users',
-      roles: 'Roles',
-      permissions: 'Permissions',
-      projects: 'Projects',
-      lots: 'Lots',
-      clients: 'Clients',
-      contracts: 'Contracts',
-      payments: 'Payments',
-      receipts: 'Receipts',
-      documents: 'Documents',
-      reports: 'Reports',
-      audit: 'Audit'
-    };
-
-    const key = normalized.toLowerCase();
-    return aliases[key] ?? normalized;
   }
 
   statusClass(isActive: boolean): string {
@@ -432,15 +438,12 @@ export class RolesPageComponent implements OnInit {
       });
   }
 
-  private groupPermissions(source: ReadonlyArray<PermissionResponse>, searchTerm: string): ReadonlyArray<PermissionGroup> {
+  private groupPermissions(source: ReadonlyArray<PermissionResponse>): ReadonlyArray<PermissionGroup> {
     const byCategory = new Map<string, PermissionResponse[]>();
 
     for (const permission of source) {
-      if (searchTerm.length > 0) {
-        const haystack = `${permission.code ?? ''} ${permission.description ?? ''} ${permission.category ?? ''}`.toLowerCase();
-        if (!haystack.includes(searchTerm)) {
-          continue;
-        }
+      if (!permission.code || !VISIBLE_PERMISSION_CODES.has(permission.code)) {
+        continue;
       }
 
       const category = this.resolvePermissionCategory(permission);

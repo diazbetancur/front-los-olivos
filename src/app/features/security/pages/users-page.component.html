@@ -100,17 +100,7 @@
         }
 
         <form [formGroup]="userForm" (ngSubmit)="submitUser()" novalidate>
-          <div class="grid">
-            <h4 class="form-section-title full-width">Identidad</h4>
-
-            <label>
-              <span class="form-label">Correo <span class="required-marker">*</span></span>
-              <input type="email" formControlName="email" />
-              @if (userForm.controls.email.invalid && (userForm.controls.email.touched || formSubmitted)) {
-                <span class="field-error">Ingresa un correo valido.</span>
-              }
-            </label>
-
+          <div class="grid ui-form-grid-2">
             <label>
               <span class="form-label">Nombres <span class="required-marker">*</span></span>
               <input type="text" formControlName="firstName" />
@@ -127,6 +117,14 @@
               }
             </label>
 
+            <label>
+              <span class="form-label">Correo <span class="required-marker">*</span></span>
+              <input type="email" formControlName="email" />
+              @if (userForm.controls.email.invalid && (userForm.controls.email.touched || formSubmitted)) {
+                <span class="field-error">Ingresa un correo valido.</span>
+              }
+            </label>
+
             @if (!editingUserId) {
               <label>
                 <span class="form-label">Contraseña <span class="required-marker">*</span></span>
@@ -135,10 +133,10 @@
                   <span class="field-error">Contraseña minimo 12 caracteres.</span>
                 }
               </label>
-              <app-password-rules [password]="userForm.controls.password.value" />
-            }
-
-            @if (editingUserId) {
+              <div class="full-width">
+                <app-password-rules [password]="userForm.controls.password.value" />
+              </div>
+            } @else {
               <label>
                 <span class="form-label">Nueva contraseña</span>
                 <input type="password" formControlName="newPassword" placeholder="Dejar vacío para no cambiar" />
@@ -146,27 +144,24 @@
                   <span class="field-error">Contraseña minimo 12 caracteres, al menos 3 tipos de caracteres.</span>
                 }
               </label>
-              <app-password-rules [password]="userForm.controls.newPassword.value" />
+              <div class="full-width">
+                <app-password-rules [password]="userForm.controls.newPassword.value" />
+              </div>
+              <label>
+                Estado
+                <select formControlName="isActive">
+                  <option [ngValue]="true">Activo</option>
+                  <option [ngValue]="false">Inactivo</option>
+                </select>
+              </label>
             }
 
-            <label>
-              Estado
-              <select formControlName="isActive">
-                <option [ngValue]="true">Activo</option>
-                <option [ngValue]="false">Inactivo</option>
-              </select>
-            </label>
-
-            <h4 class="form-section-title full-width">Roles asignados</h4>
-
-            <div class="full-width role-picker">
+            <div class="full-width">
+              <span class="form-label">Roles <span class="required-marker">*</span></span>
               @if (isLookupLoading) {
                 <app-loading-state message="Cargando roles..." />
               } @else if (roleOptions.length === 0) {
-                <app-empty-state
-                  title="Sin roles disponibles"
-                  message="No fue posible cargar roles para asignar."
-                />
+                <app-empty-state title="Sin roles disponibles" message="No fue posible cargar roles para asignar." />
               } @else {
                 <div class="role-options">
                   @for (role of roleOptions; track role.id) {
@@ -176,18 +171,16 @@
                         [checked]="isRoleSelected(role.id)"
                         (change)="toggleRole(role.id, $any($event.target).checked)"
                       />
-                      <span class="role-name">{{ role.name }}</span>
-                      <span class="role-meta">{{ role.description || 'Sin descripcion' }}</span>
+                      <span>{{ role.name }}</span>
                     </label>
                   }
                 </div>
               }
+              @if (userForm.controls.roleIds.invalid && (userForm.controls.roleIds.dirty || formSubmitted)) {
+                <p class="field-error">Selecciona al menos un rol para continuar.</p>
+              }
             </div>
           </div>
-
-          @if (userForm.controls.roleIds.invalid && (userForm.controls.roleIds.dirty || formSubmitted)) {
-            <p class="field-error">Selecciona al menos un rol para continuar.</p>
-          }
 
           <div class="form-actions">
             <button type="button" class="btn-secondary" (click)="cancelForm()">Cancelar</button>
