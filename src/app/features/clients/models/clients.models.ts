@@ -7,45 +7,45 @@ export interface PagedResult<TItem> {
 
 export type ClientPersonType = 'Natural' | 'Juridica';
 export type ClientStatus = 'Activo' | 'Inactivo' | 'Bloqueado';
+export type DocumentType = 'Dni' | 'Passport';
+export type MaritalStatus = 'Soltero' | 'Casado' | 'Divorciado' | 'Viudo' | 'UnionLibre';
 
 export interface GetClientsQuery {
   page: number;
   pageSize: number;
   search?: string | null;
   dni?: string | null;
-  contractNumber?: string | null;
+  rtn?: string | null;
+  status?: string | null;
 }
 
 export interface ClientListItemResponse {
   id: string;
   fullName: string;
+  documentType: string;
   dni: string;
   rtn: string;
-  phone: string;
   mobile: string;
   email: string;
-  department: string;
-  municipality: string;
   status: string;
 }
 
 export interface ClientDetailResponse {
   id: string;
+  userId?: string | null;
   personType: string;
   firstName: string;
   lastName: string;
   fullName: string;
+  documentType: string;
   dni: string;
   rtn: string;
   nationality: string;
-  maritalStatus: string;
+  maritalStatus?: string | null;
   birthDate?: string | null;
-  phone: string;
   mobile: string;
   email: string;
   address: string;
-  department: string;
-  municipality: string;
   status: string;
   notes: string;
 }
@@ -54,17 +54,15 @@ export interface CreateClientRequest {
   personType: string;
   firstName: string;
   lastName?: string | null;
+  documentType: string;
   dni?: string | null;
   rtn?: string | null;
   nationality?: string | null;
   maritalStatus?: string | null;
   birthDate?: string | null;
-  phone?: string | null;
   mobile?: string | null;
   email?: string | null;
   address?: string | null;
-  department?: string | null;
-  municipality?: string | null;
   status?: string | null;
   notes?: string | null;
 }
@@ -75,6 +73,7 @@ export interface ClientBeneficiaryResponse {
   id: string;
   clientId: string;
   fullName: string;
+  documentType: string | null;
   dni: string;
   phone: string;
   relationship: string;
@@ -84,6 +83,7 @@ export interface ClientBeneficiaryResponse {
 
 export interface CreateClientBeneficiaryRequest {
   fullName: string;
+  documentType?: string | null;
   dni?: string | null;
   phone?: string | null;
   relationship?: string | null;

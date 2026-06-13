@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, ViewRef, computed, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ViewRef, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
@@ -58,11 +58,22 @@ export class ClientsPageComponent implements OnInit {
 
   readonly personTypes: ReadonlyArray<ClientPersonType> = ['Natural', 'Juridica'];
   readonly statuses: ReadonlyArray<ClientStatus> = ['Activo', 'Inactivo', 'Bloqueado'];
+  readonly documentTypes = [
+    { value: 'Dni', label: 'DNI' },
+    { value: 'Passport', label: 'Pasaporte' }
+  ] as const;
+  readonly maritalStatuses = [
+    { value: 'Soltero', label: 'Soltero/a' },
+    { value: 'Casado', label: 'Casado/a' },
+    { value: 'Divorciado', label: 'Divorciado/a' },
+    { value: 'Viudo', label: 'Viudo/a' },
+    { value: 'UnionLibre', label: 'Unión libre' }
+  ] as const;
 
   readonly filterForm = this.formBuilder.nonNullable.group({
     search: ['', [Validators.maxLength(256)]],
     dni: ['', [Validators.maxLength(32)]],
-    contractNumber: ['', [Validators.maxLength(64)]],
+    rtn: ['', [Validators.maxLength(32)]],
     pageSize: [20, [Validators.min(1), Validators.max(100)]]
   });
 
@@ -70,23 +81,22 @@ export class ClientsPageComponent implements OnInit {
     personType: ['Natural', [Validators.required, Validators.maxLength(32)]],
     firstName: ['', [Validators.required, Validators.maxLength(256)]],
     lastName: ['', [Validators.maxLength(256)]],
+    documentType: ['', [Validators.required]],
     dni: ['', [Validators.maxLength(32), Validators.pattern(/^[A-Za-z0-9-]{6,32}$/)]],
     rtn: ['', [Validators.maxLength(32), Validators.pattern(/^[A-Za-z0-9-]{6,32}$/)]],
     nationality: ['', [Validators.maxLength(64)]],
     maritalStatus: ['', [Validators.maxLength(64)]],
     birthDate: [''],
-    phone: ['', [Validators.maxLength(32), Validators.pattern(/^[0-9+()\-\s]{7,32}$/)]],
     mobile: ['', [Validators.maxLength(32), Validators.pattern(/^[0-9+()\-\s]{7,32}$/)]],
     email: ['', [Validators.maxLength(256), Validators.email]],
     address: ['', [Validators.maxLength(512)]],
-    department: ['', [Validators.maxLength(128)]],
-    municipality: ['', [Validators.maxLength(128)]],
     status: ['Activo', [Validators.maxLength(32)]],
     notes: ['', [Validators.maxLength(2048)]]
   });
 
   readonly beneficiaryForm = this.formBuilder.nonNullable.group({
     fullName: ['', [Validators.required, Validators.maxLength(256)]],
+    documentType: [''],
     dni: ['', [Validators.maxLength(32), Validators.pattern(/^[A-Za-z0-9-]{6,32}$/)]],
     phone: ['', [Validators.maxLength(32), Validators.pattern(/^[0-9+()\-\s]{7,32}$/)]],
     relationship: ['', [Validators.maxLength(128)]],
@@ -101,19 +111,29 @@ export class ClientsPageComponent implements OnInit {
     notes: ['', [Validators.maxLength(2048)]]
   });
 
+  // Detail modal signals
+  readonly showClientDetailModal = signal(false);
+  readonly isDetailLoading = signal(false);
+  readonly selectedClientDetail = signal<ClientDetailResponse | null>(null);
+  readonly detailError = signal<string | null>(null);
+
+  // Form tab signals
+  readonly activeClientTab = signal<'general' | 'beneficiaries' | 'references'>('general');
+  readonly isEditingClient = computed(() => !!this.editingClientId);
+
   clients: ReadonlyArray<ClientListItemResponse> = [];
   beneficiaries: ReadonlyArray<ClientBeneficiaryResponse> = [];
   references: ReadonlyArray<ClientReferenceResponse> = [];
-  selectedClientDetail: ClientDetailResponse | null = null;
 
   currentPage = 1;
   totalCount = 0;
 
   isLoading = false;
   isSubmitting = false;
-  isDetailLoading = false;
   isBeneficiariesLoading = false;
+  beneficiariesLoaded = false;
   isReferencesLoading = false;
+  referencesLoaded = false;
 
   showClientForm = false;
   showBeneficiaryForm = false;
@@ -129,7 +149,6 @@ export class ClientsPageComponent implements OnInit {
 
   listError: string | null = null;
   clientFormError: string | null = null;
-  detailError: string | null = null;
   beneficiariesError: string | null = null;
   referencesError: string | null = null;
   beneficiaryFormError: string | null = null;
@@ -156,7 +175,7 @@ export class ClientsPageComponent implements OnInit {
     this.filterForm.reset({
       search: '',
       dni: '',
-      contractNumber: '',
+      rtn: '',
       pageSize: 20
     });
     this.loadClients(1);
@@ -172,21 +191,24 @@ export class ClientsPageComponent implements OnInit {
     this.clientFormError = null;
     this.clientFormSubmitted = false;
     this.showClientForm = true;
+    this.activeClientTab.set('general');
+    this.beneficiaries = [];
+    this.beneficiariesLoaded = false;
+    this.references = [];
+    this.referencesLoaded = false;
     this.clientForm.reset({
       personType: 'Natural',
       firstName: '',
       lastName: '',
+      documentType: '',
       dni: '',
       rtn: '',
       nationality: '',
       maritalStatus: '',
       birthDate: '',
-      phone: '',
       mobile: '',
       email: '',
       address: '',
-      department: '',
-      municipality: '',
       status: 'Activo',
       notes: ''
     });
@@ -198,6 +220,11 @@ export class ClientsPageComponent implements OnInit {
     this.clientFormError = null;
     this.clientFormSubmitted = false;
     this.showClientForm = true;
+    this.activeClientTab.set('general');
+    this.beneficiaries = [];
+    this.beneficiariesLoaded = false;
+    this.references = [];
+    this.referencesLoaded = false;
     this.isSubmitting = true;
 
     this.clientsApi
@@ -212,6 +239,8 @@ export class ClientsPageComponent implements OnInit {
       .subscribe({
         next: (client) => {
           this.fillClientForm(client);
+          this.loadBeneficiaries(clientId);
+          this.loadReferences(clientId);
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
@@ -226,6 +255,7 @@ export class ClientsPageComponent implements OnInit {
     this.editingClientId = null;
     this.clientFormError = null;
     this.clientFormSubmitted = false;
+    this.activeClientTab.set('general');
   }
 
   submitClient(): void {
@@ -264,10 +294,10 @@ export class ClientsPageComponent implements OnInit {
           });
 
           this.cancelClientForm();
-          this.reloadAfterClientMutation({
-            page: targetPage,
-            clientId: client.id
-          });
+          this.loadClients(targetPage);
+          if (this.showClientDetailModal() && this.selectedClientDetail()?.id === client.id) {
+            this.viewClientDetail(client.id);
+          }
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
@@ -277,32 +307,51 @@ export class ClientsPageComponent implements OnInit {
   }
 
   viewClientDetail(clientId: string): void {
-    this.detailError = null;
-    this.selectedClientDetail = null;
-    this.beneficiaries = [];
-    this.references = [];
-    this.isDetailLoading = true;
+    this.detailError.set(null);
+    this.selectedClientDetail.set(null);
+    this.isDetailLoading.set(true);
+    this.showClientDetailModal.set(true);
 
     this.clientsApi
       .getClientById(clientId)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
-          this.isDetailLoading = false;
+          this.isDetailLoading.set(false);
           this.syncView();
         })
       )
       .subscribe({
         next: (client) => {
-          this.selectedClientDetail = client;
-          this.loadBeneficiaries(client.id);
-          this.loadReferences(client.id);
+          this.selectedClientDetail.set(client);
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
-          this.detailError = normalizedError.userMessage;
+          this.detailError.set(normalizedError.userMessage);
         }
       });
+  }
+
+  closeClientDetail(): void {
+    this.showClientDetailModal.set(false);
+    this.selectedClientDetail.set(null);
+    this.detailError.set(null);
+  }
+
+  setClientTab(tab: 'general' | 'beneficiaries' | 'references'): void {
+    this.activeClientTab.set(tab);
+
+    if (!this.editingClientId) {
+      return;
+    }
+
+    if (tab === 'beneficiaries' && !this.beneficiariesLoaded && !this.isBeneficiariesLoading) {
+      this.loadBeneficiaries(this.editingClientId);
+    }
+
+    if (tab === 'references' && !this.referencesLoaded && !this.isReferencesLoading) {
+      this.loadReferences(this.editingClientId);
+    }
   }
 
   disableClient(client: ClientListItemResponse): void {
@@ -328,10 +377,10 @@ export class ClientsPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.feedback.show({ level: 'success', text: 'Cliente deshabilitado correctamente.' });
-          this.reloadAfterClientMutation({
-            page: this.currentPage,
-            clientId: this.selectedClientDetail?.id === client.id ? client.id : undefined
-          });
+          this.loadClients(this.currentPage);
+          if (this.showClientDetailModal() && this.selectedClientDetail()?.id === client.id) {
+            this.viewClientDetail(client.id);
+          }
         },
         error: (error) => {
           this.handleOperationError(error, 'No fue posible deshabilitar el cliente.');
@@ -340,7 +389,7 @@ export class ClientsPageComponent implements OnInit {
   }
 
   openCreateBeneficiaryForm(): void {
-    if (!this.selectedClientDetail) {
+    if (!this.editingClientId) {
       return;
     }
 
@@ -350,6 +399,7 @@ export class ClientsPageComponent implements OnInit {
     this.showBeneficiaryForm = true;
     this.beneficiaryForm.reset({
       fullName: '',
+      documentType: '',
       dni: '',
       phone: '',
       relationship: '',
@@ -365,6 +415,7 @@ export class ClientsPageComponent implements OnInit {
     this.showBeneficiaryForm = true;
     this.beneficiaryForm.reset({
       fullName: beneficiary.fullName,
+      documentType: beneficiary.documentType ?? '',
       dni: beneficiary.dni,
       phone: beneficiary.phone,
       relationship: beneficiary.relationship,
@@ -381,7 +432,7 @@ export class ClientsPageComponent implements OnInit {
   }
 
   submitBeneficiary(): void {
-    if (!this.selectedClientDetail) {
+    if (!this.editingClientId) {
       return;
     }
 
@@ -398,7 +449,7 @@ export class ClientsPageComponent implements OnInit {
 
     const request$ = this.editingBeneficiaryId
       ? this.clientsApi.updateBeneficiary(this.editingBeneficiaryId, updatePayload)
-      : this.clientsApi.createBeneficiary(this.selectedClientDetail.id, createPayload);
+      : this.clientsApi.createBeneficiary(this.editingClientId, createPayload);
 
     request$
       .pipe(
@@ -417,7 +468,7 @@ export class ClientsPageComponent implements OnInit {
               : 'Beneficiario creado correctamente.'
           });
           this.cancelBeneficiaryForm();
-          this.loadBeneficiaries(this.selectedClientDetail!.id);
+          this.loadBeneficiaries(this.editingClientId!);
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
@@ -450,8 +501,8 @@ export class ClientsPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.feedback.show({ level: 'success', text: 'Beneficiario eliminado correctamente.' });
-          if (this.selectedClientDetail) {
-            this.loadBeneficiaries(this.selectedClientDetail.id);
+          if (this.editingClientId) {
+            this.loadBeneficiaries(this.editingClientId);
           }
         },
         error: (error) => {
@@ -461,7 +512,7 @@ export class ClientsPageComponent implements OnInit {
   }
 
   openCreateReferenceForm(): void {
-    if (!this.selectedClientDetail) {
+    if (!this.editingClientId) {
       return;
     }
 
@@ -498,7 +549,7 @@ export class ClientsPageComponent implements OnInit {
   }
 
   submitReference(): void {
-    if (!this.selectedClientDetail) {
+    if (!this.editingClientId) {
       return;
     }
 
@@ -515,7 +566,7 @@ export class ClientsPageComponent implements OnInit {
 
     const request$ = this.editingReferenceId
       ? this.clientsApi.updateReference(this.editingReferenceId, updatePayload)
-      : this.clientsApi.createReference(this.selectedClientDetail.id, createPayload);
+      : this.clientsApi.createReference(this.editingClientId, createPayload);
 
     request$
       .pipe(
@@ -534,7 +585,7 @@ export class ClientsPageComponent implements OnInit {
               : 'Referencia creada correctamente.'
           });
           this.cancelReferenceForm();
-          this.loadReferences(this.selectedClientDetail!.id);
+          this.loadReferences(this.editingClientId!);
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
@@ -567,8 +618,8 @@ export class ClientsPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.feedback.show({ level: 'success', text: 'Referencia eliminada correctamente.' });
-          if (this.selectedClientDetail) {
-            this.loadReferences(this.selectedClientDetail.id);
+          if (this.editingClientId) {
+            this.loadReferences(this.editingClientId);
           }
         },
         error: (error) => {
@@ -586,7 +637,7 @@ export class ClientsPageComponent implements OnInit {
       pageSize: this.filterForm.controls.pageSize.value,
       search: this.cleanString(this.filterForm.controls.search.value),
       dni: this.cleanString(this.filterForm.controls.dni.value),
-      contractNumber: this.cleanString(this.filterForm.controls.contractNumber.value)
+      rtn: this.cleanString(this.filterForm.controls.rtn.value)
     };
 
     this.clientsApi
@@ -627,6 +678,7 @@ export class ClientsPageComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.beneficiaries = response;
+          this.beneficiariesLoaded = true;
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
@@ -652,6 +704,7 @@ export class ClientsPageComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.references = response;
+          this.referencesLoaded = true;
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
@@ -661,29 +714,20 @@ export class ClientsPageComponent implements OnInit {
       });
   }
 
-  private reloadAfterClientMutation(options: { page: number; clientId?: string }): void {
-    this.loadClients(options.page);
-    if (options.clientId) {
-      this.viewClientDetail(options.clientId);
-    }
-  }
-
   private fillClientForm(client: ClientDetailResponse): void {
     this.clientForm.reset({
       personType: this.normalizePersonType(client.personType),
       firstName: client.firstName ?? '',
       lastName: client.lastName ?? '',
+      documentType: client.documentType ?? '',
       dni: client.dni ?? '',
       rtn: client.rtn ?? '',
       nationality: client.nationality ?? '',
       maritalStatus: client.maritalStatus ?? '',
       birthDate: client.birthDate ?? '',
-      phone: client.phone ?? '',
       mobile: client.mobile ?? '',
       email: client.email ?? '',
       address: client.address ?? '',
-      department: client.department ?? '',
-      municipality: client.municipality ?? '',
       status: this.normalizeStatus(client.status),
       notes: client.notes ?? ''
     });
@@ -715,48 +759,29 @@ export class ClientsPageComponent implements OnInit {
       personType: raw.personType.trim(),
       firstName: raw.firstName.trim(),
       lastName: this.cleanString(raw.lastName),
+      documentType: raw.documentType.trim(),
       dni: this.cleanString(raw.dni),
       rtn: this.cleanString(raw.rtn),
       nationality: this.cleanString(raw.nationality),
       maritalStatus: this.cleanString(raw.maritalStatus),
       birthDate: this.cleanString(raw.birthDate),
-      phone: this.cleanString(raw.phone),
       mobile: this.cleanString(raw.mobile),
       email: this.cleanString(raw.email),
       address: this.cleanString(raw.address),
-      department: this.cleanString(raw.department),
-      municipality: this.cleanString(raw.municipality),
       status: this.cleanString(raw.status),
       notes: this.cleanString(raw.notes)
     };
   }
 
   private toUpdateClientPayload(): UpdateClientRequest {
-    const raw = this.clientForm.getRawValue();
-    return {
-      personType: raw.personType.trim(),
-      firstName: raw.firstName.trim(),
-      lastName: this.cleanString(raw.lastName),
-      dni: this.cleanString(raw.dni),
-      rtn: this.cleanString(raw.rtn),
-      nationality: this.cleanString(raw.nationality),
-      maritalStatus: this.cleanString(raw.maritalStatus),
-      birthDate: this.cleanString(raw.birthDate),
-      phone: this.cleanString(raw.phone),
-      mobile: this.cleanString(raw.mobile),
-      email: this.cleanString(raw.email),
-      address: this.cleanString(raw.address),
-      department: this.cleanString(raw.department),
-      municipality: this.cleanString(raw.municipality),
-      status: this.cleanString(raw.status),
-      notes: this.cleanString(raw.notes)
-    };
+    return this.toCreateClientPayload();
   }
 
   private toCreateBeneficiaryPayload(): CreateClientBeneficiaryRequest {
     const raw = this.beneficiaryForm.getRawValue();
     return {
       fullName: raw.fullName.trim(),
+      documentType: this.cleanString(raw.documentType),
       dni: this.cleanString(raw.dni),
       phone: this.cleanString(raw.phone),
       relationship: this.cleanString(raw.relationship),
@@ -766,15 +791,7 @@ export class ClientsPageComponent implements OnInit {
   }
 
   private toUpdateBeneficiaryPayload(): UpdateClientBeneficiaryRequest {
-    const raw = this.beneficiaryForm.getRawValue();
-    return {
-      fullName: raw.fullName.trim(),
-      dni: this.cleanString(raw.dni),
-      phone: this.cleanString(raw.phone),
-      relationship: this.cleanString(raw.relationship),
-      address: this.cleanString(raw.address),
-      notes: this.cleanString(raw.notes)
-    };
+    return this.toCreateBeneficiaryPayload();
   }
 
   private toCreateReferencePayload(): CreateClientReferenceRequest {
@@ -788,13 +805,7 @@ export class ClientsPageComponent implements OnInit {
   }
 
   private toUpdateReferencePayload(): UpdateClientReferenceRequest {
-    const raw = this.referenceForm.getRawValue();
-    return {
-      fullName: raw.fullName.trim(),
-      phone: this.cleanString(raw.phone),
-      relationshipOrNotes: this.cleanString(raw.relationshipOrNotes),
-      notes: this.cleanString(raw.notes)
-    };
+    return this.toCreateReferencePayload();
   }
 
   private normalizePersonType(rawValue: string): ClientPersonType {
@@ -834,6 +845,31 @@ export class ClientsPageComponent implements OnInit {
 
     const normalized = value.trim();
     return normalized.length === 0 ? null : normalized;
+  }
+
+  hasControlError(controlName: string): boolean {
+    const control = this.clientForm.get(controlName);
+    return !!control && control.invalid && control.touched;
+  }
+
+  getControlErrorMessage(controlName: string): string {
+    const control = this.clientForm.get(controlName);
+    if (!control?.errors || !control.touched) {
+      return '';
+    }
+    if (control.errors['required']) {
+      return 'Este campo es obligatorio.';
+    }
+    if (control.errors['maxlength']) {
+      return 'Supera la longitud permitida.';
+    }
+    if (control.errors['pattern']) {
+      return 'Formato invalido.';
+    }
+    if (control.errors['email']) {
+      return 'Email invalido.';
+    }
+    return 'Valor invalido.';
   }
 
   private syncView(): void {
