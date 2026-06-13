@@ -152,7 +152,7 @@
       <section class="form-panel">
       <header>
         <h3>Recibo manual</h3>
-        <button type="button" class="ghost" (click)="cancelManualForm()">Cerrar</button>
+        <button type="button" class="ghost ui-icon-close-btn" (click)="cancelManualForm()" aria-label="Cerrar" title="Cerrar">×</button>
       </header>
 
       @if (manualError) {
@@ -303,7 +303,7 @@
           <section class="form-panel nested-form">
           <header>
             <h5>Anular recibo</h5>
-            <button type="button" class="ghost" (click)="cancelVoidForm()">Cerrar</button>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelVoidForm()" aria-label="Cerrar" title="Cerrar">×</button>
           </header>
 
           @if (voidError) {

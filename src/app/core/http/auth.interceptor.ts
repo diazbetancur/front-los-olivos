@@ -64,8 +64,10 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
       if (isLoginRequest || isRefreshRequest || isLogoutRequest || isRetriedRequest) {
         authSession.clearSession();
-        feedback.showError('Tu sesion no es valida. Inicia sesion nuevamente.');
-        void redirectToLogin(router);
+        if (!isLoginRequest) {
+          feedback.showError('Tu sesion no es valida. Inicia sesion nuevamente.');
+          void redirectToLogin(router);
+        }
         return throwError(() => error);
       }
 

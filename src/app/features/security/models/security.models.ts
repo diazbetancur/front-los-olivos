@@ -39,7 +39,6 @@ export interface UserDetailResponse {
 }
 
 export interface CreateUserRequest {
-  userName?: string | null;
   email?: string | null;
   firstName?: string | null;
   lastName?: string | null;
@@ -54,6 +53,7 @@ export interface UpdateUserRequest {
   lastName?: string | null;
   roleIds?: ReadonlyArray<string> | null;
   isActive: boolean;
+  newPassword?: string | null;
 }
 
 export interface GetRolesQuery {
@@ -67,6 +67,7 @@ export interface RoleListItemResponse {
   name?: string | null;
   description?: string | null;
   isActive: boolean;
+  isSystem: boolean;
   permissionCount: number;
 }
 
@@ -83,6 +84,7 @@ export interface RoleDetailResponse {
   name?: string | null;
   description?: string | null;
   isActive: boolean;
+  isSystem: boolean;
   permissions?: ReadonlyArray<PermissionResponse> | null;
 }
 

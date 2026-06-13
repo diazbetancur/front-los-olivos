@@ -137,7 +137,7 @@
       <section class="form-panel">
       <header>
         <h3>Nuevo contrato</h3>
-        <button type="button" class="ghost" (click)="cancelCreateForm()">Cerrar</button>
+        <button type="button" class="ghost ui-icon-close-btn" (click)="cancelCreateForm()" aria-label="Cerrar" title="Cerrar">×</button>
       </header>
 
       @if (createFormError) {
@@ -426,7 +426,7 @@
           <section class="form-panel nested-form">
           <header>
             <h5>Cambio de estado</h5>
-            <button type="button" class="ghost" (click)="cancelStatusForm()">Cerrar</button>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelStatusForm()" aria-label="Cerrar" title="Cerrar">×</button>
           </header>
 
           @if (statusError) {
@@ -468,7 +468,7 @@
           <section class="form-panel nested-form">
           <header>
             <h5>Cancelar contrato</h5>
-            <button type="button" class="ghost" (click)="cancelCancelForm()">Cerrar</button>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelCancelForm()" aria-label="Cerrar" title="Cerrar">×</button>
           </header>
 
           @if (cancelError) {

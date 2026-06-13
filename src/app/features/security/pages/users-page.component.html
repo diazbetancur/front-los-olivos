@@ -92,7 +92,7 @@
       <section class="form-panel">
         <header>
           <h3>{{ editingUserId ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
-          <button type="button" class="btn-secondary" (click)="cancelForm()">Cerrar</button>
+          <button type="button" class="btn-secondary ui-icon-close-btn" (click)="cancelForm()" aria-label="Cerrar" title="Cerrar">×</button>
         </header>
 
         @if (formError) {
@@ -102,14 +102,6 @@
         <form [formGroup]="userForm" (ngSubmit)="submitUser()" novalidate>
           <div class="grid">
             <h4 class="form-section-title full-width">Identidad</h4>
-
-            <label>
-              <span class="form-label">Usuario <span class="required-marker">*</span></span>
-              <input type="text" formControlName="userName" [readonly]="!!editingUserId" />
-              @if (userForm.controls.userName.invalid && (userForm.controls.userName.touched || formSubmitted)) {
-                <span class="field-error">Usuario es requerido.</span>
-              }
-            </label>
 
             <label>
               <span class="form-label">Correo <span class="required-marker">*</span></span>
@@ -137,12 +129,24 @@
 
             @if (!editingUserId) {
               <label>
-                <span class="form-label">Password temporal <span class="required-marker">*</span></span>
+                <span class="form-label">Contraseña <span class="required-marker">*</span></span>
                 <input type="password" formControlName="password" />
                 @if (userForm.controls.password.invalid && (userForm.controls.password.touched || formSubmitted)) {
-                  <span class="field-error">Password minimo 8 caracteres.</span>
+                  <span class="field-error">Contraseña minimo 12 caracteres.</span>
                 }
               </label>
+              <app-password-rules [password]="userForm.controls.password.value" />
+            }
+
+            @if (editingUserId) {
+              <label>
+                <span class="form-label">Nueva contraseña</span>
+                <input type="password" formControlName="newPassword" placeholder="Dejar vacío para no cambiar" />
+                @if (userForm.controls.newPassword.invalid && (userForm.controls.newPassword.touched || formSubmitted)) {
+                  <span class="field-error">Contraseña minimo 12 caracteres, al menos 3 tipos de caracteres.</span>
+                }
+              </label>
+              <app-password-rules [password]="userForm.controls.newPassword.value" />
             }
 
             <label>
@@ -201,7 +205,7 @@
       <section class="form-panel detail-modal">
         <header>
           <h3>Detalle de usuario</h3>
-          <button type="button" class="btn-secondary" (click)="closeUserDetailModal()">Cerrar</button>
+          <button type="button" class="btn-secondary ui-icon-close-btn" (click)="closeUserDetailModal()" aria-label="Cerrar" title="Cerrar">×</button>
         </header>
 
         @if (isDetailLoading) {
@@ -249,7 +253,7 @@
       <section class="form-panel confirm-panel">
         <header>
           <h3>Deshabilitar usuario</h3>
-          <button type="button" class="btn-secondary" (click)="cancelDisableUser()" [disabled]="isSubmitting">Cerrar</button>
+          <button type="button" class="btn-secondary ui-icon-close-btn" (click)="cancelDisableUser()" [disabled]="isSubmitting" aria-label="Cerrar" title="Cerrar">×</button>
         </header>
 
         <p>
