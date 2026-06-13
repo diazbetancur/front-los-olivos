@@ -186,7 +186,7 @@
           <section class="form-panel nested-form">
           <header>
             <h5>Aprobar comprobante</h5>
-            <button type="button" class="ghost" (click)="cancelApproveForm()">Cerrar</button>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelApproveForm()" aria-label="Cerrar" title="Cerrar">×</button>
           </header>
 
           @if (approveError) {
@@ -215,7 +215,7 @@
           <section class="form-panel nested-form">
           <header>
             <h5>Rechazar comprobante</h5>
-            <button type="button" class="ghost" (click)="cancelRejectForm()">Cerrar</button>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelRejectForm()" aria-label="Cerrar" title="Cerrar">×</button>
           </header>
 
           @if (rejectError) {

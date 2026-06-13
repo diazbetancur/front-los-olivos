@@ -57,9 +57,11 @@
               <td>{{ role.permissionCount }}</td>
               <td class="row-actions">
                 <button type="button" class="btn-secondary" (click)="viewRoleDetail(role.id)">Ver</button>
-                <button type="button" class="btn-secondary" (click)="openEditForm(role.id)" *appHasPermission="['Roles.Manage']">
-                  Editar
-                </button>
+                @if (!role.isSystem) {
+                  <button type="button" class="btn-secondary" (click)="openEditForm(role.id)" *appHasPermission="['Roles.Manage']">
+                    Editar
+                  </button>
+                }
               </td>
             </tr>
           }
@@ -81,7 +83,7 @@
       <section class="form-panel">
         <header>
           <h3>{{ editingRoleId ? 'Editar rol' : 'Nuevo rol' }}</h3>
-          <button type="button" class="btn-secondary" (click)="cancelForm()">Cerrar</button>
+          <button type="button" class="btn-secondary ui-icon-close-btn" (click)="cancelForm()" aria-label="Cerrar" title="Cerrar">×</button>
         </header>
 
         @if (formError) {
@@ -130,9 +132,7 @@
       <section class="form-panel detail-modal">
         <header>
           <h3>Detalle de rol</h3>
-          <button type="button" class="btn-secondary" (click)="closeRoleDetailModal()" [disabled]="isPermissionsLoading">
-            Cerrar
-          </button>
+          <button type="button" class="btn-secondary ui-icon-close-btn" (click)="closeRoleDetailModal()" [disabled]="isPermissionsLoading" aria-label="Cerrar" title="Cerrar">×</button>
         </header>
 
         @if (isDetailLoading) {
@@ -160,7 +160,7 @@
             <div class="subsection-header">
               <div class="permission-summary">
                 <h4>Permisos del rol</h4>
-                <p>{{ selectedPermissionCount() }} seleccionados de {{ visiblePermissionCount() }} visibles</p>
+                <p>{{ selectedPermissionCount() }} de {{ visiblePermissionCount() }} seleccionados</p>
               </div>
               <div class="inline-actions">
                 <button
@@ -175,16 +175,6 @@
               </div>
             </div>
 
-            <label class="permission-search">
-              <span class="form-label">Buscar permiso</span>
-              <input
-                type="text"
-                placeholder="Codigo, descripcion o categoria"
-                [value]="permissionSearchTerm"
-                (input)="setPermissionSearchTerm($any($event.target).value)"
-              />
-            </label>
-
             @if (permissionsError) {
               <p class="error-text">{{ permissionsError }}</p>
             }
@@ -192,28 +182,35 @@
             @if (!canViewPermissions()) {
               <app-empty-state title="Sin acceso a permisos" message="No tienes permiso para consultar el catalogo." />
             } @else if (permissionGroups().length === 0) {
-              <app-empty-state title="Sin permisos coincidentes" message="No hay permisos disponibles para el filtro actual." />
+              <app-empty-state title="Sin permisos disponibles" message="No hay permisos configurados en el sistema." />
             } @else {
-              <div class="permission-groups">
+              <div class="permission-accordion">
                 @for (group of permissionGroups(); track group.category) {
-                  <section class="permission-group">
-                    <h5>{{ permissionGroupLabel(group.category) }}</h5>
+                  <div class="accordion-item" [class.accordion-item--open]="isCategoryExpanded(group.category)">
+                    <button type="button" class="accordion-header" (click)="toggleCategory(group.category)">
+                      <span class="accordion-label">{{ group.category }}</span>
+                      <span class="accordion-badge">{{ selectedCountInCategory(group.permissions) }}/{{ group.permissions.length }}</span>
+                      <span class="accordion-caret">{{ isCategoryExpanded(group.category) ? '▾' : '▸' }}</span>
+                    </button>
 
-                    <div class="permission-options">
-                      @for (permission of group.permissions; track permission.id) {
-                        <label class="permission-option">
-                          <input
-                            type="checkbox"
-                            [checked]="isPermissionSelected(permission.code)"
-                            [disabled]="!canManage() || isPermissionsLoading || !permission.code"
-                            (change)="togglePermission(permission.code, $any($event.target).checked)"
-                          />
-                          <span class="permission-code">{{ permission.code || 'Sin codigo' }}</span>
-                          <span class="permission-description">{{ permission.description || 'Sin descripcion' }}</span>
-                        </label>
-                      }
-                    </div>
-                  </section>
+                    @if (isCategoryExpanded(group.category)) {
+                      <div class="accordion-body">
+                        <div class="permission-grid">
+                          @for (permission of group.permissions; track permission.id) {
+                            <label class="permission-check" [class.permission-check--disabled]="!canManage() || isPermissionsLoading">
+                              <input
+                                type="checkbox"
+                                [checked]="isPermissionSelected(permission.code)"
+                                [disabled]="!canManage() || isPermissionsLoading || !permission.code"
+                                (change)="togglePermission(permission.code, $any($event.target).checked)"
+                              />
+                              <span>{{ permission.description || permission.code }}</span>
+                            </label>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
                 }
               </div>
             }
@@ -228,9 +225,7 @@
       <section class="form-panel confirm-panel">
         <header>
           <h3>Guardar permisos del rol</h3>
-          <button type="button" class="btn-secondary" (click)="cancelSavePermissions()" [disabled]="isPermissionsLoading">
-            Cerrar
-          </button>
+          <button type="button" class="btn-secondary ui-icon-close-btn" (click)="cancelSavePermissions()" [disabled]="isPermissionsLoading" aria-label="Cerrar" title="Cerrar">×</button>
         </header>
 
         <p>

@@ -9,7 +9,7 @@ import {
   Validators
 } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
+import { finalize, map } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { AuthSessionService } from '../../../core/auth/auth-session.service';
 import { ApiErrorService } from '../../../core/http/api-error.service';
@@ -18,9 +18,9 @@ import { AppModalComponent } from '../../../shared/components/app-modal/app-moda
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { SearchSelectComponent, SearchSelectOption } from '../../../shared/components/search-select/search-select';
 import {
   ApplyPaymentRequest,
-  ClientLookupItem,
   ContractBalanceResponse,
   ContractInstallmentResponse,
   ContractLookupItem,
@@ -32,8 +32,6 @@ import {
   VoidPaymentRequest
 } from '../models/payments.models';
 import { PaymentsApiService } from '../services/payments-api.service';
-
-const LOOKUP_PAGE_SIZE = 100;
 
 type AllocationFormGroup = FormGroup<{
   contractInstallmentId: FormControl<string>;
@@ -52,7 +50,8 @@ type AllocationFormGroup = FormGroup<{
     LoadingStateComponent,
     EmptyStateComponent,
     HasPermissionDirective,
-    PaginationComponent
+    PaginationComponent,
+    SearchSelectComponent
   ],
   templateUrl: './payments-page.component.html',
   styleUrl: './payments-page.component.scss'
@@ -85,9 +84,6 @@ export class PaymentsPageComponent implements OnInit {
     contractId: [''],
     clientId: [''],
     status: [''],
-    search: ['', [Validators.maxLength(256)]],
-    fromDate: [''],
-    toDate: [''],
     pageSize: [20, [Validators.min(1), Validators.max(200)]]
   });
 
@@ -114,8 +110,6 @@ export class PaymentsPageComponent implements OnInit {
 
   payments: ReadonlyArray<PaymentListItemResponse> = [];
   contractPayments: ReadonlyArray<PaymentListItemResponse> = [];
-  contractOptions: ReadonlyArray<ContractLookupItem> = [];
-  clientOptions: ReadonlyArray<ClientLookupItem> = [];
   schedule: ReadonlyArray<ContractInstallmentResponse> = [];
   selectedPaymentDetail: PaymentDetailResponse | null = null;
   selectedContractBalance: ContractBalanceResponse | null = null;
@@ -127,7 +121,13 @@ export class PaymentsPageComponent implements OnInit {
   isSubmitting = false;
   isDetailLoading = false;
   isFinanceLoading = false;
-  isLookupLoading = false;
+
+  clientClearSignal = 0;
+  contractClearSignal = 0;
+  registerClientClearSignal = 0;
+
+  registerClientContracts: ReadonlyArray<ContractLookupItem> = [];
+  isRegisterContractsLoading = false;
 
   showRegisterForm = false;
   showVoidForm = false;
@@ -150,6 +150,71 @@ export class PaymentsPageComponent implements OnInit {
     return Math.max(1, pages);
   });
 
+  readonly searchClientsFn = (query: string) =>
+    this.paymentsApi
+      .getClientsLookup({ page: 1, pageSize: 10, search: query })
+      .pipe(
+        map((result) =>
+          result.items.map((client) => ({
+            id: client.id,
+            label: client.fullName,
+            sublabel: client.dni || client.rtn || undefined
+          } as SearchSelectOption))
+        )
+      );
+
+  readonly searchContractsFn = (query: string) =>
+    this.paymentsApi
+      .getContractsLookup({ page: 1, pageSize: 10, search: query })
+      .pipe(
+        map((result) =>
+          result.items.map((contract) => ({
+            id: contract.id,
+            label: contract.contractNumber,
+            sublabel: contract.clientFullName || undefined
+          } as SearchSelectOption))
+        )
+      );
+
+  onClientSelected(option: SearchSelectOption | null): void {
+    this.filterForm.controls.clientId.setValue(option?.id ?? '');
+    this.applyFilters();
+  }
+
+  onContractSelected(option: SearchSelectOption | null): void {
+    this.filterForm.controls.contractId.setValue(option?.id ?? '');
+    this.applyFilters();
+  }
+
+  onRegisterClientSelected(option: SearchSelectOption | null): void {
+    this.registerForm.controls.clientId.setValue(option?.id ?? '');
+    this.registerForm.controls.contractId.setValue('');
+    this.registerClientContracts = [];
+
+    if (option) {
+      this.loadRegisterClientContracts(option.id);
+    } else {
+      this.registerForm.controls.contractId.disable();
+    }
+  }
+
+  hasRegisterControlError(controlName: string): boolean {
+    const control = this.registerForm.get(controlName);
+    return !!control && control.invalid && (control.touched || this.registerSubmitted);
+  }
+
+  getRegisterControlErrorMessage(controlName: string): string {
+    const control = this.registerForm.get(controlName);
+    if (!control?.errors || (!control.touched && !this.registerSubmitted)) {
+      return '';
+    }
+
+    if (control.errors['required']) return 'Este campo es obligatorio.';
+    if (control.errors['min']) return 'Ingresa un valor mayor que 0.';
+    if (control.errors['maxlength']) return 'Supera la longitud permitida.';
+    return 'Valor invalido.';
+  }
+
   hasRegisterReferences(): boolean {
     const contractId = this.registerForm.controls.contractId.value?.trim();
     const clientId = this.registerForm.controls.clientId.value?.trim();
@@ -161,7 +226,6 @@ export class PaymentsPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadLookupOptions();
     this.loadPayments(1);
   }
 
@@ -174,11 +238,10 @@ export class PaymentsPageComponent implements OnInit {
       contractId: '',
       clientId: '',
       status: '',
-      search: '',
-      fromDate: '',
-      toDate: '',
       pageSize: 20
     });
+    this.clientClearSignal++;
+    this.contractClearSignal++;
     this.loadPayments(1);
   }
 
@@ -203,6 +266,9 @@ export class PaymentsPageComponent implements OnInit {
       concept: '',
       notes: ''
     });
+    this.registerClientClearSignal++;
+    this.registerClientContracts = [];
+    this.registerForm.controls.contractId.disable();
   }
 
   cancelRegisterForm(): void {
@@ -485,21 +551,11 @@ export class PaymentsPageComponent implements OnInit {
   }
 
   resolveContractLabel(contractId: string | null | undefined): string {
-    if (!contractId) {
-      return '-';
-    }
-
-    const option = this.contractOptions.find((item) => item.id === contractId);
-    return option ? option.contractNumber : contractId;
+    return contractId ?? '-';
   }
 
   resolveClientLabel(clientId: string | null | undefined): string {
-    if (!clientId) {
-      return '-';
-    }
-
-    const option = this.clientOptions.find((item) => item.id === clientId);
-    return option ? option.fullName : clientId;
+    return clientId ?? '-';
   }
 
   protected loadPayments(page: number): void {
@@ -510,9 +566,6 @@ export class PaymentsPageComponent implements OnInit {
       contractId: this.cleanString(this.filterForm.controls.contractId.value),
       clientId: this.cleanString(this.filterForm.controls.clientId.value),
       status: this.cleanString(this.filterForm.controls.status.value),
-      search: this.cleanString(this.filterForm.controls.search.value),
-      fromDate: this.cleanString(this.filterForm.controls.fromDate.value),
-      toDate: this.cleanString(this.filterForm.controls.toDate.value),
       page,
       pageSize: this.filterForm.controls.pageSize.value
     };
@@ -539,58 +592,27 @@ export class PaymentsPageComponent implements OnInit {
       });
   }
 
-  private loadLookupOptions(): void {
-    this.isLookupLoading = true;
+  private loadRegisterClientContracts(clientId: string): void {
+    this.isRegisterContractsLoading = true;
+    this.registerForm.controls.contractId.disable();
 
     this.paymentsApi
-      .getContractsLookup({
-        page: 1,
-        pageSize: LOOKUP_PAGE_SIZE,
-        status: null,
-        search: null,
-        projectId: null,
-        lotId: null,
-        clientId: null,
-        fromDate: null,
-        toDate: null
-      })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.contractOptions = response.items;
-          this.syncView();
-        },
-        error: () => {
-          this.contractOptions = [];
-          this.syncView();
-        }
-      });
-
-    this.paymentsApi
-      .getClientsLookup({
-        page: 1,
-        pageSize: LOOKUP_PAGE_SIZE,
-        search: null,
-        dni: null,
-        rtn: null,
-        status: null,
-        department: null,
-        municipality: null
-      })
+      .getContractsLookup({ page: 1, pageSize: 50, clientId })
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
-          this.isLookupLoading = false;
+          this.isRegisterContractsLoading = false;
           this.syncView();
         })
       )
       .subscribe({
         next: (response) => {
-          this.clientOptions = response.items;
+          this.registerClientContracts = response.items;
+          this.registerForm.controls.contractId.enable();
           this.syncView();
         },
         error: () => {
-          this.clientOptions = [];
+          this.registerClientContracts = [];
           this.syncView();
         }
       });

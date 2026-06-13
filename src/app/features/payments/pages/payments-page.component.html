@@ -13,23 +13,23 @@
   <section class="filters">
     <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
       <label>
-        Contrato
-        <select formControlName="contractId">
-          <option value="">Todos</option>
-          @for (contract of contractOptions; track contract.id) {
-            <option [value]="contract.id">{{ contract.contractNumber }}</option>
-          }
-        </select>
+        Cliente
+        <app-search-select
+          [searchFn]="searchClientsFn"
+          placeholder="Buscar por nombre o documento..."
+          [clearSignal]="clientClearSignal"
+          (selectionChange)="onClientSelected($event)"
+        />
       </label>
 
       <label>
-        Cliente
-        <select formControlName="clientId">
-          <option value="">Todos</option>
-          @for (client of clientOptions; track client.id) {
-            <option [value]="client.id">{{ client.fullName }}</option>
-          }
-        </select>
+        Contrato
+        <app-search-select
+          [searchFn]="searchContractsFn"
+          placeholder="Buscar por numero o cliente..."
+          [clearSignal]="contractClearSignal"
+          (selectionChange)="onContractSelected($event)"
+        />
       </label>
 
       <label>
@@ -40,21 +40,6 @@
             <option [value]="status">{{ status }}</option>
           }
         </select>
-      </label>
-
-      <label>
-        Buscar
-        <input type="text" formControlName="search" placeholder="Numero, referencia o concepto" />
-      </label>
-
-      <label>
-        Desde
-        <input type="date" formControlName="fromDate" />
-      </label>
-
-      <label>
-        Hasta
-        <input type="date" formControlName="toDate" />
       </label>
 
       <div class="filter-actions">
@@ -126,7 +111,7 @@
       <section class="form-panel">
       <header>
         <h3>Registrar pago</h3>
-        <button type="button" class="ghost" (click)="cancelRegisterForm()">Cerrar</button>
+        <button type="button" class="ghost ui-icon-close-btn" (click)="cancelRegisterForm()" aria-label="Cerrar" title="Cerrar">×</button>
       </header>
 
       @if (registerError) {
@@ -137,78 +122,110 @@
         <div class="grid">
           <h4 class="form-section-title full-width">Referencia</h4>
 
-          <label>
-            Contrato (opcional)
-            <select formControlName="contractId">
-              <option value="">Sin contrato</option>
-              @for (contract of contractOptions; track contract.id) {
-                <option [value]="contract.id">{{ contract.contractNumber }}</option>
-              }
-            </select>
+          <label class="required">
+            Cliente
+            <app-search-select
+              [searchFn]="searchClientsFn"
+              placeholder="Buscar por nombre o documento..."
+              [clearSignal]="registerClientClearSignal"
+              (selectionChange)="onRegisterClientSelected($event)"
+            />
+            <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('clientId')">
+              {{ getRegisterControlErrorMessage('clientId') }}
+            </small>
           </label>
 
           <label>
-            Cliente (opcional)
-            <select formControlName="clientId">
-              <option value="">Sin cliente</option>
-              @for (client of clientOptions; track client.id) {
-                <option [value]="client.id">{{ client.fullName }}</option>
+            Contrato
+            <select formControlName="contractId" class="ui-form-control">
+              <option value="">
+                {{ isRegisterContractsLoading ? 'Cargando contratos...' : (registerForm.controls.clientId.value ? 'Sin contrato' : 'Selecciona un cliente primero') }}
+              </option>
+              @for (contract of registerClientContracts; track contract.id) {
+                <option [value]="contract.id">{{ contract.contractNumber }}</option>
               }
             </select>
+            <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('contractId')">
+              {{ getRegisterControlErrorMessage('contractId') }}
+            </small>
           </label>
 
           <h4 class="form-section-title full-width">Pago</h4>
 
           <label class="required">
             Fecha pago
-            <input type="date" formControlName="paymentDate" />
+            <input type="date" formControlName="paymentDate" class="ui-form-control" />
+            <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('paymentDate')">
+              {{ getRegisterControlErrorMessage('paymentDate') }}
+            </small>
           </label>
 
           <label class="required">
             Monto
-            <input type="number" formControlName="amount" min="0" step="0.01" />
+            <input type="number" formControlName="amount" min="0" step="0.01" class="ui-form-control" />
+            <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('amount')">
+              {{ getRegisterControlErrorMessage('amount') }}
+            </small>
           </label>
 
           <label>
             Moneda
-            <input type="text" formControlName="currency" />
+            <input type="text" formControlName="currency" class="ui-form-control" />
+            <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('currency')">
+              {{ getRegisterControlErrorMessage('currency') }}
+            </small>
           </label>
 
           <label>
             Metodo de pago
-            <input type="text" formControlName="paymentMethod" />
+            <select formControlName="paymentMethod" class="ui-form-control">
+              <option value="">Seleccionar...</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Efectivo">Efectivo</option>
+            </select>
+            <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('paymentMethod')">
+              {{ getRegisterControlErrorMessage('paymentMethod') }}
+            </small>
           </label>
 
           <label>
             Banco
-            <input type="text" formControlName="bankName" />
+            <input type="text" formControlName="bankName" class="ui-form-control" />
+            <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('bankName')">
+              {{ getRegisterControlErrorMessage('bankName') }}
+            </small>
           </label>
 
           <label>
             Referencia transaccion
-            <input type="text" formControlName="transactionReference" />
+            <input type="text" formControlName="transactionReference" class="ui-form-control" />
+            <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('transactionReference')">
+              {{ getRegisterControlErrorMessage('transactionReference') }}
+            </small>
           </label>
 
           <h4 class="form-section-title full-width">Detalle</h4>
 
           <label class="full-width">
             Concepto
-            <input type="text" formControlName="concept" />
+            <input type="text" formControlName="concept" class="ui-form-control" />
+            <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('concept')">
+              {{ getRegisterControlErrorMessage('concept') }}
+            </small>
           </label>
 
           <label class="full-width">
             Notas
-            <textarea rows="2" formControlName="notes"></textarea>
+            <textarea rows="2" formControlName="notes" class="ui-form-control"></textarea>
+            <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('notes')">
+              {{ getRegisterControlErrorMessage('notes') }}
+            </small>
           </label>
         </div>
 
         @if (!hasRegisterReferences()) {
-          <p class="warning-text">Debes indicar al menos contrato o cliente para registrar el pago.</p>
+          <p class="warning-text">Debes seleccionar un cliente para registrar el pago.</p>
         }
-
-        <p class="field-error" *ngIf="registerForm.invalid && (registerForm.touched || registerSubmitted)">
-          Revisa campos requeridos y formatos antes de guardar.
-        </p>
 
         <div class="form-actions">
           <button type="button" class="ghost" (click)="cancelRegisterForm()">Cancelar</button>
@@ -311,7 +328,7 @@
           <section class="form-panel nested-form">
           <header>
             <h5>Anular pago</h5>
-            <button type="button" class="ghost" (click)="cancelVoidForm()">Cerrar</button>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelVoidForm()" aria-label="Cerrar" title="Cerrar">×</button>
           </header>
 
           @if (voidError) {
@@ -346,7 +363,7 @@
           <section class="form-panel nested-form">
           <header>
             <h5>Aplicar pago a cuotas</h5>
-            <button type="button" class="ghost" (click)="cancelApplyForm()">Cerrar</button>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelApplyForm()" aria-label="Cerrar" title="Cerrar">×</button>
           </header>
 
           @if (applyError) {

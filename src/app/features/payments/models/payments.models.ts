@@ -231,6 +231,7 @@ export interface RejectPaymentProofRequest {
 export interface ContractLookupItem {
   id: string;
   contractNumber: string;
+  clientFullName: string;
   projectId: string;
   lotId: string;
   clientId: string;

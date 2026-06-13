@@ -11,6 +11,7 @@ import { AppModalComponent } from '../../../shared/components/app-modal/app-moda
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { PasswordRulesComponent } from '../components/password-rules/password-rules';
 
 import {
   CreateUserRequest,
@@ -35,7 +36,8 @@ const LOOKUP_PAGE_SIZE = 100;
     LoadingStateComponent,
     EmptyStateComponent,
     HasPermissionDirective,
-    PaginationComponent
+    PaginationComponent,
+    PasswordRulesComponent
   ],
   templateUrl: './users-page.component.html',
   styleUrl: './users-page.component.scss'
@@ -61,11 +63,11 @@ export class UsersPageComponent implements OnInit {
   });
 
   readonly userForm = this.formBuilder.nonNullable.group({
-    userName: ['', [Validators.required, Validators.maxLength(64)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(256)]],
     firstName: ['', [Validators.required, Validators.maxLength(128)]],
     lastName: ['', [Validators.required, Validators.maxLength(128)]],
-    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
+    password: ['', [Validators.required, Validators.minLength(12), Validators.maxLength(256)]],
+    newPassword: ['', [Validators.minLength(12), Validators.maxLength(256)]],
     isActive: [true, [Validators.required]],
     roleIds: this.formBuilder.nonNullable.control<ReadonlyArray<string>>([], [Validators.minLength(1)])
   });
@@ -127,15 +129,14 @@ export class UsersPageComponent implements OnInit {
     this.formSubmitted = false;
     this.showForm = true;
     this.userForm.enable({ emitEvent: false });
-    this.userForm.controls.userName.enable({ emitEvent: false });
-    this.userForm.controls.password.enable({ emitEvent: false });
-    this.userForm.controls.password.setValidators([Validators.required, Validators.minLength(8), Validators.maxLength(128)]);
+    this.userForm.controls.newPassword.disable({ emitEvent: false });
+    this.userForm.controls.password.setValidators([Validators.required, Validators.minLength(12), Validators.maxLength(256)]);
     this.userForm.reset({
-      userName: '',
       email: '',
       firstName: '',
       lastName: '',
       password: '',
+      newPassword: '',
       isActive: true,
       roleIds: []
     });
@@ -150,7 +151,6 @@ export class UsersPageComponent implements OnInit {
     this.isSubmitting = true;
     this.userForm.disable({ emitEvent: false });
 
-    this.userForm.controls.userName.disable({ emitEvent: false });
     this.userForm.controls.password.disable({ emitEvent: false });
     this.userForm.controls.password.clearValidators();
     this.userForm.controls.password.updateValueAndValidity({ emitEvent: false });
@@ -168,14 +168,12 @@ export class UsersPageComponent implements OnInit {
         next: (user) => {
           this.fillForm(user);
           this.userForm.enable({ emitEvent: false });
-          this.userForm.controls.userName.disable({ emitEvent: false });
           this.userForm.controls.password.disable({ emitEvent: false });
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.formError = normalizedError.userMessage;
           this.userForm.enable({ emitEvent: false });
-          this.userForm.controls.userName.disable({ emitEvent: false });
           this.userForm.controls.password.disable({ emitEvent: false });
         }
       });
@@ -186,6 +184,19 @@ export class UsersPageComponent implements OnInit {
     this.editingUserId = null;
     this.formSubmitted = false;
     this.formError = null;
+    this.syncView();
+  }
+
+  isRoleSelected(roleId: string): boolean {
+    return this.userForm.controls.roleIds.value.includes(roleId);
+  }
+
+  toggleRole(roleId: string, checked: boolean): void {
+    const current = this.selectedRoleIds();
+    const updated = checked ? [...new Set([...current, roleId])] : current.filter((id) => id !== roleId);
+    this.userForm.controls.roleIds.setValue(updated);
+    this.userForm.controls.roleIds.markAsDirty();
+    this.userForm.controls.roleIds.updateValueAndValidity();
   }
 
   submitUser(): void {
@@ -326,18 +337,6 @@ export class UsersPageComponent implements OnInit {
       });
   }
 
-  isRoleSelected(roleId: string): boolean {
-    return this.userForm.controls.roleIds.value.includes(roleId);
-  }
-
-  toggleRole(roleId: string, checked: boolean): void {
-    const current = this.selectedRoleIds();
-    const updated = checked ? [...new Set([...current, roleId])] : current.filter((id) => id !== roleId);
-    this.userForm.controls.roleIds.setValue(updated);
-    this.userForm.controls.roleIds.markAsDirty();
-    this.userForm.controls.roleIds.updateValueAndValidity();
-  }
-
   fullName(user: { firstName?: string | null; lastName?: string | null }): string {
     const first = user.firstName?.trim() ?? '';
     const last = user.lastName?.trim() ?? '';
@@ -436,11 +435,11 @@ export class UsersPageComponent implements OnInit {
 
   private fillForm(user: UserDetailResponse): void {
     this.userForm.reset({
-      userName: user.userName?.trim() ?? '',
       email: user.email?.trim() ?? '',
       firstName: user.firstName?.trim() ?? '',
       lastName: user.lastName?.trim() ?? '',
       password: '',
+      newPassword: '',
       isActive: user.isActive,
       roleIds: (user.roles ?? []).map((role) => role.id)
     });
@@ -449,7 +448,6 @@ export class UsersPageComponent implements OnInit {
   private toCreatePayload(): CreateUserRequest {
     const raw = this.userForm.getRawValue();
     return {
-      userName: raw.userName.trim(),
       email: raw.email.trim(),
       firstName: raw.firstName.trim(),
       lastName: raw.lastName.trim(),
@@ -461,12 +459,14 @@ export class UsersPageComponent implements OnInit {
 
   private toUpdatePayload(): UpdateUserRequest {
     const raw = this.userForm.getRawValue();
+    const trimmedNewPassword = raw.newPassword.trim();
     return {
       email: raw.email.trim(),
       firstName: raw.firstName.trim(),
       lastName: raw.lastName.trim(),
       roleIds: this.selectedRoleIds(),
-      isActive: raw.isActive
+      isActive: raw.isActive,
+      newPassword: trimmedNewPassword.length > 0 ? trimmedNewPassword : null
     };
   }
 
