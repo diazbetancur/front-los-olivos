@@ -14,16 +14,20 @@ const AuthPaths = {
 
 async function redirectToLogin(router: Router): Promise<void> {
   const currentUrl = router.url;
+  const loginRoute = currentUrl.startsWith('/client') ? '/client/login' : '/login';
   const shouldPreserveReturnUrl =
-    !!currentUrl && currentUrl !== '/' && !currentUrl.startsWith('/login');
+    !!currentUrl &&
+    currentUrl !== '/' &&
+    !currentUrl.startsWith('/login') &&
+    !currentUrl.startsWith('/client/login');
 
-  const navigationSucceeded = await router.navigate(['/login'], {
+  const navigationSucceeded = await router.navigate([loginRoute], {
     replaceUrl: true,
     queryParams: shouldPreserveReturnUrl ? { returnUrl: currentUrl } : undefined,
   });
 
   if (!navigationSucceeded && typeof globalThis !== 'undefined' && !!globalThis.location) {
-    globalThis.location.assign('/login');
+    globalThis.location.assign(loginRoute);
   }
 }
 
