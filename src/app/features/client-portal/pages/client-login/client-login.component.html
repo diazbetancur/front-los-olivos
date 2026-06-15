@@ -1,0 +1,58 @@
+<section class="auth-page">
+  <div class="auth-card">
+    <div class="card-brand">
+      <span class="brand-mark" aria-hidden="true">O</span>
+      <div>
+        <strong class="brand-name">Los Olivos</strong>
+        <span class="brand-sub">Portal Cliente</span>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <h1 class="auth-title">Bienvenido</h1>
+      <p class="auth-subtitle">Ingresa con tu número de documento</p>
+
+      @if (serverError()) {
+        <div class="alert-error" role="alert">{{ serverError() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="field">
+          <label for="documentNumber">Número de documento</label>
+          <input
+            id="documentNumber"
+            type="text"
+            formControlName="documentNumber"
+            autocomplete="username"
+            placeholder="Ej: 0801199012345"
+          />
+          @if (form.controls.documentNumber.invalid && form.controls.documentNumber.touched) {
+            <span class="field-error">Ingresa tu número de documento.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            autocomplete="current-password"
+          />
+          @if (form.controls.password.invalid && form.controls.password.touched) {
+            <span class="field-error">Ingresa tu contraseña.</span>
+          }
+        </div>
+
+        <button type="submit" class="btn-primary" [disabled]="loading()">
+          {{ loading() ? 'Ingresando...' : 'Ingresar' }}
+        </button>
+      </form>
+
+      <p class="auth-footer">
+        ¿No tienes cuenta?
+        <a routerLink="/client/register">Regístrate aquí</a>
+      </p>
+    </div>
+  </div>
+</section>

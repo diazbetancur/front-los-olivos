@@ -35,6 +35,12 @@ export class AuthSessionService {
     );
   }
 
+  loginWithResponse(response: AuthResponse): Observable<AuthSessionState> {
+    return this.enrichWithCurrentUser(response).pipe(
+      tap((session) => this.setSession(session))
+    );
+  }
+
   logout(): Observable<void> {
     const currentSession = this.sessionState();
     if (!currentSession?.refreshToken) {

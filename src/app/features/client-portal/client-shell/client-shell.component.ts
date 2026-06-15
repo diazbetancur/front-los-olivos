@@ -35,7 +35,7 @@ export class ClientShellComponent {
       .subscribe({
         next: () => {
           this.feedback.clear();
-          void this.router.navigate(['/login']);
+          void this.router.navigate(['/client/login']);
         }
       });
   }

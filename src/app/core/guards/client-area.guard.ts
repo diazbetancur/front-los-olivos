@@ -12,6 +12,6 @@ export const clientAreaGuard: CanActivateFn = () => {
     return true;
   }
 
-  feedback.showError('No tienes acceso al portal cliente.');
-  return router.createUrlTree(['/admin/dashboard']);
+  feedback.showError('Inicia sesión en el portal cliente para continuar.');
+  return router.createUrlTree(['/client/login']);
 };
