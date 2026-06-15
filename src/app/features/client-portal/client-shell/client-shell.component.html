@@ -1,38 +1,32 @@
-<section class="client-layout">
-  <aside class="sidebar">
+<div class="portal-layout">
+  <header class="topbar">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true">C</span>
+      <span class="brand-mark" aria-hidden="true">O</span>
       <div>
-        <h1>Constructora</h1>
-        <p>Portal cliente</p>
+        <span class="brand-name">Los Olivos</span>
+        <span class="brand-sub">Portal cliente</span>
       </div>
     </div>
 
     <nav class="nav" aria-label="Portal cliente">
-      <a routerLink="/client/contracts" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <a routerLink="/client/contracts" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">
         Mis contratos
       </a>
+      <a routerLink="/client/profile" routerLinkActive="active">
+        Mi perfil
+      </a>
     </nav>
-  </aside>
 
-  <section class="main-area">
-    <header class="topbar">
-      <div>
-        <h2>Portal cliente</h2>
-        <p>Consulta tus contratos, cuotas, pagos y recibos.</p>
+    <div class="user-area">
+      <div class="identity">
+        <strong>{{ displayName() }}</strong>
+        <span>{{ currentUser()?.userName }}</span>
       </div>
+      <button type="button" class="logout-btn" (click)="logout()">Cerrar sesión</button>
+    </div>
+  </header>
 
-      <div class="user-area">
-        <div class="identity">
-          <strong>{{ displayName() }}</strong>
-          <span>{{ currentUser()?.userName }}</span>
-        </div>
-        <button type="button" class="logout-btn" (click)="logout()">Cerrar sesion</button>
-      </div>
-    </header>
-
-    <main class="workspace">
-      <router-outlet />
-    </main>
-  </section>
-</section>
+  <main class="workspace">
+    <router-outlet />
+  </main>
+</div>

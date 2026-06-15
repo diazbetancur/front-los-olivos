@@ -147,15 +147,38 @@ export const routes: Routes = [
     ]
   },
   {
+    path: 'client/login',
+    loadComponent: () =>
+      import('./features/client-portal/pages/client-login/client-login.component').then((m) => m.ClientLoginComponent)
+  },
+  {
+    path: 'client/register',
+    loadComponent: () =>
+      import('./features/client-portal/pages/client-register/client-register.component').then(
+        (m) => m.ClientRegisterComponent
+      )
+  },
+  {
     path: 'client',
     loadComponent: () =>
       import('./features/client-portal/client-shell/client-shell.component').then((m) => m.ClientShellComponent),
-    canActivate: [authGuard, clientAreaGuard],
+    canActivate: [clientAreaGuard],
     children: [
       {
         path: '',
         pathMatch: 'full',
         redirectTo: 'contracts'
+      },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/client-portal/pages/client-profile/client-profile.component').then(
+            (m) => m.ClientProfileComponent
+          ),
+        data: {
+          title: 'Mi perfil',
+          description: 'Datos personales y cambio de contraseña.'
+        }
       },
       {
         path: 'contracts',

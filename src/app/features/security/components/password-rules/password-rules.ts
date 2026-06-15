@@ -17,14 +17,13 @@ export class PasswordRulesComponent {
     this._password.set(value ?? '');
   }
 
-  readonly minLength = computed(() => this._password().length >= 12);
+  readonly minLength = computed(() => this._password().length >= 8);
   readonly hasUpper = computed(() => /[A-Z]/.test(this._password()));
   readonly hasLower = computed(() => /[a-z]/.test(this._password()));
-  readonly hasDigit = computed(() => /[0-9]/.test(this._password()));
+  readonly hasDigit = computed(() => /\d/.test(this._password()));
   readonly hasSymbol = computed(() => /[^A-Za-z0-9]/.test(this._password()));
   readonly classCount = computed(() =>
     [this.hasUpper(), this.hasLower(), this.hasDigit(), this.hasSymbol()].filter(Boolean).length
   );
   readonly classesOk = computed(() => this.classCount() >= 3);
-  readonly show = computed(() => this._password().length > 0);
 }
