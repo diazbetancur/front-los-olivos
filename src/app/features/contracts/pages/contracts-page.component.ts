@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, ViewRef, computed, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ViewRef, computed, inject, signal } from '@angular/core';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
@@ -29,6 +29,20 @@ import {
 import { ContractsApiService } from '../services/contracts-api.service';
 
 const LOOKUP_PAGE_SIZE = 100;
+
+function startDateNotBeforeContractDate(group: AbstractControl): ValidationErrors | null {
+  const contractDate = group.get('contractDate')?.value as string;
+  const startDate = group.get('startDate')?.value as string;
+  if (!contractDate || !startDate) return null;
+  return startDate >= contractDate ? null : { startDateBeforeContractDate: true };
+}
+
+function downPaymentNotExceedsAmount(group: AbstractControl): ValidationErrors | null {
+  const contractAmount = Number(group.get('contractAmount')?.value);
+  const downPayment = Number(group.get('downPayment')?.value);
+  if (!Number.isFinite(contractAmount) || !Number.isFinite(downPayment)) return null;
+  return downPayment <= contractAmount ? null : { downPaymentExceedsAmount: true };
+}
 
 @Component({
   selector: 'app-contracts-page',
@@ -83,29 +97,32 @@ export class ContractsPageComponent implements OnInit {
     pageSize: [20, [Validators.min(1), Validators.max(200)]]
   });
 
-  readonly contractForm = this.formBuilder.nonNullable.group({
-    projectId: ['', [Validators.required]],
-    lotId: ['', [Validators.required]],
-    clientId: ['', [Validators.required]],
-    contractDate: [this.todayString(), [Validators.required]],
-    startDate: [this.todayString(), [Validators.required]],
-    termMonths: [12, [Validators.required, Validators.min(1), Validators.max(600)]],
-    contractAmount: [0, [Validators.required, Validators.min(0.01)]],
-    downPayment: [0, [Validators.required, Validators.min(0)]],
-    monthlyPayment: [0, [Validators.required, Validators.min(0.01)]],
-    interestRate: [0, [Validators.required, Validators.min(0)]],
-    lateFeeRate: ['0'],
-    lateFeeRateEnabled: [false],
-    annualTotalCost: [''],
-    purchaseOptionValue: [''],
-    monthlyPaymentDay: [1, [Validators.required, Validators.min(1), Validators.max(31)]],
-    currency: ['HNL', [Validators.maxLength(16)]],
-    specialConditionText: ['', [Validators.maxLength(4096)]],
-    discountPreparedAmount: [''],
-    discountPreparedDeadline: [''],
-    discountPreparedEnabled: [false],
-    notes: ['', [Validators.maxLength(2048)]]
-  });
+  readonly contractForm = this.formBuilder.nonNullable.group(
+    {
+      projectId: ['', [Validators.required]],
+      lotId: ['', [Validators.required]],
+      clientId: ['', [Validators.required]],
+      contractDate: [this.todayString(), [Validators.required]],
+      startDate: [this.todayString(), [Validators.required]],
+      termMonths: [12, [Validators.required, Validators.min(1), Validators.max(600)]],
+      contractAmount: [0, [Validators.required, Validators.min(0.01)]],
+      downPayment: [0, [Validators.required, Validators.min(0)]],
+      monthlyPayment: [0, [Validators.required, Validators.min(0.01)]],
+      interestRate: [0, [Validators.required, Validators.min(0)]],
+      lateFeeRate: ['0'],
+      lateFeeRateEnabled: [false],
+      annualTotalCost: [''],
+      purchaseOptionValue: [''],
+      monthlyPaymentDay: [1, [Validators.required, Validators.min(1), Validators.max(31)]],
+      currency: ['HNL', [Validators.maxLength(16)]],
+      specialConditionText: ['', [Validators.maxLength(4096)]],
+      discountPreparedAmount: [''],
+      discountPreparedDeadline: [''],
+      discountPreparedEnabled: [false],
+      notes: ['', [Validators.maxLength(2048)]]
+    },
+    { validators: [startDateNotBeforeContractDate, downPaymentNotExceedsAmount] }
+  );
 
   readonly statusForm = this.formBuilder.nonNullable.group({
     status: ['Borrador', [Validators.required, Validators.maxLength(32)]],
@@ -143,6 +160,8 @@ export class ContractsPageComponent implements OnInit {
   isDocumentsLoading = false;
   isGeneratingDocuments = false;
   isLookupLoading = false;
+
+  readonly detailTab = signal<'info' | 'schedule'>('info');
 
   showCreateForm = false;
   showStatusForm = false;
@@ -414,7 +433,21 @@ export class ContractsPageComponent implements OnInit {
       });
   }
 
+  closeDetail(): void {
+    this.selectedContractDetail = null;
+    this.detailError = null;
+    this.schedule = [];
+    this.documents = [];
+    this.scheduleError = null;
+    this.documentsError = null;
+    this.showStatusForm = false;
+    this.showCancelForm = false;
+    this.detailTab.set('info');
+    this.syncView();
+  }
+
   viewContractDetail(contractId: string): void {
+    this.detailTab.set('info');
     this.detailError = null;
     this.selectedContractDetail = null;
     this.schedule = [];
