@@ -81,6 +81,17 @@ export class PaymentsPageComponent implements OnInit {
   creditConfirmContext: 'register' | 'approve' = 'register';
   creditConfirmPaymentId: string | null = null;
 
+  selectedProofFile: File | null = null;
+
+  onProofFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.selectedProofFile = input.files?.[0] ?? null;
+  }
+
+  get isTransferMethod(): boolean {
+    return this.registerForm.controls.paymentMethod.value === 'Transferencia';
+  }
+
   readonly paymentStatuses: ReadonlyArray<string> = [
     'Registrado',
     'Aplicado',
@@ -285,12 +296,14 @@ export class PaymentsPageComponent implements OnInit {
     this.registerClientClearSignal++;
     this.registerClientContracts = [];
     this.registerForm.controls.contractId.disable();
+    this.selectedProofFile = null;
   }
 
   cancelRegisterForm(): void {
     this.showRegisterForm = false;
     this.registerSubmitted = false;
     this.registerError = null;
+    this.selectedProofFile = null;
   }
 
   submitRegisterPayment(confirmCreditBalance = false): void {
@@ -298,6 +311,42 @@ export class PaymentsPageComponent implements OnInit {
     this.registerError = null;
     if (this.registerForm.invalid || !this.hasRegisterReferences()) {
       this.registerForm.markAllAsTouched();
+      return;
+    }
+
+    if (this.isTransferMethod) {
+      if (!this.selectedProofFile) {
+        this.registerError = 'Debes adjuntar el comprobante de la transferencia.';
+        return;
+      }
+      const raw = this.registerForm.getRawValue();
+      const fd = new FormData();
+      if (raw.contractId) fd.append('contractId', raw.contractId);
+      if (raw.clientId) fd.append('clientId', raw.clientId);
+      fd.append('paymentDate', raw.paymentDate);
+      fd.append('amount', String(raw.amount));
+      fd.append('currency', raw.currency ?? 'HNL');
+      if (raw.bankName) fd.append('bankName', raw.bankName);
+      if (raw.transactionReference) fd.append('transactionReference', raw.transactionReference);
+      if (raw.concept) fd.append('concept', raw.concept);
+      if (raw.notes) fd.append('notes', raw.notes);
+      fd.append('file', this.selectedProofFile);
+
+      this.isSubmitting = true;
+      this.paymentsApi.registerTransferPayment(fd)
+        .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isSubmitting = false; this.changeDetectorRef.markForCheck(); }))
+        .subscribe({
+          next: () => {
+            this.feedback.showSuccess('Transferencia registrada. Queda pendiente de aprobacion.');
+            this.cancelRegisterForm();
+            this.reloadAfterMutation({ page: 1 });
+          },
+          error: (error) => {
+            const normalized = this.apiErrorService.normalize(error);
+            this.registerError = normalized.userMessage;
+            this.feedback.showError(normalized.userMessage);
+          }
+        });
       return;
     }
 

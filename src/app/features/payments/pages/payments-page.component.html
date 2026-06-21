@@ -188,6 +188,16 @@
             </small>
           </label>
 
+          @if (isTransferMethod) {
+            <label class="full-width">
+              <span class="required-label">Comprobante (PDF o imagen) *</span>
+              <input type="file" class="ui-form-control" accept="application/pdf,image/png,image/jpeg" (change)="onProofFileSelected($event)" />
+              <small class="ui-field-inline-error" [class.visible]="registerSubmitted && !selectedProofFile">
+                Adjunta el comprobante de la transferencia.
+              </small>
+            </label>
+          }
+
           <label>
             Banco
             <input type="text" formControlName="bankName" class="ui-form-control" />

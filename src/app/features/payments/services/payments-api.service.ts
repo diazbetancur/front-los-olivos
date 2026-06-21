@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClientService } from '../../../core/http/api-client.service';
@@ -43,7 +44,10 @@ interface GetClientsLookupQuery {
 
 @Injectable({ providedIn: 'root' })
 export class PaymentsApiService {
-  constructor(private readonly apiClient: ApiClientService) {}
+  constructor(
+    private readonly apiClient: ApiClientService,
+    private readonly httpClient: HttpClient
+  ) {}
 
   getPayments(query: GetPaymentsQuery): Observable<PagedResult<PaymentListItemResponse>> {
     return this.apiClient.get<PagedResult<PaymentListItemResponse>>('/api/v1/admin/payments', {
@@ -53,6 +57,11 @@ export class PaymentsApiService {
 
   registerPayment(request: RegisterPaymentRequest): Observable<PaymentApplyResultResponse> {
     return this.apiClient.post<RegisterPaymentRequest, PaymentApplyResultResponse>('/api/v1/admin/payments', request);
+  }
+
+  // POST /api/v1/admin/payments/transfer (multipart)
+  registerTransferPayment(form: FormData): Observable<PaymentDetailResponse> {
+    return this.httpClient.post<PaymentDetailResponse>('/api/v1/admin/payments/transfer', form);
   }
 
   getPaymentById(paymentId: string): Observable<PaymentDetailResponse> {
