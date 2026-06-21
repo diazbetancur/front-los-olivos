@@ -69,6 +69,7 @@ export class PaymentsPageComponent implements OnInit {
   readonly canRegister = computed(() => this.authSession.hasPermission('Payments.Register'));
   readonly canApply = computed(() => this.authSession.hasPermission('Payments.Apply'));
   readonly canVoid = computed(() => this.authSession.hasPermission('Payments.Void'));
+  readonly canReview = computed(() => this.authSession.hasPermission('Payments.ReviewProof'));
   readonly canViewSchedule = computed(() => this.authSession.hasPermission('PaymentSchedules.View'));
   readonly canViewContracts = computed(() => this.authSession.hasPermission('Contracts.View'));
   readonly canViewClients = computed(() => this.authSession.hasPermission('Clients.View'));
@@ -115,6 +116,13 @@ export class PaymentsPageComponent implements OnInit {
   readonly voidForm = this.formBuilder.nonNullable.group({
     reason: ['', [Validators.required, Validators.maxLength(1024)]]
   });
+
+  readonly rejectForm = this.formBuilder.nonNullable.group({
+    reason: ['', [Validators.required, Validators.maxLength(1024)]]
+  });
+  showRejectForm = false;
+  rejectSubmitted = false;
+  rejectError: string | null = null;
 
   payments: ReadonlyArray<PaymentListItemResponse> = [];
   contractPayments: ReadonlyArray<PaymentListItemResponse> = [];
@@ -357,8 +365,58 @@ export class PaymentsPageComponent implements OnInit {
     this.creditConfirmPaymentId = null;
   }
 
-  // Stub — implemented in Task 3
-  approvePayment(_paymentId: string, _confirmCreditBalance = false): void { /* implemented in Task 3 */ }
+  approvePayment(paymentId: string, confirmCreditBalance = false): void {
+    this.creditConfirmPaymentId = paymentId;
+    this.isSubmitting = true;
+    this.paymentsApi
+      .approvePayment(paymentId, { confirmCreditBalance })
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isSubmitting = false; this.changeDetectorRef.markForCheck(); }))
+      .subscribe({
+        next: (result) => this.handleApplyResult(result, 'approve'),
+        error: (error) => {
+          const normalized = this.apiErrorService.normalize(error);
+          this.feedback.showError(normalized.userMessage);
+        }
+      });
+  }
+
+  openRejectForm(): void {
+    this.rejectSubmitted = false;
+    this.rejectError = null;
+    this.rejectForm.reset({ reason: '' });
+    this.showRejectForm = true;
+  }
+
+  cancelRejectForm(): void {
+    this.showRejectForm = false;
+  }
+
+  submitRejectPayment(): void {
+    this.rejectSubmitted = true;
+    this.rejectError = null;
+    const paymentId = this.selectedPaymentDetail?.id;
+    if (!paymentId || this.rejectForm.invalid) {
+      this.rejectForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.paymentsApi
+      .rejectPayment(paymentId, { reason: this.rejectForm.getRawValue().reason })
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isSubmitting = false; this.changeDetectorRef.markForCheck(); }))
+      .subscribe({
+        next: () => {
+          this.feedback.showSuccess('Pago rechazado.');
+          this.cancelRejectForm();
+          this.reloadAfterMutation({ page: this.currentPage, paymentId });
+        },
+        error: (error) => {
+          const normalized = this.apiErrorService.normalize(error);
+          this.rejectError = normalized.userMessage;
+          this.feedback.showError(normalized.userMessage);
+        }
+      });
+  }
 
   viewPaymentDetail(paymentId: string): void {
     this.detailError = null;

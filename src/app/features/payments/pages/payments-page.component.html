@@ -176,7 +176,7 @@
             </small>
           </label>
 
-          <label class="required">
+          <label>
             <span class="required-label">Metodo de pago *</span>
             <select formControlName="paymentMethod" class="ui-form-control">
               @for (method of paymentMethods; track method) {
@@ -341,6 +341,14 @@
         >
           Anular pago
         </button>
+        @if (detail.status === 'PendienteRevision') {
+          <button type="button" (click)="approvePayment(detail.id)" [disabled]="isSubmitting" *appHasPermission="['Payments.ReviewProof']">
+            Aprobar pago
+          </button>
+          <button type="button" class="danger" (click)="openRejectForm()" [disabled]="isSubmitting" *appHasPermission="['Payments.ReviewProof']">
+            Rechazar pago
+          </button>
+        }
       </section>
 
       @if (showVoidForm) {
@@ -433,6 +441,34 @@
               <button type="submit" [disabled]="isSubmitting">Aplicar pago</button>
             </div>
           </form>
+          </section>
+        </app-modal>
+      }
+
+      @if (showRejectForm) {
+        <app-modal (closed)="cancelRejectForm()">
+          <section class="form-panel nested-form">
+            <header>
+              <h3>Rechazar pago</h3>
+              <button type="button" class="ghost ui-icon-close-btn" (click)="cancelRejectForm()">×</button>
+            </header>
+            @if (rejectError) {
+              <p class="error-text">{{ rejectError }}</p>
+            }
+            <form [formGroup]="rejectForm" (ngSubmit)="submitRejectPayment()" novalidate>
+              <label class="full-width">
+                <span class="required-label">Motivo del rechazo *</span>
+                <textarea rows="3" formControlName="reason" class="ui-form-control"></textarea>
+                <small class="ui-field-inline-error"
+                       [class.visible]="rejectForm.controls.reason.invalid && (rejectForm.controls.reason.touched || rejectSubmitted)">
+                  El motivo es obligatorio.
+                </small>
+              </label>
+              <div class="form-actions">
+                <button type="button" class="ghost" (click)="cancelRejectForm()">Cancelar</button>
+                <button type="submit" class="danger" [disabled]="isSubmitting || rejectForm.invalid">Confirmar rechazo</button>
+              </div>
+            </form>
           </section>
         </app-modal>
       }
