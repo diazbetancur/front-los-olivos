@@ -26,6 +26,7 @@ import {
   ContractLookupItem,
   GetPaymentsQuery,
   PagedResult,
+  PaymentApplyResultResponse,
   PaymentDetailResponse,
   PaymentListItemResponse,
   RegisterPaymentRequest,
@@ -72,6 +73,13 @@ export class PaymentsPageComponent implements OnInit {
   readonly canViewContracts = computed(() => this.authSession.hasPermission('Contracts.View'));
   readonly canViewClients = computed(() => this.authSession.hasPermission('Clients.View'));
 
+  readonly paymentMethods = ['Efectivo', 'Transferencia'] as const;
+
+  showCreditConfirm = false;
+  creditConfirmAmount = 0;
+  creditConfirmContext: 'register' | 'approve' = 'register';
+  creditConfirmPaymentId: string | null = null;
+
   readonly paymentStatuses: ReadonlyArray<string> = [
     'Registrado',
     'Aplicado',
@@ -93,7 +101,7 @@ export class PaymentsPageComponent implements OnInit {
     paymentDate: [this.todayString(), [Validators.required]],
     amount: [0, [Validators.required, Validators.min(0.01)]],
     currency: ['HNL', [Validators.maxLength(16)]],
-    paymentMethod: ['', [Validators.maxLength(64)]],
+    paymentMethod: ['Efectivo', [Validators.required]],
     bankName: ['', [Validators.maxLength(128)]],
     transactionReference: ['', [Validators.maxLength(128)]],
     concept: ['', [Validators.maxLength(256)]],
@@ -260,7 +268,7 @@ export class PaymentsPageComponent implements OnInit {
       paymentDate: this.todayString(),
       amount: 0,
       currency: 'HNL',
-      paymentMethod: '',
+      paymentMethod: 'Efectivo',
       bankName: '',
       transactionReference: '',
       concept: '',
@@ -277,53 +285,80 @@ export class PaymentsPageComponent implements OnInit {
     this.registerError = null;
   }
 
-  submitRegisterPayment(): void {
+  submitRegisterPayment(confirmCreditBalance = false): void {
     this.registerSubmitted = true;
     this.registerError = null;
-
-    if (this.registerForm.invalid) {
+    if (this.registerForm.invalid || !this.hasRegisterReferences()) {
       this.registerForm.markAllAsTouched();
       return;
     }
 
-    if (!this.hasRegisterReferences()) {
-      this.registerError = 'Debes seleccionar al menos contrato o cliente para registrar el pago.';
-      return;
-    }
+    const raw = this.registerForm.getRawValue();
+    const request: RegisterPaymentRequest = {
+      contractId: raw.contractId || null,
+      clientId: raw.clientId || null,
+      paymentDate: raw.paymentDate,
+      amount: raw.amount,
+      currency: raw.currency || null,
+      paymentMethod: raw.paymentMethod,
+      bankName: raw.bankName || null,
+      transactionReference: raw.transactionReference || null,
+      concept: raw.concept || null,
+      notes: raw.notes || null,
+      confirmCreditBalance
+    };
 
-    const payload = this.toRegisterPaymentPayload();
     this.isSubmitting = true;
-
     this.paymentsApi
-      .registerPayment(payload)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => {
-          this.isSubmitting = false;
-          this.syncView();
-        })
-      )
+      .registerPayment(request)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isSubmitting = false; this.changeDetectorRef.markForCheck(); }))
       .subscribe({
-        next: (response) => {
-          this.feedback.show({ level: 'success', text: 'Pago registrado correctamente.' });
-          this.cancelRegisterForm();
-          this.reloadAfterMutation({
-            page: 1,
-            paymentId: response.id,
-            contractId: response.contractId ?? undefined
-          });
-        },
+        next: (result) => this.handleApplyResult(result, 'register'),
         error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.registerError = normalizedError.userMessage;
-          if (normalizedError.status === 409) {
-            this.feedback.showError(`Conflicto al registrar pago: ${normalizedError.userMessage}`);
-            return;
-          }
-          this.feedback.showError(normalizedError.userMessage);
+          const normalized = this.apiErrorService.normalize(error);
+          this.registerError = normalized.userMessage;
+          this.feedback.showError(normalized.userMessage);
         }
       });
   }
+
+  private handleApplyResult(result: PaymentApplyResultResponse, context: 'register' | 'approve'): void {
+    if (result.requiresCreditConfirmation) {
+      this.creditConfirmAmount = result.projectedCreditBalance;
+      this.creditConfirmContext = context;
+      // En 'register' aún no hay paymentId; en 'approve' lo setea el método approve antes de llamar.
+      this.showCreditConfirm = true;
+      return;
+    }
+
+    if (context === 'register') {
+      const message = result.payment?.status === 'Aplicado'
+        ? 'Pago aplicado y recibo emitido.'
+        : 'Pago registrado. Queda pendiente de aprobacion.';
+      this.feedback.showSuccess(message);
+      this.cancelRegisterForm();
+    } else {
+      this.feedback.showSuccess('Pago aprobado: aplicado y recibo emitido.');
+    }
+    this.reloadAfterMutation({ page: context === 'register' ? 1 : this.currentPage, paymentId: result.payment?.id ?? undefined });
+  }
+
+  confirmCreditBalance(): void {
+    this.showCreditConfirm = false;
+    if (this.creditConfirmContext === 'register') {
+      this.submitRegisterPayment(true);
+    } else if (this.creditConfirmPaymentId) {
+      this.approvePayment(this.creditConfirmPaymentId, true);
+    }
+  }
+
+  cancelCreditConfirm(): void {
+    this.showCreditConfirm = false;
+    this.creditConfirmPaymentId = null;
+  }
+
+  // Stub — implemented in Task 3
+  approvePayment(_paymentId: string, _confirmCreditBalance = false): void { /* implemented in Task 3 */ }
 
   viewPaymentDetail(paymentId: string): void {
     this.detailError = null;

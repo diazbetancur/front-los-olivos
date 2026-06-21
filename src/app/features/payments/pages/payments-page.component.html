@@ -176,12 +176,12 @@
             </small>
           </label>
 
-          <label>
-            Metodo de pago
+          <label class="required">
+            <span class="required-label">Metodo de pago *</span>
             <select formControlName="paymentMethod" class="ui-form-control">
-              <option value="">Seleccionar...</option>
-              <option value="Transferencia">Transferencia</option>
-              <option value="Efectivo">Efectivo</option>
+              @for (method of paymentMethods; track method) {
+                <option [value]="method">{{ method }}</option>
+              }
             </select>
             <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('paymentMethod')">
               {{ getRegisterControlErrorMessage('paymentMethod') }}
@@ -237,6 +237,26 @@
           </button>
         </div>
       </form>
+      </section>
+    </app-modal>
+  }
+
+  @if (showCreditConfirm) {
+    <app-modal (closed)="cancelCreditConfirm()">
+      <section class="form-panel">
+        <header>
+          <h3>Confirmar saldo a favor</h3>
+          <button type="button" class="ghost ui-icon-close-btn" (click)="cancelCreditConfirm()">×</button>
+        </header>
+        <p>
+          Este pago dejaria un <strong>saldo a favor de {{ creditConfirmAmount | number: '1.2-2' }}</strong>
+          (el monto excede lo que falta del contrato). ¿Deseas continuar?
+        </p>
+        <p class="warning-text">Si fue un error de tipeo, cancela y corrige el monto.</p>
+        <div class="form-actions">
+          <button type="button" class="ghost" (click)="cancelCreditConfirm()">Cancelar</button>
+          <button type="button" (click)="confirmCreditBalance()" [disabled]="isSubmitting">Confirmar y aplicar</button>
+        </div>
       </section>
     </app-modal>
   }
