@@ -335,6 +335,9 @@ export class PaymentsPageComponent implements OnInit {
       this.creditConfirmAmount = result.projectedCreditBalance;
       this.creditConfirmContext = context;
       // En 'register' aún no hay paymentId; en 'approve' lo setea el método approve antes de llamar.
+      if (context === 'register') {
+        this.showRegisterForm = false;
+      }
       this.showCreditConfirm = true;
       return;
     }
@@ -346,6 +349,7 @@ export class PaymentsPageComponent implements OnInit {
       this.feedback.showSuccess(message);
       this.cancelRegisterForm();
     } else {
+      this.showRejectForm = false;
       this.feedback.showSuccess('Pago aprobado: aplicado y recibo emitido.');
     }
     this.reloadAfterMutation({ page: context === 'register' ? 1 : this.currentPage, paymentId: result.payment?.id ?? undefined });
@@ -363,6 +367,9 @@ export class PaymentsPageComponent implements OnInit {
   cancelCreditConfirm(): void {
     this.showCreditConfirm = false;
     this.creditConfirmPaymentId = null;
+    if (this.creditConfirmContext === 'register') {
+      this.showRegisterForm = true;
+    }
   }
 
   approvePayment(paymentId: string, confirmCreditBalance = false): void {
@@ -389,6 +396,7 @@ export class PaymentsPageComponent implements OnInit {
 
   cancelRejectForm(): void {
     this.showRejectForm = false;
+    this.rejectError = null;
   }
 
   submitRejectPayment(): void {
