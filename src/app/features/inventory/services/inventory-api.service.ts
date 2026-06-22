@@ -87,6 +87,12 @@ export class InventoryApiService {
     return this.changeLotStatus(lotId, 'cancel', request);
   }
 
+  uploadProjectLogo(projectId: string, file: File): Observable<ProjectDetailResponse> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return this.httpClient.post<ProjectDetailResponse>(`/api/v1/admin/projects/${projectId}/logo`, formData);
+  }
+
   previewLotImport(projectId: string, file: File): Observable<LotImportPreviewResponse> {
     const formData = new FormData();
     formData.append('projectId', projectId);

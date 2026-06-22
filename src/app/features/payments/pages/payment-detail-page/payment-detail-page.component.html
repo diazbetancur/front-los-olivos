@@ -1,0 +1,389 @@
+<section class="payments-page payment-detail-page">
+  @if (isLoading()) {
+    <app-loading-state message="Cargando detalle del pago..." />
+  } @else if (loadError()) {
+    <section class="error-box">
+      <p>{{ loadError() }}</p>
+      <button type="button" class="ghost" (click)="goBack()">Volver</button>
+    </section>
+  } @else if (payment(); as detail) {
+    <button type="button" class="back-link" (click)="goBack()">← Volver a pagos</button>
+
+    <div class="pd-title-row">
+      <div>
+        <div class="pd-eyebrow">Pago</div>
+        <h1 class="pd-title">{{ detail.paymentNumber }}</h1>
+      </div>
+      <span [class]="statusClass(detail.status)">{{ detail.status }}</span>
+    </div>
+
+    <!-- Hero summary -->
+    <div class="pd-hero">
+      <div class="pd-hero-top">
+        <div class="pd-hero-amount">
+          <div class="pd-label">Monto total del pago</div>
+          <div class="pd-amount">
+            <span class="num">{{ detail.amount | number: '1.2-2' }}</span>
+            <span class="cur">{{ detail.currency }}</span>
+          </div>
+          <div class="pd-hero-meta">
+            <span>{{ detail.paymentDate }}</span>
+            <span class="dot-sep"></span>
+            <span>{{ detail.paymentMethod || '—' }}</span>
+          </div>
+        </div>
+
+        @if (detail.status !== 'Anulado' && detail.status !== 'Rechazado') {
+          <div class="pd-actions">
+            @if (detail.status === 'PendienteRevision') {
+              <button type="button" class="pd-btn pd-btn--primary" (click)="approve()" [disabled]="isSubmitting()" *appHasPermission="['Payments.Apply']">
+                Aprobar
+              </button>
+              <button type="button" class="pd-btn pd-btn--danger" (click)="openReject()" [disabled]="isSubmitting()" *appHasPermission="['Payments.ReviewProof']">
+                Rechazar
+              </button>
+            }
+            @if (detail.status === 'Registrado') {
+              <button type="button" class="pd-btn pd-btn--primary" (click)="openApply()" [disabled]="isSubmitting()" *appHasPermission="['Payments.Apply']">
+                Aplicar
+              </button>
+            }
+            <button type="button" class="pd-btn pd-btn--danger" (click)="openVoid()" [disabled]="isSubmitting()" *appHasPermission="['Payments.Void']">
+              Anular pago
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="pd-dist">
+        <div class="pd-dist-head">
+          <span>Distribución del pago</span>
+          <span class="pd-dist-pct">{{ appliedPercent() }}% aplicado</span>
+        </div>
+        <div class="pd-bar">
+          <div class="pd-bar-fill" [style.width.%]="appliedPercent()"></div>
+        </div>
+        <div class="pd-dist-cards">
+          <div class="pd-dist-card pd-dist-card--applied">
+            <div class="lbl">Aplicado</div>
+            <div class="val">{{ detail.appliedAmount | number: '1.2-2' }}</div>
+          </div>
+          <div class="pd-dist-card">
+            <div class="lbl">No aplicado</div>
+            <div class="val">{{ detail.unallocatedAmount | number: '1.2-2' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="pd-tabs">
+      <button type="button" [class.active]="activeTab() === 'detail'" (click)="setTab('detail')">Detalle de pago</button>
+      <button type="button" [class.active]="activeTab() === 'balance'" (click)="setTab('balance')">Balance del contrato</button>
+    </div>
+
+    @if (activeTab() === 'detail') {
+      <!-- Información del pago -->
+      <div class="pd-card">
+        <h2 class="pd-card-title">Información del pago</h2>
+        <div class="pd-info-grid">
+          <div class="pd-field">
+            <div class="k">Fecha</div>
+            <div class="v">{{ detail.paymentDate }}</div>
+          </div>
+          <div class="pd-field">
+            <div class="k">Método</div>
+            <div class="v">{{ detail.paymentMethod || '—' }}</div>
+          </div>
+          <div class="pd-field">
+            <div class="k">Moneda</div>
+            <div class="v">{{ detail.currency }}</div>
+          </div>
+          <div class="pd-field">
+            <div class="k">Banco</div>
+            <div class="v" [class.empty]="!detail.bankName">{{ detail.bankName || '—' }}</div>
+          </div>
+          <div class="pd-field">
+            <div class="k">Referencia</div>
+            <div class="v" [class.empty]="!detail.transactionReference">{{ detail.transactionReference || '—' }}</div>
+          </div>
+          <div class="pd-field">
+            <div class="k">Concepto</div>
+            <div class="v" [class.empty]="!detail.concept">{{ detail.concept || '—' }}</div>
+          </div>
+        </div>
+        <div class="pd-divider"></div>
+        <div class="pd-field">
+          <div class="k">Notas</div>
+          <div class="v" [class.empty]="!detail.notes">{{ detail.notes || 'Sin notas registradas para este pago.' }}</div>
+        </div>
+        @if (detail.status === 'Anulado') {
+          <div class="pd-divider"></div>
+          <div class="pd-field">
+            <div class="k">Anulación</div>
+            <div class="v">
+              {{ detail.voidedAtUtc ? (detail.voidedAtUtc | date: 'short') : '—' }} · {{ detail.voidReason || '—' }}
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Aplicaciones actuales -->
+      <div class="pd-card">
+        <div class="pd-card-head">
+          <h2 class="pd-card-title">Aplicaciones actuales</h2>
+          <div class="pd-card-head-right">
+            @if (receipt() && canDownloadReceipt()) {
+              <button type="button" class="pd-btn-soft" (click)="downloadReceipt()" [disabled]="isDownloadingReceipt()">
+                {{ isDownloadingReceipt() ? 'Descargando…' : '⬇ Descargar comprobante' }}
+              </button>
+            }
+            <span class="pd-count">{{ detail.allocations.length }} {{ detail.allocations.length === 1 ? 'cuota' : 'cuotas' }}</span>
+          </div>
+        </div>
+
+        @if (detail.allocations.length === 0) {
+          <app-empty-state title="Sin aplicaciones" message="Este pago no tiene aplicaciones registradas." />
+        } @else {
+          <div class="pd-table-wrap">
+            <table class="pd-table">
+              <thead>
+                <tr>
+                  <th>Cuota</th>
+                  <th>Monto aplicado</th>
+                  <th>Aplicado en</th>
+                  <th class="ta-right">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (allocation of detail.allocations; track allocation.id) {
+                  <tr>
+                    <td><span class="pd-num-badge">#{{ allocation.installmentNumber }}</span></td>
+                    <td class="strong">{{ allocation.amountApplied | number: '1.2-2' }} <span class="muted">{{ detail.currency }}</span></td>
+                    <td class="muted">{{ allocation.appliedAtUtc | date: 'short' }}</td>
+                    <td class="ta-right">
+                      <span class="status-badge" [class.applied]="!allocation.isVoided" [class.blocked]="allocation.isVoided">
+                        {{ allocation.isVoided ? 'Anulada' : 'Vigente' }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    } @else {
+      <!-- Balance del contrato -->
+      <div class="pd-card">
+        @if (!detail.contractId) {
+          <app-empty-state title="Sin contrato" message="Este pago no está asociado a un contrato." />
+        } @else if (isFinanceLoading()) {
+          <app-loading-state message="Cargando balance y cronograma..." />
+        } @else {
+          @if (financeError()) {
+            <p class="error-text">{{ financeError() }}</p>
+          }
+          @if (balance(); as bal) {
+            <h2 class="pd-card-title">Balance del contrato</h2>
+            <div class="pd-stats">
+              <div class="pd-stat">
+                <div class="lbl">Total programado</div>
+                <div class="val">{{ bal.totalScheduled | number: '1.2-2' }} <span class="cur">{{ bal.currency }}</span></div>
+              </div>
+              <div class="pd-stat">
+                <div class="lbl">Total pagado</div>
+                <div class="val">{{ bal.totalPaid | number: '1.2-2' }} <span class="cur">{{ bal.currency }}</span></div>
+              </div>
+              <div class="pd-stat">
+                <div class="lbl">Total pendiente</div>
+                <div class="val">{{ bal.totalRemaining | number: '1.2-2' }} <span class="cur">{{ bal.currency }}</span></div>
+              </div>
+              <div class="pd-stat">
+                <div class="lbl">Cuotas (pagadas / pendientes / vencidas)</div>
+                <div class="val">{{ bal.paidInstallments }} / {{ bal.pendingInstallments }} / {{ bal.overdueInstallments }}</div>
+              </div>
+            </div>
+          }
+
+          <h3 class="pd-subtitle">Cronograma del contrato</h3>
+          @if (schedule().length === 0) {
+            <app-empty-state title="Sin cronograma" message="No hay cuotas disponibles para este contrato." />
+          } @else {
+            <div class="pd-table-wrap">
+              <table class="pd-table">
+                <thead>
+                  <tr>
+                    <th>Cuota</th>
+                    <th>Vencimiento</th>
+                    <th>Monto</th>
+                    <th>Pagado</th>
+                    <th>Saldo</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (installment of schedule(); track installment.id) {
+                    <tr>
+                      <td><span class="pd-num-badge">#{{ installment.installmentNumber }}</span></td>
+                      <td class="muted">{{ installment.dueDate }}</td>
+                      <td>{{ installment.amount | number: '1.2-2' }}</td>
+                      <td>{{ installment.paidAmount | number: '1.2-2' }}</td>
+                      <td>{{ installment.remainingAmount | number: '1.2-2' }}</td>
+                      <td>{{ installment.status }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    @if (showApply()) {
+      <app-modal (closed)="cancelApply()">
+        <section class="form-panel">
+          <header>
+            <h3>Aplicar pago a cuotas</h3>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelApply()" aria-label="Cerrar" title="Cerrar">×</button>
+          </header>
+
+          @if (applyError()) {
+            <p class="error-text">{{ applyError() }}</p>
+          }
+
+          @if (allocationsArray.length > 0) {
+            <form [formGroup]="applyForm" (ngSubmit)="submitApply()" novalidate>
+              <div formArrayName="allocations">
+                <section class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Cuota</th>
+                        <th>Vencimiento</th>
+                        <th>Saldo cuota</th>
+                        <th>Monto a aplicar</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (allocation of allocationsArray.controls; track allocation.controls.contractInstallmentId.value; let i = $index) {
+                        <tr [formGroupName]="i">
+                          <td>{{ allocation.controls.installmentNumber.value }}</td>
+                          <td>{{ allocation.controls.dueDate.value }}</td>
+                          <td>{{ allocation.controls.remainingAmount.value | number: '1.2-2' }}</td>
+                          <td>
+                            <input
+                              type="number"
+                              formControlName="amountApplied"
+                              min="0"
+                              step="0.01"
+                              class="ui-form-control"
+                              [max]="allocation.controls.remainingAmount.value"
+                            />
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </section>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="ghost" (click)="cancelApply()">Cancelar</button>
+                <button type="submit" [disabled]="isSubmitting()">Aplicar pago</button>
+              </div>
+            </form>
+          } @else {
+            <app-empty-state title="Sin cuotas" message="No hay cuotas disponibles para aplicar este pago." />
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelApply()">Cerrar</button>
+            </div>
+          }
+        </section>
+      </app-modal>
+    }
+
+    @if (showVoid()) {
+      <app-modal (closed)="cancelVoid()">
+        <section class="form-panel">
+          <header>
+            <h3>Anular pago</h3>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelVoid()" aria-label="Cerrar" title="Cerrar">×</button>
+          </header>
+
+          @if (voidError()) {
+            <p class="error-text">{{ voidError() }}</p>
+          }
+
+          <form [formGroup]="voidForm" (ngSubmit)="submitVoid()" novalidate>
+            <label class="full-width">
+              <span class="required-label">Razon de anulacion *</span>
+              <textarea rows="3" formControlName="reason" class="ui-form-control"></textarea>
+              <small class="ui-field-inline-error"
+                     [class.visible]="voidForm.controls.reason.invalid && (voidForm.controls.reason.touched || voidSubmitted())">
+                Debes ingresar una razon valida para anular el pago.
+              </small>
+            </label>
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelVoid()">Cancelar</button>
+              <button type="submit" class="danger" [disabled]="isSubmitting() || voidForm.invalid">Confirmar anulacion</button>
+            </div>
+          </form>
+        </section>
+      </app-modal>
+    }
+
+    @if (showReject()) {
+      <app-modal (closed)="cancelReject()">
+        <section class="form-panel">
+          <header>
+            <h3>Rechazar pago</h3>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelReject()" aria-label="Cerrar" title="Cerrar">×</button>
+          </header>
+
+          @if (rejectError()) {
+            <p class="error-text">{{ rejectError() }}</p>
+          }
+
+          <form [formGroup]="rejectForm" (ngSubmit)="submitReject()" novalidate>
+            <label class="full-width">
+              <span class="required-label">Motivo del rechazo *</span>
+              <textarea rows="3" formControlName="reason" class="ui-form-control"></textarea>
+              <small class="ui-field-inline-error"
+                     [class.visible]="rejectForm.controls.reason.invalid && (rejectForm.controls.reason.touched || rejectSubmitted())">
+                El motivo es obligatorio.
+              </small>
+            </label>
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelReject()">Cancelar</button>
+              <button type="submit" class="danger" [disabled]="isSubmitting() || rejectForm.invalid">Confirmar rechazo</button>
+            </div>
+          </form>
+        </section>
+      </app-modal>
+    }
+
+    @if (showCreditConfirm()) {
+      <app-modal (closed)="cancelCredit()">
+        <section class="form-panel">
+          <header>
+            <h3>Confirmar saldo a favor</h3>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelCredit()" aria-label="Cerrar" title="Cerrar">×</button>
+          </header>
+          <p>
+            Este pago dejaria un <strong>saldo a favor de {{ creditConfirmAmount() | number: '1.2-2' }}</strong>
+            (el monto excede lo que falta del contrato). ¿Deseas continuar?
+          </p>
+          <p class="warning-text">Si fue un error de tipeo, cancela y revisa el pago.</p>
+          <div class="form-actions">
+            <button type="button" class="ghost" (click)="cancelCredit()">Cancelar</button>
+            <button type="button" (click)="confirmCredit()" [disabled]="isSubmitting()">Confirmar y aplicar</button>
+          </div>
+        </section>
+      </app-modal>
+    }
+  } @else {
+    <app-empty-state title="Pago no encontrado" message="No se pudo cargar el pago." />
+  }
+</section>

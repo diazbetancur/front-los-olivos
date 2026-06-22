@@ -33,6 +33,8 @@ export interface PaymentListItemResponse {
   status: string;
   paymentMethod: string;
   transactionReference: string;
+  contractNumber?: string | null;
+  clientFullName?: string | null;
 }
 
 export interface RegisterPaymentRequest {
@@ -46,6 +48,7 @@ export interface RegisterPaymentRequest {
   transactionReference?: string | null;
   concept?: string | null;
   notes?: string | null;
+  confirmCreditBalance?: boolean;
 }
 
 export interface ApplyPaymentAllocationRequest {
@@ -247,4 +250,19 @@ export interface ClientLookupItem {
   status: string;
   dni: string;
   rtn: string;
+}
+
+export interface PaymentApplyResultResponse {
+  applied: boolean;
+  requiresCreditConfirmation: boolean;
+  projectedCreditBalance: number;
+  payment: PaymentDetailResponse | null;
+}
+
+export interface ApprovePaymentRequest {
+  confirmCreditBalance: boolean;
+}
+
+export interface RejectPaymentRequest {
+  reason: string;
 }

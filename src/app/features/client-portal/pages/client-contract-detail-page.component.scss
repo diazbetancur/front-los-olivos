@@ -254,6 +254,50 @@ textarea {
 .form-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.load-payment-btn {
+  margin-left: auto;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+
+.page-size {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.page-size select {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.34rem 0.5rem;
+  font-size: 0.86rem;
+}
+
+.pager-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pager-info {
+  font-size: 0.84rem;
+  color: #475569;
+}
+
+.proof-modal {
+  display: grid;
+  gap: 0.4rem;
 }
 
 .field-error,
