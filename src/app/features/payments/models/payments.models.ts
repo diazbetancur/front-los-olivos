@@ -33,6 +33,8 @@ export interface PaymentListItemResponse {
   status: string;
   paymentMethod: string;
   transactionReference: string;
+  contractNumber?: string | null;
+  clientFullName?: string | null;
 }
 
 export interface RegisterPaymentRequest {

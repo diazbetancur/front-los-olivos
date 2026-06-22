@@ -387,14 +387,6 @@ export class PaymentsPageComponent implements OnInit {
     }
   }
 
-  resolveContractLabel(contractId: string | null | undefined): string {
-    return contractId ?? '-';
-  }
-
-  resolveClientLabel(clientId: string | null | undefined): string {
-    return clientId ?? '-';
-  }
-
   protected loadPayments(page: number): void {
     this.listError = null;
     this.isLoading = true;
