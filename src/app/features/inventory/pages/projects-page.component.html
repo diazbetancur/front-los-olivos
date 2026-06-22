@@ -193,6 +193,34 @@
             </label>
           </div>
 
+          @if (editingProjectId) {
+            <div class="logo-upload-section">
+              <p class="logo-upload-label">Logo del proyecto</p>
+              @if (editingProjectLogoStorageKey) {
+                <p class="logo-current-state">
+                  <span class="chip">Logo cargado</span>
+                </p>
+              }
+              <label>
+                <span class="required-label">Seleccionar imagen (PNG o JPG)</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  class="ui-form-control"
+                  (change)="onLogoFileSelected($event)"
+                />
+              </label>
+              <button
+                type="button"
+                class="ui-btn-primary"
+                [disabled]="isUploadingLogo || !selectedLogoFile"
+                (click)="uploadLogo(editingProjectId)"
+              >
+                {{ isUploadingLogo ? 'Subiendo...' : 'Subir logo' }}
+              </button>
+            </div>
+          }
+
           <div class="form-actions ui-form-actions">
             <button type="button" class="ghost" (click)="cancelForm()">Cancelar</button>
             <button

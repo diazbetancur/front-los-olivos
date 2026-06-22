@@ -38,6 +38,7 @@ export interface ProjectDetailResponse {
   cadastralKey?: string | null;
   totalAreaM2?: number | null;
   status: string;
+  logoStorageKey?: string | null;
 }
 
 export interface CreateProjectRequest {

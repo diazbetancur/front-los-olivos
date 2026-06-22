@@ -81,9 +81,13 @@ export class ProjectsPageComponent implements OnInit {
   isSubmitting = false;
   showForm = false;
   editingProjectId: string | null = null;
+  editingProjectLogoStorageKey: string | null = null;
   projectFormSubmitted = false;
   listError: string | null = null;
   formError: string | null = null;
+
+  selectedLogoFile: File | null = null;
+  isUploadingLogo = false;
 
   readonly totalPages = computed(() => {
     const pageSize = this.filterForm.controls.pageSize.value;
@@ -122,8 +126,10 @@ export class ProjectsPageComponent implements OnInit {
 
   openCreateForm(): void {
     this.editingProjectId = null;
+    this.editingProjectLogoStorageKey = null;
     this.formError = null;
     this.projectFormSubmitted = false;
+    this.selectedLogoFile = null;
     this.showForm = true;
     this.projectForm.reset({
       name: '',
@@ -155,6 +161,7 @@ export class ProjectsPageComponent implements OnInit {
       .subscribe({
         next: (project) => {
           this.fillForm(project);
+          this.editingProjectLogoStorageKey = project.logoStorageKey ?? null;
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
@@ -166,8 +173,10 @@ export class ProjectsPageComponent implements OnInit {
   cancelForm(): void {
     this.showForm = false;
     this.editingProjectId = null;
+    this.editingProjectLogoStorageKey = null;
     this.projectFormSubmitted = false;
     this.formError = null;
+    this.selectedLogoFile = null;
   }
 
   submitProject(): void {
@@ -238,6 +247,39 @@ export class ProjectsPageComponent implements OnInit {
         next: () => {
           this.feedback.show({ level: 'success', text: 'Proyecto deshabilitado correctamente.' });
           this.reloadAfterMutation(this.currentPage);
+        },
+        error: (error) => {
+          const normalizedError = this.apiErrorService.normalize(error);
+          this.feedback.showError(normalizedError.userMessage);
+        },
+      });
+  }
+
+  onLogoFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.selectedLogoFile = input.files?.[0] ?? null;
+  }
+
+  uploadLogo(projectId: string): void {
+    if (!this.selectedLogoFile || this.isUploadingLogo) {
+      return;
+    }
+
+    this.isUploadingLogo = true;
+    this.inventoryApi
+      .uploadProjectLogo(projectId, this.selectedLogoFile)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.isUploadingLogo = false;
+          this.syncView();
+        }),
+      )
+      .subscribe({
+        next: (project) => {
+          this.editingProjectLogoStorageKey = project.logoStorageKey ?? null;
+          this.selectedLogoFile = null;
+          this.feedback.show({ level: 'success', text: 'Logo del proyecto actualizado correctamente.' });
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
