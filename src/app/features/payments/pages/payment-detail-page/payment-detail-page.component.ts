@@ -1,21 +1,50 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import {
+  FormArray,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiErrorService } from '../../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../../core/ui/app-feedback.service';
+import { AuthSessionService } from '../../../../core/auth/auth-session.service';
+import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
+import { HasPermissionDirective } from '../../../../core/auth/has-permission.directive';
 import { LoadingStateComponent } from '../../../../shared/components/loading-state/loading-state.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import {
+  ApplyPaymentRequest,
   ContractBalanceResponse,
   ContractInstallmentResponse,
-  PaymentDetailResponse
+  PaymentApplyResultResponse,
+  PaymentDetailResponse,
+  VoidPaymentRequest
 } from '../../models/payments.models';
 import { PaymentsApiService } from '../../services/payments-api.service';
 
+type AllocationFormGroup = FormGroup<{
+  contractInstallmentId: FormControl<string>;
+  installmentNumber: FormControl<number>;
+  dueDate: FormControl<string>;
+  remainingAmount: FormControl<number>;
+  amountApplied: FormControl<number | null>;
+}>;
+
 @Component({
   selector: 'app-payment-detail-page',
-  imports: [CommonModule, LoadingStateComponent, EmptyStateComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    AppModalComponent,
+    HasPermissionDirective,
+    LoadingStateComponent,
+    EmptyStateComponent
+  ],
   templateUrl: './payment-detail-page.component.html',
   styleUrl: './payment-detail-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -24,9 +53,15 @@ export class PaymentDetailPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly formBuilder = inject(FormBuilder);
   private readonly paymentsApi = inject(PaymentsApiService);
   private readonly apiErrorService = inject(ApiErrorService);
   protected readonly feedback = inject(AppFeedbackService);
+  private readonly authSession = inject(AuthSessionService);
+
+  readonly canApply = computed(() => this.authSession.hasPermission('Payments.Apply'));
+  readonly canVoid = computed(() => this.authSession.hasPermission('Payments.Void'));
+  readonly canReview = computed(() => this.authSession.hasPermission('Payments.ReviewProof'));
 
   readonly payment = signal<PaymentDetailResponse | null>(null);
   readonly balance = signal<ContractBalanceResponse | null>(null);
@@ -36,10 +71,40 @@ export class PaymentDetailPageComponent implements OnInit {
 
   readonly isLoading = signal(false);
   readonly isFinanceLoading = signal(false);
+  readonly isSubmitting = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly financeError = signal<string | null>(null);
 
-  protected paymentId = '';
+  readonly showApply = signal(false);
+  readonly showVoid = signal(false);
+  readonly showReject = signal(false);
+  readonly showCreditConfirm = signal(false);
+  readonly creditConfirmAmount = signal(0);
+
+  readonly applySubmitted = signal(false);
+  readonly voidSubmitted = signal(false);
+  readonly rejectSubmitted = signal(false);
+  readonly applyError = signal<string | null>(null);
+  readonly voidError = signal<string | null>(null);
+  readonly rejectError = signal<string | null>(null);
+
+  readonly applyForm = this.formBuilder.nonNullable.group({
+    allocations: this.formBuilder.array<AllocationFormGroup>([])
+  });
+
+  readonly voidForm = this.formBuilder.nonNullable.group({
+    reason: ['', [Validators.required, Validators.maxLength(1024)]]
+  });
+
+  readonly rejectForm = this.formBuilder.nonNullable.group({
+    reason: ['', [Validators.required, Validators.maxLength(1024)]]
+  });
+
+  private paymentId = '';
+
+  get allocationsArray(): FormArray<AllocationFormGroup> {
+    return this.applyForm.controls.allocations;
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -71,6 +136,217 @@ export class PaymentDetailPageComponent implements OnInit {
       default:
         return 'status-badge';
     }
+  }
+
+  // --- Aprobar (transferencia pendiente) ---
+
+  approve(confirmCreditBalance = false): void {
+    const current = this.payment();
+    if (!current) {
+      return;
+    }
+    this.isSubmitting.set(true);
+    this.paymentsApi
+      .approvePayment(current.id, { confirmCreditBalance })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result: PaymentApplyResultResponse) => {
+          this.isSubmitting.set(false);
+          if (result.requiresCreditConfirmation) {
+            this.creditConfirmAmount.set(result.projectedCreditBalance);
+            this.showCreditConfirm.set(true);
+            return;
+          }
+          this.feedback.showSuccess('Pago aprobado: aplicado y recibo emitido.');
+          this.reload();
+        },
+        error: (error) => {
+          this.isSubmitting.set(false);
+          this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
+        }
+      });
+  }
+
+  confirmCredit(): void {
+    this.showCreditConfirm.set(false);
+    this.approve(true);
+  }
+
+  cancelCredit(): void {
+    this.showCreditConfirm.set(false);
+  }
+
+  // --- Rechazar ---
+
+  openReject(): void {
+    this.rejectSubmitted.set(false);
+    this.rejectError.set(null);
+    this.rejectForm.reset({ reason: '' });
+    this.showReject.set(true);
+  }
+
+  cancelReject(): void {
+    this.showReject.set(false);
+    this.rejectError.set(null);
+  }
+
+  submitReject(): void {
+    const current = this.payment();
+    this.rejectSubmitted.set(true);
+    this.rejectError.set(null);
+    if (!current || this.rejectForm.invalid) {
+      this.rejectForm.markAllAsTouched();
+      return;
+    }
+    this.isSubmitting.set(true);
+    this.paymentsApi
+      .rejectPayment(current.id, { reason: this.rejectForm.getRawValue().reason })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.isSubmitting.set(false);
+          this.feedback.showSuccess('Pago rechazado.');
+          this.showReject.set(false);
+          this.reload();
+        },
+        error: (error) => {
+          this.isSubmitting.set(false);
+          const normalized = this.apiErrorService.normalize(error);
+          this.rejectError.set(normalized.userMessage);
+          this.feedback.showError(normalized.userMessage);
+        }
+      });
+  }
+
+  // --- Anular ---
+
+  openVoid(): void {
+    this.voidSubmitted.set(false);
+    this.voidError.set(null);
+    this.voidForm.reset({ reason: '' });
+    this.showVoid.set(true);
+  }
+
+  cancelVoid(): void {
+    this.showVoid.set(false);
+    this.voidError.set(null);
+  }
+
+  submitVoid(): void {
+    const current = this.payment();
+    this.voidSubmitted.set(true);
+    this.voidError.set(null);
+    if (!current || this.voidForm.invalid) {
+      this.voidForm.markAllAsTouched();
+      return;
+    }
+
+    const confirmed = globalThis.confirm(`Se anulara el pago ${current.paymentNumber}. Deseas continuar?`);
+    if (!confirmed) {
+      return;
+    }
+
+    const payload: VoidPaymentRequest = { reason: this.voidForm.getRawValue().reason.trim() };
+    this.isSubmitting.set(true);
+    this.paymentsApi
+      .voidPayment(current.id, payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.isSubmitting.set(false);
+          this.feedback.show({ level: 'success', text: 'Pago anulado correctamente.' });
+          this.showVoid.set(false);
+          this.reload();
+        },
+        error: (error) => {
+          this.isSubmitting.set(false);
+          const normalized = this.apiErrorService.normalize(error);
+          this.voidError.set(normalized.userMessage);
+          this.feedback.showError(
+            normalized.status === 409 ? `Conflicto al anular pago: ${normalized.userMessage}` : normalized.userMessage
+          );
+        }
+      });
+  }
+
+  // --- Aplicar a cuotas ---
+
+  openApply(): void {
+    const current = this.payment();
+    if (!current?.contractId) {
+      this.applyError.set('Este pago no tiene contrato asociado; no se puede aplicar a cuotas.');
+      this.showApply.set(true);
+      return;
+    }
+    this.applySubmitted.set(false);
+    this.applyError.set(null);
+    this.initializeApplyFromSchedule();
+    this.showApply.set(true);
+  }
+
+  cancelApply(): void {
+    this.showApply.set(false);
+    this.applySubmitted.set(false);
+    this.applyError.set(null);
+    this.allocationsArray.clear();
+  }
+
+  submitApply(): void {
+    const current = this.payment();
+    if (!current) {
+      return;
+    }
+    this.applySubmitted.set(true);
+    this.applyError.set(null);
+
+    const rows = this.allocationsArray.controls.map((group) => group.getRawValue());
+    const selectedRows = rows.filter((row) => row.amountApplied !== null && row.amountApplied > 0);
+
+    if (selectedRows.length === 0) {
+      this.applyError.set('Debes indicar al menos una cuota con monto aplicado mayor que cero.');
+      return;
+    }
+
+    const invalidRow = selectedRows.find((row) => row.amountApplied! <= 0 || row.amountApplied! > row.remainingAmount);
+    if (invalidRow) {
+      this.applyError.set('Hay montos aplicados invalidos. Verifica que sean mayores que cero y no excedan el saldo de cuota.');
+      return;
+    }
+
+    const payload: ApplyPaymentRequest = {
+      allocations: selectedRows.map((row) => ({
+        contractInstallmentId: row.contractInstallmentId,
+        amountApplied: Number(row.amountApplied)
+      }))
+    };
+
+    const confirmed = globalThis.confirm(
+      `Se aplicaran ${payload.allocations.length} cuotas al pago ${current.paymentNumber}. Deseas continuar?`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.paymentsApi
+      .applyPayment(current.id, payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.isSubmitting.set(false);
+          this.feedback.show({ level: 'success', text: 'Pago aplicado correctamente.' });
+          this.showApply.set(false);
+          this.reload();
+        },
+        error: (error) => {
+          this.isSubmitting.set(false);
+          const normalized = this.apiErrorService.normalize(error);
+          this.applyError.set(normalized.userMessage);
+          this.feedback.showError(
+            normalized.status === 409 ? `Conflicto al aplicar pago: ${normalized.userMessage}` : normalized.userMessage
+          );
+        }
+      });
   }
 
   protected reload(): void {
@@ -134,5 +410,36 @@ export class PaymentDetailPageComponent implements OnInit {
           this.financeError.set(normalized.userMessage);
         }
       });
+  }
+
+  private initializeApplyFromSchedule(): void {
+    this.allocationsArray.clear();
+    for (const installment of this.schedule()) {
+      this.allocationsArray.push(this.buildAllocationGroup(installment));
+    }
+  }
+
+  private buildAllocationGroup(installment: ContractInstallmentResponse): AllocationFormGroup {
+    return new FormGroup({
+      contractInstallmentId: new FormControl<string>(installment.id, {
+        nonNullable: true,
+        validators: [Validators.required]
+      }),
+      installmentNumber: new FormControl<number>(installment.installmentNumber, {
+        nonNullable: true,
+        validators: [Validators.required]
+      }),
+      dueDate: new FormControl<string>(installment.dueDate, {
+        nonNullable: true,
+        validators: [Validators.required]
+      }),
+      remainingAmount: new FormControl<number>(installment.remainingAmount, {
+        nonNullable: true,
+        validators: [Validators.required]
+      }),
+      amountApplied: new FormControl<number | null>(null, {
+        validators: [Validators.min(0), Validators.max(installment.remainingAmount)]
+      })
+    });
   }
 }

@@ -16,7 +16,26 @@
       <span [class]="statusClass(detail.status)">{{ detail.status }}</span>
     </header>
 
-    <!-- ACTION-BAR-SLOT (Task 2) -->
+    @if (detail.status !== 'Anulado' && detail.status !== 'Rechazado') {
+      <section class="action-bar">
+        @if (detail.status === 'PendienteRevision') {
+          <button type="button" (click)="approve()" [disabled]="isSubmitting()" *appHasPermission="['Payments.Apply']">
+            Aprobar
+          </button>
+          <button type="button" class="danger" (click)="openReject()" [disabled]="isSubmitting()" *appHasPermission="['Payments.ReviewProof']">
+            Rechazar
+          </button>
+        }
+        @if (detail.status === 'Registrado') {
+          <button type="button" (click)="openApply()" [disabled]="isSubmitting()" *appHasPermission="['Payments.Apply']">
+            Aplicar
+          </button>
+        }
+        <button type="button" class="danger" (click)="openVoid()" [disabled]="isSubmitting()" *appHasPermission="['Payments.Void']">
+          Anular
+        </button>
+      </section>
+    }
 
     <nav class="section-tabs">
       <button type="button" [class.active]="activeTab() === 'detail'" (click)="setTab('detail')">
@@ -134,6 +153,148 @@
           </section>
         }
       </section>
+    }
+    @if (showApply()) {
+      <app-modal (closed)="cancelApply()">
+        <section class="form-panel">
+          <header>
+            <h3>Aplicar pago a cuotas</h3>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelApply()" aria-label="Cerrar" title="Cerrar">×</button>
+          </header>
+
+          @if (applyError()) {
+            <p class="error-text">{{ applyError() }}</p>
+          }
+
+          @if (allocationsArray.length > 0) {
+            <form [formGroup]="applyForm" (ngSubmit)="submitApply()" novalidate>
+              <div formArrayName="allocations">
+                <section class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Cuota</th>
+                        <th>Vencimiento</th>
+                        <th>Saldo cuota</th>
+                        <th>Monto a aplicar</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (allocation of allocationsArray.controls; track allocation.controls.contractInstallmentId.value; let i = $index) {
+                        <tr [formGroupName]="i">
+                          <td>{{ allocation.controls.installmentNumber.value }}</td>
+                          <td>{{ allocation.controls.dueDate.value }}</td>
+                          <td>{{ allocation.controls.remainingAmount.value | number: '1.2-2' }}</td>
+                          <td>
+                            <input
+                              type="number"
+                              formControlName="amountApplied"
+                              min="0"
+                              step="0.01"
+                              class="ui-form-control"
+                              [max]="allocation.controls.remainingAmount.value"
+                            />
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </section>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="ghost" (click)="cancelApply()">Cancelar</button>
+                <button type="submit" [disabled]="isSubmitting()">Aplicar pago</button>
+              </div>
+            </form>
+          } @else {
+            <app-empty-state title="Sin cuotas" message="No hay cuotas disponibles para aplicar este pago." />
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelApply()">Cerrar</button>
+            </div>
+          }
+        </section>
+      </app-modal>
+    }
+
+    @if (showVoid()) {
+      <app-modal (closed)="cancelVoid()">
+        <section class="form-panel">
+          <header>
+            <h3>Anular pago</h3>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelVoid()" aria-label="Cerrar" title="Cerrar">×</button>
+          </header>
+
+          @if (voidError()) {
+            <p class="error-text">{{ voidError() }}</p>
+          }
+
+          <form [formGroup]="voidForm" (ngSubmit)="submitVoid()" novalidate>
+            <label class="full-width">
+              <span class="required-label">Razon de anulacion *</span>
+              <textarea rows="3" formControlName="reason" class="ui-form-control"></textarea>
+              <small class="ui-field-inline-error"
+                     [class.visible]="voidForm.controls.reason.invalid && (voidForm.controls.reason.touched || voidSubmitted())">
+                Debes ingresar una razon valida para anular el pago.
+              </small>
+            </label>
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelVoid()">Cancelar</button>
+              <button type="submit" class="danger" [disabled]="isSubmitting() || voidForm.invalid">Confirmar anulacion</button>
+            </div>
+          </form>
+        </section>
+      </app-modal>
+    }
+
+    @if (showReject()) {
+      <app-modal (closed)="cancelReject()">
+        <section class="form-panel">
+          <header>
+            <h3>Rechazar pago</h3>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelReject()" aria-label="Cerrar" title="Cerrar">×</button>
+          </header>
+
+          @if (rejectError()) {
+            <p class="error-text">{{ rejectError() }}</p>
+          }
+
+          <form [formGroup]="rejectForm" (ngSubmit)="submitReject()" novalidate>
+            <label class="full-width">
+              <span class="required-label">Motivo del rechazo *</span>
+              <textarea rows="3" formControlName="reason" class="ui-form-control"></textarea>
+              <small class="ui-field-inline-error"
+                     [class.visible]="rejectForm.controls.reason.invalid && (rejectForm.controls.reason.touched || rejectSubmitted())">
+                El motivo es obligatorio.
+              </small>
+            </label>
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelReject()">Cancelar</button>
+              <button type="submit" class="danger" [disabled]="isSubmitting() || rejectForm.invalid">Confirmar rechazo</button>
+            </div>
+          </form>
+        </section>
+      </app-modal>
+    }
+
+    @if (showCreditConfirm()) {
+      <app-modal (closed)="cancelCredit()">
+        <section class="form-panel">
+          <header>
+            <h3>Confirmar saldo a favor</h3>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelCredit()" aria-label="Cerrar" title="Cerrar">×</button>
+          </header>
+          <p>
+            Este pago dejaria un <strong>saldo a favor de {{ creditConfirmAmount() | number: '1.2-2' }}</strong>
+            (el monto excede lo que falta del contrato). ¿Deseas continuar?
+          </p>
+          <p class="warning-text">Si fue un error de tipeo, cancela y revisa el pago.</p>
+          <div class="form-actions">
+            <button type="button" class="ghost" (click)="cancelCredit()">Cancelar</button>
+            <button type="button" (click)="confirmCredit()" [disabled]="isSubmitting()">Confirmar y aplicar</button>
+          </div>
+        </section>
+      </app-modal>
     }
   } @else {
     <app-empty-state title="Pago no encontrado" message="No se pudo cargar el pago." />

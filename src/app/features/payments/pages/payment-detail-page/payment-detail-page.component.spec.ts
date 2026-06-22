@@ -35,4 +35,36 @@ describe('PaymentDetailPageComponent', () => {
     component.setTab('balance');
     expect(component.activeTab()).toBe('balance');
   });
+
+  it('toggles the apply modal open and closed', () => {
+    component.payment.set({
+      id: 'p1', paymentNumber: 'PG-1', contractId: 'c1', clientId: null,
+      paymentDate: '2026-06-01', amount: 100, appliedAmount: 0, unallocatedAmount: 100,
+      currency: 'HNL', status: 'Registrado', paymentMethod: 'Efectivo', bankName: '',
+      transactionReference: '', concept: '', notes: '', voidReason: '', allocations: []
+    });
+    component.schedule.set([
+      { id: 'i1', contractId: 'c1', installmentNumber: 1, dueDate: '2026-07-01', amount: 50,
+        principalAmount: 50, interestAmount: 0, lateFeeAmount: 0, paidAmount: 0, remainingAmount: 50, status: 'Pendiente' }
+    ]);
+    component.openApply();
+    expect(component.showApply()).toBe(true);
+    expect(component.allocationsArray.length).toBe(1);
+    component.cancelApply();
+    expect(component.showApply()).toBe(false);
+    expect(component.allocationsArray.length).toBe(0);
+  });
+
+  it('requires a reason before rejecting', () => {
+    component.payment.set({
+      id: 'p1', paymentNumber: 'PG-1', contractId: 'c1', clientId: null,
+      paymentDate: '2026-06-01', amount: 100, appliedAmount: 0, unallocatedAmount: 100,
+      currency: 'HNL', status: 'PendienteRevision', paymentMethod: 'Transferencia', bankName: '',
+      transactionReference: '', concept: '', notes: '', voidReason: '', allocations: []
+    });
+    component.openReject();
+    component.submitReject();
+    expect(component.rejectForm.invalid).toBe(true);
+    expect(component.showReject()).toBe(true);
+  });
 });
