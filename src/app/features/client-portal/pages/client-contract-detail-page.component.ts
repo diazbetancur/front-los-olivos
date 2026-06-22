@@ -132,7 +132,10 @@ export class ClientContractDetailPageComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.feedback.showSuccess('Comprobante enviado. Estado: PendienteRevision.');
+          this.feedback.showSuccess('Pago registrado por transferencia. Queda pendiente de aprobacion.');
+          if (this.contractId) {
+            this.loadPayments(this.contractId);
+          }
           this.resetProofForm();
         },
         error: (error) => {
