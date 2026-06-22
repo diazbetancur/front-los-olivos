@@ -95,6 +95,19 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'payments/:id',
+        loadComponent: () =>
+          import('./features/payments/pages/payment-detail-page/payment-detail-page.component').then(
+            (m) => m.PaymentDetailPageComponent
+          ),
+        canActivate: [permissionGuard],
+        data: {
+          title: 'Detalle de pago',
+          description: 'Detalle de pago, aplicaciones y balance del contrato.',
+          requiredPermissions: ['Payments.View']
+        }
+      },
+      {
         path: 'receipts',
         loadComponent: () => import('./features/payments/pages/receipts-page.component').then((m) => m.ReceiptsPageComponent),
         canActivate: [permissionGuard],

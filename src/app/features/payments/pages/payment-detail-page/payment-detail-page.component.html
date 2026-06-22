@@ -1,0 +1,141 @@
+<section class="payments-page payment-detail-page">
+  <button type="button" class="back-link" (click)="goBack()">← Volver a pagos</button>
+
+  @if (isLoading()) {
+    <app-loading-state message="Cargando detalle del pago..." />
+  } @else if (loadError()) {
+    <section class="error-box">
+      <p>{{ loadError() }}</p>
+      <button type="button" class="ghost" (click)="goBack()">Volver</button>
+    </section>
+  } @else if (payment(); as detail) {
+    <header class="detail-header">
+      <div>
+        <h2>Pago {{ detail.paymentNumber }}</h2>
+      </div>
+      <span [class]="statusClass(detail.status)">{{ detail.status }}</span>
+    </header>
+
+    <!-- ACTION-BAR-SLOT (Task 2) -->
+
+    <nav class="section-tabs">
+      <button type="button" [class.active]="activeTab() === 'detail'" (click)="setTab('detail')">
+        Detalle de pago
+      </button>
+      <button type="button" [class.active]="activeTab() === 'balance'" (click)="setTab('balance')">
+        Balance del contrato
+      </button>
+    </nav>
+
+    @if (activeTab() === 'detail') {
+      <section class="detail-panel">
+        <div class="detail-grid">
+          <div><strong>Fecha:</strong> {{ detail.paymentDate }}</div>
+          <div><strong>Monto:</strong> {{ detail.amount | number: '1.2-2' }}</div>
+          <div><strong>Aplicado:</strong> {{ detail.appliedAmount | number: '1.2-2' }}</div>
+          <div><strong>No aplicado:</strong> {{ detail.unallocatedAmount | number: '1.2-2' }}</div>
+          <div><strong>Moneda:</strong> {{ detail.currency }}</div>
+          <div><strong>Metodo:</strong> {{ detail.paymentMethod || '-' }}</div>
+          <div><strong>Banco:</strong> {{ detail.bankName || '-' }}</div>
+          <div><strong>Referencia:</strong> {{ detail.transactionReference || '-' }}</div>
+          <div class="full-width"><strong>Concepto:</strong> {{ detail.concept || '-' }}</div>
+          <div class="full-width"><strong>Notas:</strong> {{ detail.notes || '-' }}</div>
+          @if (detail.status === 'Anulado') {
+            <div><strong>Anulado en:</strong> {{ detail.voidedAtUtc ? (detail.voidedAtUtc | date: 'short') : '-' }}</div>
+            <div class="full-width"><strong>Razon anulacion:</strong> {{ detail.voidReason || '-' }}</div>
+          }
+        </div>
+
+        <section class="subsection">
+          <h4>Aplicaciones actuales</h4>
+          @if (detail.allocations.length === 0) {
+            <app-empty-state title="Sin aplicaciones" message="Este pago no tiene aplicaciones registradas." />
+          } @else {
+            <section class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cuota</th>
+                    <th>Monto aplicado</th>
+                    <th>Aplicado en</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (allocation of detail.allocations; track allocation.id) {
+                    <tr>
+                      <td>{{ allocation.installmentNumber }}</td>
+                      <td>{{ allocation.amountApplied | number: '1.2-2' }}</td>
+                      <td>{{ allocation.appliedAtUtc | date: 'short' }}</td>
+                      <td>{{ allocation.isVoided ? 'Anulada' : 'Vigente' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+          }
+        </section>
+      </section>
+    } @else {
+      <section class="detail-panel">
+        @if (!detail.contractId) {
+          <app-empty-state title="Sin contrato" message="Este pago no está asociado a un contrato." />
+        } @else if (isFinanceLoading()) {
+          <app-loading-state message="Cargando balance y cronograma..." />
+        } @else {
+          @if (financeError()) {
+            <p class="error-text">{{ financeError() }}</p>
+          }
+          @if (balance(); as bal) {
+            <div class="detail-grid">
+              <div><strong>Total programado:</strong> {{ bal.totalScheduled | number: '1.2-2' }}</div>
+              <div><strong>Total pagado:</strong> {{ bal.totalPaid | number: '1.2-2' }}</div>
+              <div><strong>Total pendiente:</strong> {{ bal.totalRemaining | number: '1.2-2' }}</div>
+              <div><strong>Cuotas totales:</strong> {{ bal.totalInstallments }}</div>
+              <div><strong>Cuotas pagadas:</strong> {{ bal.paidInstallments }}</div>
+              <div><strong>Cuotas pendientes:</strong> {{ bal.pendingInstallments }}</div>
+              <div><strong>Cuotas vencidas:</strong> {{ bal.overdueInstallments }}</div>
+              <div><strong>Moneda:</strong> {{ bal.currency }}</div>
+            </div>
+          }
+
+          <section class="subsection">
+            <h4>Cronograma del contrato</h4>
+            @if (schedule().length === 0) {
+              <app-empty-state title="Sin cronograma" message="No hay cuotas disponibles para este contrato." />
+            } @else {
+              <section class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Vencimiento</th>
+                      <th>Monto</th>
+                      <th>Pagado</th>
+                      <th>Saldo</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (installment of schedule(); track installment.id) {
+                      <tr>
+                        <td>{{ installment.installmentNumber }}</td>
+                        <td>{{ installment.dueDate }}</td>
+                        <td>{{ installment.amount | number: '1.2-2' }}</td>
+                        <td>{{ installment.paidAmount | number: '1.2-2' }}</td>
+                        <td>{{ installment.remainingAmount | number: '1.2-2' }}</td>
+                        <td>{{ installment.status }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </section>
+            }
+          </section>
+        }
+      </section>
+    }
+  } @else {
+    <app-empty-state title="Pago no encontrado" message="No se pudo cargar el pago." />
+  }
+</section>
