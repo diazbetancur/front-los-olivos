@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, ViewRef, computed, inject } from '@angular/core';
 import {
-  FormArray,
+  AbstractControl,
   FormBuilder,
-  FormControl,
-  FormGroup,
   ReactiveFormsModule,
+  ValidationErrors,
   Validators
 } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, map } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
@@ -20,33 +20,30 @@ import { LoadingStateComponent } from '../../../shared/components/loading-state/
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { SearchSelectComponent, SearchSelectOption } from '../../../shared/components/search-select/search-select';
 import {
-  ApplyPaymentRequest,
-  ContractBalanceResponse,
-  ContractInstallmentResponse,
   ContractLookupItem,
   GetPaymentsQuery,
   PagedResult,
   PaymentApplyResultResponse,
-  PaymentDetailResponse,
   PaymentListItemResponse,
-  RegisterPaymentRequest,
-  VoidPaymentRequest
+  RegisterPaymentRequest
 } from '../models/payments.models';
 import { PaymentsApiService } from '../services/payments-api.service';
 
-type AllocationFormGroup = FormGroup<{
-  contractInstallmentId: FormControl<string>;
-  installmentNumber: FormControl<number>;
-  dueDate: FormControl<string>;
-  remainingAmount: FormControl<number>;
-  amountApplied: FormControl<number | null>;
-}>;
+function dateRangeValidator(group: AbstractControl): ValidationErrors | null {
+  const from = group.get('fromDate')?.value as string;
+  const to = group.get('toDate')?.value as string;
+  if (from && to && from > to) {
+    return { dateRange: true };
+  }
+  return null;
+}
 
 @Component({
   selector: 'app-payments-page',
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
     AppModalComponent,
     LoadingStateComponent,
     EmptyStateComponent,
@@ -67,10 +64,6 @@ export class PaymentsPageComponent implements OnInit {
   private readonly authSession = inject(AuthSessionService);
 
   readonly canRegister = computed(() => this.authSession.hasPermission('Payments.Register'));
-  readonly canApply = computed(() => this.authSession.hasPermission('Payments.Apply'));
-  readonly canVoid = computed(() => this.authSession.hasPermission('Payments.Void'));
-  readonly canReview = computed(() => this.authSession.hasPermission('Payments.ReviewProof'));
-  readonly canViewSchedule = computed(() => this.authSession.hasPermission('PaymentSchedules.View'));
   readonly canViewContracts = computed(() => this.authSession.hasPermission('Contracts.View'));
   readonly canViewClients = computed(() => this.authSession.hasPermission('Clients.View'));
 
@@ -78,8 +71,6 @@ export class PaymentsPageComponent implements OnInit {
 
   showCreditConfirm = false;
   creditConfirmAmount = 0;
-  creditConfirmContext: 'register' | 'approve' = 'register';
-  creditConfirmPaymentId: string | null = null;
 
   selectedProofFile: File | null = null;
 
@@ -100,12 +91,17 @@ export class PaymentsPageComponent implements OnInit {
     'Anulado'
   ];
 
-  readonly filterForm = this.formBuilder.nonNullable.group({
-    contractId: [''],
-    clientId: [''],
-    status: [''],
-    pageSize: [20, [Validators.min(1), Validators.max(200)]]
-  });
+  readonly filterForm = this.formBuilder.nonNullable.group(
+    {
+      contractId: [''],
+      clientId: [''],
+      status: ['PendienteRevision'],
+      fromDate: [''],
+      toDate: [''],
+      pageSize: [20, [Validators.min(1), Validators.max(200)]]
+    },
+    { validators: dateRangeValidator }
+  );
 
   readonly registerForm = this.formBuilder.nonNullable.group({
     contractId: [''],
@@ -120,34 +116,13 @@ export class PaymentsPageComponent implements OnInit {
     notes: ['', [Validators.maxLength(2048)]]
   });
 
-  readonly applyForm = this.formBuilder.nonNullable.group({
-    allocations: this.formBuilder.array<AllocationFormGroup>([])
-  });
-
-  readonly voidForm = this.formBuilder.nonNullable.group({
-    reason: ['', [Validators.required, Validators.maxLength(1024)]]
-  });
-
-  readonly rejectForm = this.formBuilder.nonNullable.group({
-    reason: ['', [Validators.required, Validators.maxLength(1024)]]
-  });
-  showRejectForm = false;
-  rejectSubmitted = false;
-  rejectError: string | null = null;
-
   payments: ReadonlyArray<PaymentListItemResponse> = [];
-  contractPayments: ReadonlyArray<PaymentListItemResponse> = [];
-  schedule: ReadonlyArray<ContractInstallmentResponse> = [];
-  selectedPaymentDetail: PaymentDetailResponse | null = null;
-  selectedContractBalance: ContractBalanceResponse | null = null;
 
   currentPage = 1;
   totalCount = 0;
 
   isLoading = false;
   isSubmitting = false;
-  isDetailLoading = false;
-  isFinanceLoading = false;
 
   clientClearSignal = 0;
   contractClearSignal = 0;
@@ -157,19 +132,11 @@ export class PaymentsPageComponent implements OnInit {
   isRegisterContractsLoading = false;
 
   showRegisterForm = false;
-  showVoidForm = false;
-  showApplyForm = false;
 
   registerSubmitted = false;
-  voidSubmitted = false;
-  applySubmitted = false;
 
   listError: string | null = null;
   registerError: string | null = null;
-  detailError: string | null = null;
-  financeError: string | null = null;
-  voidError: string | null = null;
-  applyError: string | null = null;
 
   readonly totalPages = computed(() => {
     const pageSize = this.filterForm.controls.pageSize.value;
@@ -248,15 +215,14 @@ export class PaymentsPageComponent implements OnInit {
     return !!(contractId || clientId);
   }
 
-  get allocationsArray(): FormArray<AllocationFormGroup> {
-    return this.applyForm.controls.allocations;
-  }
-
   ngOnInit(): void {
     this.loadPayments(1);
   }
 
   applyFilters(): void {
+    if (this.filterForm.errors?.['dateRange']) {
+      return;
+    }
     this.loadPayments(1);
   }
 
@@ -264,7 +230,9 @@ export class PaymentsPageComponent implements OnInit {
     this.filterForm.reset({
       contractId: '',
       clientId: '',
-      status: '',
+      status: 'PendienteRevision',
+      fromDate: '',
+      toDate: '',
       pageSize: 20
     });
     this.clientClearSignal++;
@@ -339,7 +307,7 @@ export class PaymentsPageComponent implements OnInit {
           next: () => {
             this.feedback.showSuccess('Transferencia registrada. Queda pendiente de aprobacion.');
             this.cancelRegisterForm();
-            this.reloadAfterMutation({ page: 1 });
+            this.loadPayments(1);
           },
           error: (error) => {
             const normalized = this.apiErrorService.normalize(error);
@@ -370,7 +338,7 @@ export class PaymentsPageComponent implements OnInit {
       .registerPayment(request)
       .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isSubmitting = false; this.changeDetectorRef.markForCheck(); }))
       .subscribe({
-        next: (result) => this.handleApplyResult(result, 'register'),
+        next: (result) => this.handleApplyResult(result),
         error: (error) => {
           const normalized = this.apiErrorService.normalize(error);
           this.registerError = normalized.userMessage;
@@ -379,311 +347,30 @@ export class PaymentsPageComponent implements OnInit {
       });
   }
 
-  private handleApplyResult(result: PaymentApplyResultResponse, context: 'register' | 'approve'): void {
+  private handleApplyResult(result: PaymentApplyResultResponse): void {
     if (result.requiresCreditConfirmation) {
       this.creditConfirmAmount = result.projectedCreditBalance;
-      this.creditConfirmContext = context;
-      // En 'register' aún no hay paymentId; en 'approve' lo setea el método approve antes de llamar.
-      if (context === 'register') {
-        this.showRegisterForm = false;
-      }
+      this.showRegisterForm = false;
       this.showCreditConfirm = true;
       return;
     }
 
-    if (context === 'register') {
-      const message = result.payment?.status === 'Aplicado'
-        ? 'Pago aplicado y recibo emitido.'
-        : 'Pago registrado. Queda pendiente de aprobacion.';
-      this.feedback.showSuccess(message);
-      this.cancelRegisterForm();
-    } else {
-      this.showRejectForm = false;
-      this.feedback.showSuccess('Pago aprobado: aplicado y recibo emitido.');
-    }
-    this.reloadAfterMutation({ page: context === 'register' ? 1 : this.currentPage, paymentId: result.payment?.id ?? undefined });
+    const message = result.payment?.status === 'Aplicado'
+      ? 'Pago aplicado y recibo emitido.'
+      : 'Pago registrado. Queda pendiente de aprobacion.';
+    this.feedback.showSuccess(message);
+    this.cancelRegisterForm();
+    this.loadPayments(1);
   }
 
   confirmCreditBalance(): void {
     this.showCreditConfirm = false;
-    if (this.creditConfirmContext === 'register') {
-      this.submitRegisterPayment(true);
-    } else if (this.creditConfirmPaymentId) {
-      this.approvePayment(this.creditConfirmPaymentId, true);
-    }
+    this.submitRegisterPayment(true);
   }
 
   cancelCreditConfirm(): void {
     this.showCreditConfirm = false;
-    this.creditConfirmPaymentId = null;
-    if (this.creditConfirmContext === 'register') {
-      this.showRegisterForm = true;
-    }
-  }
-
-  approvePayment(paymentId: string, confirmCreditBalance = false): void {
-    this.creditConfirmPaymentId = paymentId;
-    this.isSubmitting = true;
-    this.paymentsApi
-      .approvePayment(paymentId, { confirmCreditBalance })
-      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isSubmitting = false; this.changeDetectorRef.markForCheck(); }))
-      .subscribe({
-        next: (result) => this.handleApplyResult(result, 'approve'),
-        error: (error) => {
-          const normalized = this.apiErrorService.normalize(error);
-          this.feedback.showError(normalized.userMessage);
-        }
-      });
-  }
-
-  openRejectForm(): void {
-    this.rejectSubmitted = false;
-    this.rejectError = null;
-    this.rejectForm.reset({ reason: '' });
-    this.showRejectForm = true;
-  }
-
-  cancelRejectForm(): void {
-    this.showRejectForm = false;
-    this.rejectError = null;
-  }
-
-  submitRejectPayment(): void {
-    this.rejectSubmitted = true;
-    this.rejectError = null;
-    const paymentId = this.selectedPaymentDetail?.id;
-    if (!paymentId || this.rejectForm.invalid) {
-      this.rejectForm.markAllAsTouched();
-      return;
-    }
-
-    this.isSubmitting = true;
-    this.paymentsApi
-      .rejectPayment(paymentId, { reason: this.rejectForm.getRawValue().reason })
-      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.isSubmitting = false; this.changeDetectorRef.markForCheck(); }))
-      .subscribe({
-        next: () => {
-          this.feedback.showSuccess('Pago rechazado.');
-          this.cancelRejectForm();
-          this.reloadAfterMutation({ page: this.currentPage, paymentId });
-        },
-        error: (error) => {
-          const normalized = this.apiErrorService.normalize(error);
-          this.rejectError = normalized.userMessage;
-          this.feedback.showError(normalized.userMessage);
-        }
-      });
-  }
-
-  viewPaymentDetail(paymentId: string): void {
-    this.detailError = null;
-    this.financeError = null;
-    this.selectedPaymentDetail = null;
-    this.selectedContractBalance = null;
-    this.schedule = [];
-    this.contractPayments = [];
-    this.showApplyForm = false;
-    this.showVoidForm = false;
-    this.isDetailLoading = true;
-
-    this.paymentsApi
-      .getPaymentById(paymentId)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => {
-          this.isDetailLoading = false;
-          this.syncView();
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          this.selectedPaymentDetail = response;
-          if (response.contractId) {
-            this.loadContractFinance(response.contractId);
-          }
-        },
-        error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.detailError = normalizedError.userMessage;
-          this.feedback.showError(normalizedError.userMessage);
-        }
-      });
-  }
-
-  openApplyForm(): void {
-    if (!this.selectedPaymentDetail?.contractId) {
-      this.applyError = 'Este pago no tiene contrato asociado; no se puede aplicar a cuotas.';
-      return;
-    }
-
-    if (this.selectedPaymentDetail.status === 'Anulado') {
-      this.applyError = 'No puedes aplicar un pago anulado.';
-      return;
-    }
-
-    this.showApplyForm = true;
-    this.applySubmitted = false;
-    this.applyError = null;
-    this.initializeApplyFormFromSchedule();
-  }
-
-  cancelApplyForm(): void {
-    this.showApplyForm = false;
-    this.applySubmitted = false;
-    this.applyError = null;
-    this.allocationsArray.clear();
-  }
-
-  submitApplyPayment(): void {
-    if (!this.selectedPaymentDetail) {
-      return;
-    }
-
-    this.applySubmitted = true;
-    this.applyError = null;
-
-    const rows = this.allocationsArray.controls.map((group) => group.getRawValue());
-    const selectedRows = rows.filter((row) => row.amountApplied !== null && row.amountApplied > 0);
-
-    if (selectedRows.length === 0) {
-      this.applyError = 'Debes indicar al menos una cuota con monto aplicado mayor que cero.';
-      return;
-    }
-
-    const invalidRow = selectedRows.find((row) => row.amountApplied! <= 0 || row.amountApplied! > row.remainingAmount);
-    if (invalidRow) {
-      this.applyError = 'Hay montos aplicados invalidos. Verifica que sean mayores que cero y no excedan el saldo de cuota.';
-      return;
-    }
-
-    const payload: ApplyPaymentRequest = {
-      allocations: selectedRows.map((row) => ({
-        contractInstallmentId: row.contractInstallmentId,
-        amountApplied: Number(row.amountApplied)
-      }))
-    };
-
-    const confirmed = globalThis.confirm(
-      `Se aplicaran ${payload.allocations.length} cuotas al pago ${this.selectedPaymentDetail.paymentNumber}. Deseas continuar?`
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    this.isSubmitting = true;
-    this.paymentsApi
-      .applyPayment(this.selectedPaymentDetail.id, payload)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => {
-          this.isSubmitting = false;
-          this.syncView();
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          this.feedback.show({ level: 'success', text: 'Pago aplicado correctamente.' });
-          this.showApplyForm = false;
-          this.reloadAfterMutation({
-            page: this.currentPage,
-            paymentId: response.id,
-            contractId: response.contractId ?? undefined
-          });
-        },
-        error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.applyError = normalizedError.userMessage;
-          if (normalizedError.status === 409) {
-            this.feedback.showError(`Conflicto al aplicar pago: ${normalizedError.userMessage}`);
-            return;
-          }
-          this.feedback.showError(normalizedError.userMessage);
-        }
-      });
-  }
-
-  openVoidForm(): void {
-    if (!this.selectedPaymentDetail) {
-      return;
-    }
-
-    this.showVoidForm = true;
-    this.voidSubmitted = false;
-    this.voidError = null;
-    this.voidForm.reset({ reason: '' });
-  }
-
-  cancelVoidForm(): void {
-    this.showVoidForm = false;
-    this.voidSubmitted = false;
-    this.voidError = null;
-  }
-
-  submitVoidPayment(): void {
-    if (!this.selectedPaymentDetail) {
-      return;
-    }
-
-    this.voidSubmitted = true;
-    this.voidError = null;
-    if (this.voidForm.invalid) {
-      this.voidForm.markAllAsTouched();
-      return;
-    }
-
-    const confirmed = globalThis.confirm(
-      `Se anulara el pago ${this.selectedPaymentDetail.paymentNumber}. Deseas continuar?`
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    const payload: VoidPaymentRequest = {
-      reason: this.cleanString(this.voidForm.controls.reason.value)
-    };
-
-    this.isSubmitting = true;
-    this.paymentsApi
-      .voidPayment(this.selectedPaymentDetail.id, payload)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => {
-          this.isSubmitting = false;
-          this.syncView();
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          this.feedback.show({ level: 'success', text: 'Pago anulado correctamente.' });
-          this.showVoidForm = false;
-          this.reloadAfterMutation({
-            page: this.currentPage,
-            paymentId: response.id,
-            contractId: response.contractId ?? undefined
-          });
-        },
-        error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.voidError = normalizedError.userMessage;
-          if (normalizedError.status === 409) {
-            this.feedback.showError(`Conflicto al anular pago: ${normalizedError.userMessage}`);
-            return;
-          }
-          this.feedback.showError(normalizedError.userMessage);
-        }
-      });
-  }
-
-  private reloadAfterMutation(options: { page: number; paymentId?: string; contractId?: string }): void {
-    this.loadPayments(options.page);
-    if (options.paymentId) {
-      this.viewPaymentDetail(options.paymentId);
-      return;
-    }
-
-    if (options.contractId) {
-      this.loadContractFinance(options.contractId);
-    }
+    this.showRegisterForm = true;
   }
 
   statusClass(status: string): string {
@@ -716,6 +403,8 @@ export class PaymentsPageComponent implements OnInit {
       contractId: this.cleanString(this.filterForm.controls.contractId.value),
       clientId: this.cleanString(this.filterForm.controls.clientId.value),
       status: this.cleanString(this.filterForm.controls.status.value),
+      fromDate: this.cleanString(this.filterForm.controls.fromDate.value),
+      toDate: this.cleanString(this.filterForm.controls.toDate.value),
       page,
       pageSize: this.filterForm.controls.pageSize.value
     };
@@ -766,114 +455,6 @@ export class PaymentsPageComponent implements OnInit {
           this.syncView();
         }
       });
-  }
-
-  private loadContractFinance(contractId: string): void {
-    this.financeError = null;
-    this.isFinanceLoading = true;
-    this.schedule = [];
-    this.contractPayments = [];
-    this.selectedContractBalance = null;
-
-    this.paymentsApi
-      .getContractSchedule(contractId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.schedule = response;
-          if (this.showApplyForm) {
-            this.initializeApplyFormFromSchedule();
-          }
-          this.syncView();
-        },
-        error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.financeError = normalizedError.userMessage;
-          this.schedule = [];
-          this.syncView();
-        }
-      });
-
-    this.paymentsApi
-      .getContractPayments(contractId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.contractPayments = response;
-          this.syncView();
-        },
-        error: () => {
-          this.contractPayments = [];
-          this.syncView();
-        }
-      });
-
-    this.paymentsApi
-      .getContractBalance(contractId)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => {
-          this.isFinanceLoading = false;
-          this.syncView();
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          this.selectedContractBalance = response;
-        },
-        error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.financeError = normalizedError.userMessage;
-          this.selectedContractBalance = null;
-        }
-      });
-  }
-
-  private initializeApplyFormFromSchedule(): void {
-    this.allocationsArray.clear();
-    for (const installment of this.schedule) {
-      this.allocationsArray.push(this.buildAllocationGroup(installment));
-    }
-  }
-
-  private buildAllocationGroup(installment: ContractInstallmentResponse): AllocationFormGroup {
-    return new FormGroup({
-      contractInstallmentId: new FormControl<string>(installment.id, {
-        nonNullable: true,
-        validators: [Validators.required]
-      }),
-      installmentNumber: new FormControl<number>(installment.installmentNumber, {
-        nonNullable: true,
-        validators: [Validators.required]
-      }),
-      dueDate: new FormControl<string>(installment.dueDate, {
-        nonNullable: true,
-        validators: [Validators.required]
-      }),
-      remainingAmount: new FormControl<number>(installment.remainingAmount, {
-        nonNullable: true,
-        validators: [Validators.required]
-      }),
-      amountApplied: new FormControl<number | null>(null, {
-        validators: [Validators.min(0), Validators.max(installment.remainingAmount)]
-      })
-    });
-  }
-
-  private toRegisterPaymentPayload(): RegisterPaymentRequest {
-    const raw = this.registerForm.getRawValue();
-    return {
-      contractId: this.cleanString(raw.contractId),
-      clientId: this.cleanString(raw.clientId),
-      paymentDate: raw.paymentDate,
-      amount: Number(raw.amount),
-      currency: this.cleanString(raw.currency) ?? 'HNL',
-      paymentMethod: this.cleanString(raw.paymentMethod),
-      bankName: this.cleanString(raw.bankName),
-      transactionReference: this.cleanString(raw.transactionReference),
-      concept: this.cleanString(raw.concept),
-      notes: this.cleanString(raw.notes)
-    };
   }
 
   private cleanString(value: string | null | undefined): string | null {
