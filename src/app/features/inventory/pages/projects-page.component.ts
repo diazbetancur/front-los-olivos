@@ -146,6 +146,7 @@ export class ProjectsPageComponent implements OnInit {
     this.editingProjectId = projectId;
     this.formError = null;
     this.projectFormSubmitted = false;
+    this.selectedLogoFile = null;
     this.showForm = true;
     this.isSubmitting = true;
 
