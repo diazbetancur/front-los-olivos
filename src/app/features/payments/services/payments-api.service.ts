@@ -14,6 +14,7 @@ import {
   PaymentApplyResultResponse,
   PaymentDetailResponse,
   PaymentListItemResponse,
+  ReceiptDetailResponse,
   RegisterPaymentRequest,
   RejectPaymentRequest,
   VoidPaymentRequest
@@ -89,6 +90,13 @@ export class PaymentsApiService {
     return this.apiClient.post<RejectPaymentRequest, PaymentDetailResponse>(
       `/api/v1/admin/payments/${paymentId}/reject`,
       request
+    );
+  }
+
+  emitReceipt(paymentId: string): Observable<ReceiptDetailResponse> {
+    return this.apiClient.post<Record<string, never>, ReceiptDetailResponse>(
+      `/api/v1/admin/payments/${paymentId}/receipt`,
+      {}
     );
   }
 

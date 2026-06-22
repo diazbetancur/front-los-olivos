@@ -35,6 +35,7 @@ export interface PaymentListItemResponse {
   transactionReference: string;
   contractNumber?: string | null;
   clientFullName?: string | null;
+  hasReceipt?: boolean;
 }
 
 export interface RegisterPaymentRequest {
