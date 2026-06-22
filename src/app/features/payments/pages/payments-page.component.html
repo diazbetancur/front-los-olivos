@@ -34,13 +34,27 @@
 
       <label>
         Estado
-        <select formControlName="status">
-          <option value="">Todos</option>
+        <select formControlName="status" class="ui-form-control">
+          <option value="">Todos los estados</option>
           @for (status of paymentStatuses; track status) {
             <option [value]="status">{{ status }}</option>
           }
         </select>
       </label>
+
+      <label>
+        Desde
+        <input type="date" formControlName="fromDate" class="ui-form-control" />
+      </label>
+
+      <label>
+        Hasta
+        <input type="date" formControlName="toDate" class="ui-form-control" />
+      </label>
+
+      @if (filterForm.errors?.['dateRange']) {
+        <p class="field-error">La fecha "Desde" no puede ser mayor que "Hasta".</p>
+      }
 
       <div class="filter-actions">
         <button type="submit">Aplicar</button>
@@ -81,15 +95,22 @@
             <tr>
               <td>{{ payment.paymentNumber }}</td>
               <td>{{ payment.paymentDate }}</td>
-              <td>{{ resolveContractLabel(payment.contractId) }}</td>
-              <td>{{ resolveClientLabel(payment.clientId) }}</td>
+              <td>{{ payment.contractNumber || '-' }}</td>
+              <td>{{ payment.clientFullName || '-' }}</td>
               <td>{{ payment.amount | number: '1.2-2' }}</td>
               <td>{{ payment.appliedAmount | number: '1.2-2' }}</td>
               <td>{{ payment.unallocatedAmount | number: '1.2-2' }}</td>
               <td><span [class]="statusClass(payment.status)">{{ payment.status }}</span></td>
               <td>{{ payment.paymentMethod || '-' }}</td>
               <td class="row-actions">
-                <button type="button" class="ghost" (click)="viewPaymentDetail(payment.id)">Ver</button>
+                <a
+                  class="action-icon-btn"
+                  [routerLink]="['/admin/payments', payment.id]"
+                  title="Ver detalle"
+                  aria-label="Ver detalle"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>
               </td>
             </tr>
           }
@@ -177,16 +198,26 @@
           </label>
 
           <label>
-            Metodo de pago
+            <span class="required-label">Metodo de pago *</span>
             <select formControlName="paymentMethod" class="ui-form-control">
-              <option value="">Seleccionar...</option>
-              <option value="Transferencia">Transferencia</option>
-              <option value="Efectivo">Efectivo</option>
+              @for (method of paymentMethods; track method) {
+                <option [value]="method">{{ method }}</option>
+              }
             </select>
             <small class="ui-field-inline-error" [class.visible]="hasRegisterControlError('paymentMethod')">
               {{ getRegisterControlErrorMessage('paymentMethod') }}
             </small>
           </label>
+
+          @if (isTransferMethod) {
+            <label class="full-width">
+              <span class="required-label">Comprobante (PDF o imagen) *</span>
+              <input type="file" class="ui-form-control" accept="application/pdf,image/png,image/jpeg" (change)="onProofFileSelected($event)" />
+              <small class="ui-field-inline-error" [class.visible]="registerSubmitted && !selectedProofFile">
+                Adjunta el comprobante de la transferencia.
+              </small>
+            </label>
+          }
 
           <label>
             Banco
@@ -241,239 +272,23 @@
     </app-modal>
   }
 
-  @if (isDetailLoading) {
-    <app-loading-state message="Cargando detalle del pago..." />
-  } @else if (detailError) {
-    <section class="error-box">
-      <p>{{ detailError }}</p>
-    </section>
-  } @else if (selectedPaymentDetail; as detail) {
-    <section class="detail-panel">
-      <header class="detail-header">
-        <div>
-          <h3>Detalle de pago</h3>
-          <p>{{ detail.paymentNumber }}</p>
+  @if (showCreditConfirm) {
+    <app-modal (closed)="cancelCreditConfirm()">
+      <section class="form-panel">
+        <header>
+          <h3>Confirmar saldo a favor</h3>
+          <button type="button" class="ghost ui-icon-close-btn" (click)="cancelCreditConfirm()">×</button>
+        </header>
+        <p>
+          Este pago dejaria un <strong>saldo a favor de {{ creditConfirmAmount | number: '1.2-2' }}</strong>
+          (el monto excede lo que falta del contrato). ¿Deseas continuar?
+        </p>
+        <p class="warning-text">Si fue un error de tipeo, cancela y corrige el monto.</p>
+        <div class="form-actions">
+          <button type="button" class="ghost" (click)="cancelCreditConfirm()">Cancelar</button>
+          <button type="button" (click)="confirmCreditBalance()" [disabled]="isSubmitting">Confirmar y aplicar</button>
         </div>
-        <span [class]="statusClass(detail.status)">{{ detail.status }}</span>
-      </header>
-
-      <div class="detail-grid">
-        <div><strong>Fecha:</strong> {{ detail.paymentDate }}</div>
-        <div><strong>Contrato:</strong> {{ resolveContractLabel(detail.contractId) }}</div>
-        <div><strong>Cliente:</strong> {{ resolveClientLabel(detail.clientId) }}</div>
-        <div><strong>Monto:</strong> {{ detail.amount | number: '1.2-2' }}</div>
-        <div><strong>Aplicado:</strong> {{ detail.appliedAmount | number: '1.2-2' }}</div>
-        <div><strong>No aplicado:</strong> {{ detail.unallocatedAmount | number: '1.2-2' }}</div>
-        <div><strong>Moneda:</strong> {{ detail.currency }}</div>
-        <div><strong>Metodo:</strong> {{ detail.paymentMethod || '-' }}</div>
-        <div><strong>Banco:</strong> {{ detail.bankName || '-' }}</div>
-        <div><strong>Referencia:</strong> {{ detail.transactionReference || '-' }}</div>
-        <div class="full-width"><strong>Concepto:</strong> {{ detail.concept || '-' }}</div>
-        <div class="full-width"><strong>Notas:</strong> {{ detail.notes || '-' }}</div>
-        <div><strong>Anulado en:</strong> {{ detail.voidedAtUtc ? (detail.voidedAtUtc | date: 'short') : '-' }}</div>
-        <div class="full-width"><strong>Razon anulacion:</strong> {{ detail.voidReason || '-' }}</div>
-      </div>
-
-      @if (detail.allocations.length > 0) {
-        <section class="subsection">
-          <h4>Aplicaciones actuales</h4>
-          <section class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Cuota</th>
-                  <th>Monto aplicado</th>
-                  <th>Aplicado en</th>
-                  <th>Anulada</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (allocation of detail.allocations; track allocation.id) {
-                  <tr>
-                    <td>{{ allocation.installmentNumber }}</td>
-                    <td>{{ allocation.amountApplied | number: '1.2-2' }}</td>
-                    <td>{{ allocation.appliedAtUtc | date: 'short' }}</td>
-                    <td>{{ allocation.isVoided ? 'Si' : 'No' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </section>
-        </section>
-      }
-
-      <section class="action-bar">
-        <button
-          type="button"
-          class="ghost"
-          (click)="openApplyForm()"
-          [disabled]="detail.status === 'Anulado'"
-          *appHasPermission="['Payments.Apply']"
-        >
-          Aplicar pago
-        </button>
-        <button
-          type="button"
-          class="danger"
-          (click)="openVoidForm()"
-          [disabled]="detail.status === 'Anulado'"
-          *appHasPermission="['Payments.Void']"
-        >
-          Anular pago
-        </button>
       </section>
-
-      @if (showVoidForm) {
-        <app-modal (closed)="cancelVoidForm()">
-          <section class="form-panel nested-form">
-          <header>
-            <h5>Anular pago</h5>
-            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelVoidForm()" aria-label="Cerrar" title="Cerrar">×</button>
-          </header>
-
-          @if (voidError) {
-            <p class="error-text">{{ voidError }}</p>
-          }
-
-            <form [formGroup]="voidForm" (ngSubmit)="submitVoidPayment()" novalidate>
-              <div class="grid">
-              <label class="required full-width">
-                Razon de anulacion (obligatoria)
-                <textarea rows="3" formControlName="reason"></textarea>
-              </label>
-            </div>
-
-            <p class="field-error" *ngIf="voidForm.invalid && (voidForm.touched || voidSubmitted)">
-              Debes ingresar una razon valida para anular el pago.
-            </p>
-
-            <div class="form-actions">
-              <button type="button" class="ghost" (click)="cancelVoidForm()">Cancelar</button>
-              <button type="submit" class="danger" [disabled]="isSubmitting || voidForm.invalid">
-                Confirmar anulacion
-              </button>
-            </div>
-          </form>
-          </section>
-        </app-modal>
-      }
-
-      @if (showApplyForm) {
-        <app-modal (closed)="cancelApplyForm()">
-          <section class="form-panel nested-form">
-          <header>
-            <h5>Aplicar pago a cuotas</h5>
-            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelApplyForm()" aria-label="Cerrar" title="Cerrar">×</button>
-          </header>
-
-          @if (applyError) {
-            <p class="error-text">{{ applyError }}</p>
-          }
-
-          <form [formGroup]="applyForm" (ngSubmit)="submitApplyPayment()" novalidate>
-            <div formArrayName="allocations">
-              <section class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Cuota</th>
-                      <th>Vencimiento</th>
-                      <th>Saldo cuota</th>
-                      <th>Monto a aplicar</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (allocation of allocationsArray.controls; track allocation.controls.contractInstallmentId.value; let i = $index) {
-                      <tr [formGroupName]="i">
-                        <td>{{ allocation.controls.installmentNumber.value }}</td>
-                        <td>{{ allocation.controls.dueDate.value }}</td>
-                        <td>{{ allocation.controls.remainingAmount.value | number: '1.2-2' }}</td>
-                        <td>
-                          <input
-                            type="number"
-                            formControlName="amountApplied"
-                            min="0"
-                            step="0.01"
-                            [max]="allocation.controls.remainingAmount.value"
-                          />
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </section>
-            </div>
-
-            <p class="field-error" *ngIf="applySubmitted && allocationsArray.length === 0">
-              No hay cuotas disponibles para aplicar.
-            </p>
-
-            <div class="form-actions">
-              <button type="button" class="ghost" (click)="cancelApplyForm()">Cancelar</button>
-              <button type="submit" [disabled]="isSubmitting">Aplicar pago</button>
-            </div>
-          </form>
-          </section>
-        </app-modal>
-      }
-
-      <section class="subsection" *appHasPermission="['PaymentSchedules.View']">
-        <h4>Balance del contrato</h4>
-        @if (financeError) {
-          <p class="error-text">{{ financeError }}</p>
-        }
-
-        @if (isFinanceLoading) {
-          <app-loading-state message="Cargando balance y cronograma..." />
-        } @else if (selectedContractBalance; as balance) {
-          <div class="detail-grid">
-            <div><strong>Total programado:</strong> {{ balance.totalScheduled | number: '1.2-2' }}</div>
-            <div><strong>Total pagado:</strong> {{ balance.totalPaid | number: '1.2-2' }}</div>
-            <div><strong>Total pendiente:</strong> {{ balance.totalRemaining | number: '1.2-2' }}</div>
-            <div><strong>Cuotas totales:</strong> {{ balance.totalInstallments }}</div>
-            <div><strong>Cuotas pagadas:</strong> {{ balance.paidInstallments }}</div>
-            <div><strong>Cuotas pendientes:</strong> {{ balance.pendingInstallments }}</div>
-            <div><strong>Cuotas vencidas:</strong> {{ balance.overdueInstallments }}</div>
-            <div><strong>Moneda:</strong> {{ balance.currency }}</div>
-          </div>
-        } @else {
-          <app-empty-state title="Sin balance" message="No hay balance disponible para este contrato." />
-        }
-      </section>
-
-      <section class="subsection" *appHasPermission="['PaymentSchedules.View']">
-        <h4>Cronograma del contrato</h4>
-        @if (schedule.length === 0) {
-          <app-empty-state title="Sin cronograma" message="No hay cuotas disponibles para este contrato." />
-        } @else {
-          <section class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Vencimiento</th>
-                  <th>Monto</th>
-                  <th>Pagado</th>
-                  <th>Saldo</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (installment of schedule; track installment.id) {
-                  <tr>
-                    <td>{{ installment.installmentNumber }}</td>
-                    <td>{{ installment.dueDate }}</td>
-                    <td>{{ installment.amount | number: '1.2-2' }}</td>
-                    <td>{{ installment.paidAmount | number: '1.2-2' }}</td>
-                    <td>{{ installment.remainingAmount | number: '1.2-2' }}</td>
-                    <td>{{ installment.status }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </section>
-        }
-      </section>
-    </section>
+    </app-modal>
   }
 </section>

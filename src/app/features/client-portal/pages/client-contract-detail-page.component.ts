@@ -7,6 +7,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { ApiErrorService } from '../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
+import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import {
@@ -22,7 +23,7 @@ type ClientContractSection = 'overview' | 'schedule' | 'payments' | 'receipts';
 
 @Component({
   selector: 'app-client-contract-detail-page',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, LoadingStateComponent, EmptyStateComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, LoadingStateComponent, EmptyStateComponent, AppModalComponent],
   templateUrl: './client-contract-detail-page.component.html',
   styleUrl: './client-contract-detail-page.component.scss'
 })
@@ -68,6 +69,12 @@ export class ClientContractDetailPageComponent implements OnInit {
   proofSubmitted = false;
   private selectedFile: File | null = null;
 
+  showProofModal = false;
+
+  readonly schedulePageSizeOptions = [10, 25, 50];
+  schedulePageSize = 10;
+  schedulePage = 1;
+
   ngOnInit(): void {
     this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
       this.activeSection = this.resolveSection(data['section']);
@@ -92,6 +99,41 @@ export class ClientContractDetailPageComponent implements OnInit {
     this.selectedFile = file;
     this.proofForm.controls.fileName.setValue(file?.name ?? '');
     this.proofForm.controls.fileName.markAsTouched();
+  }
+
+  openProofModal(): void {
+    this.resetProofForm();
+    this.showProofModal = true;
+  }
+
+  closeProofModal(): void {
+    this.showProofModal = false;
+  }
+
+  get pagedSchedule(): ReadonlyArray<ContractInstallmentItem> {
+    const start = (this.schedulePage - 1) * this.schedulePageSize;
+    return this.schedule.slice(start, start + this.schedulePageSize);
+  }
+
+  get scheduleTotalPages(): number {
+    return Math.max(1, Math.ceil(this.schedule.length / this.schedulePageSize));
+  }
+
+  onSchedulePageSizeChange(event: Event): void {
+    this.schedulePageSize = Number((event.target as HTMLSelectElement).value);
+    this.schedulePage = 1;
+  }
+
+  prevSchedulePage(): void {
+    if (this.schedulePage > 1) {
+      this.schedulePage -= 1;
+    }
+  }
+
+  nextSchedulePage(): void {
+    if (this.schedulePage < this.scheduleTotalPages) {
+      this.schedulePage += 1;
+    }
   }
 
   submitPaymentProof(): void {
@@ -132,7 +174,11 @@ export class ClientContractDetailPageComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.feedback.showSuccess('Comprobante enviado. Estado: PendienteRevision.');
+          this.showProofModal = false;
+          this.feedback.showSuccess('Pago registrado por transferencia. Queda pendiente de aprobacion.');
+          if (this.contractId) {
+            this.loadPayments(this.contractId);
+          }
           this.resetProofForm();
         },
         error: (error) => {
@@ -267,6 +313,7 @@ export class ClientContractDetailPageComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.schedule = response;
+          this.schedulePage = 1;
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
