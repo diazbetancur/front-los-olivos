@@ -255,7 +255,7 @@
           <select formControlName="projectId">
             <option value="">Todos</option>
             @for (project of projectOptions; track project.id) {
-              <option [value]="project.id">{{ project.code }} - {{ project.name }}</option>
+              <option [value]="project.id">{{ project.name }}</option>
             }
           </select>
         </label>
@@ -439,7 +439,7 @@
                   <ul class="combo-dropdown">
                     @for (project of projectDropdownItems; track project.id) {
                       <li (mousedown)="selectProject(project)">
-                        {{ project.code }} - {{ project.name }}
+                        {{ project.name }}
                       </li>
                     }
                   </ul>
