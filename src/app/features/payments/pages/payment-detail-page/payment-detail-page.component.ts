@@ -68,6 +68,7 @@ export class PaymentDetailPageComponent implements OnInit {
   readonly canReview = computed(() => this.authSession.hasPermission('Payments.ReviewProof'));
   readonly canViewReceipts = computed(() => this.authSession.hasPermission('Receipts.View'));
   readonly canDownloadReceipt = computed(() => this.authSession.hasPermission('Receipts.Print'));
+  readonly canGenerateReceipt = computed(() => this.authSession.hasPermission('Receipts.Generate'));
 
   readonly payment = signal<PaymentDetailResponse | null>(null);
   readonly balance = signal<ContractBalanceResponse | null>(null);
@@ -80,6 +81,7 @@ export class PaymentDetailPageComponent implements OnInit {
   readonly isFinanceLoading = signal(false);
   readonly isSubmitting = signal(false);
   readonly isDownloadingReceipt = signal(false);
+  readonly isGeneratingReceipt = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly financeError = signal<string | null>(null);
 
@@ -90,6 +92,11 @@ export class PaymentDetailPageComponent implements OnInit {
     }
     const percent = Math.round((current.appliedAmount / current.amount) * 100);
     return Math.min(100, Math.max(0, percent));
+  });
+
+  readonly isReceiptPending = computed(() => {
+    const current = this.payment();
+    return !!current && current.status === 'Aplicado' && !!current.contractId && !this.receipt();
   });
 
   readonly showApply = signal(false);
@@ -368,6 +375,28 @@ export class PaymentDetailPageComponent implements OnInit {
 
   protected reload(): void {
     this.load();
+  }
+
+  generateReceipt(): void {
+    const current = this.payment();
+    if (!current) {
+      return;
+    }
+    this.isGeneratingReceipt.set(true);
+    this.paymentsApi
+      .emitReceipt(current.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.isGeneratingReceipt.set(false);
+          this.feedback.showSuccess('Comprobante generado.');
+          this.reload();
+        },
+        error: (error) => {
+          this.isGeneratingReceipt.set(false);
+          this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
+        }
+      });
   }
 
   downloadReceipt(): void {

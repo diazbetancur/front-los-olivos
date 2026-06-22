@@ -133,6 +133,11 @@
         <div class="pd-card-head">
           <h2 class="pd-card-title">Aplicaciones actuales</h2>
           <div class="pd-card-head-right">
+            @if (isReceiptPending() && canGenerateReceipt()) {
+              <button type="button" class="pd-btn-soft" (click)="generateReceipt()" [disabled]="isGeneratingReceipt()">
+                {{ isGeneratingReceipt() ? 'Generando…' : 'Generar comprobante' }}
+              </button>
+            }
             @if (receipt() && canDownloadReceipt()) {
               <button type="button" class="pd-btn-soft" (click)="downloadReceipt()" [disabled]="isDownloadingReceipt()">
                 {{ isDownloadingReceipt() ? 'Descargando…' : '⬇ Descargar comprobante' }}
