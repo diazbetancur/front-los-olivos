@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   FormArray,
@@ -23,9 +24,11 @@ import {
   ContractInstallmentResponse,
   PaymentApplyResultResponse,
   PaymentDetailResponse,
+  ReceiptListItemResponse,
   VoidPaymentRequest
 } from '../../models/payments.models';
 import { PaymentsApiService } from '../../services/payments-api.service';
+import { ReceiptsApiService } from '../../services/receipts-api.service';
 
 type AllocationFormGroup = FormGroup<{
   contractInstallmentId: FormControl<string>;
@@ -55,6 +58,7 @@ export class PaymentDetailPageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly paymentsApi = inject(PaymentsApiService);
+  private readonly receiptsApi = inject(ReceiptsApiService);
   private readonly apiErrorService = inject(ApiErrorService);
   protected readonly feedback = inject(AppFeedbackService);
   private readonly authSession = inject(AuthSessionService);
@@ -62,18 +66,31 @@ export class PaymentDetailPageComponent implements OnInit {
   readonly canApply = computed(() => this.authSession.hasPermission('Payments.Apply'));
   readonly canVoid = computed(() => this.authSession.hasPermission('Payments.Void'));
   readonly canReview = computed(() => this.authSession.hasPermission('Payments.ReviewProof'));
+  readonly canViewReceipts = computed(() => this.authSession.hasPermission('Receipts.View'));
+  readonly canDownloadReceipt = computed(() => this.authSession.hasPermission('Receipts.Print'));
 
   readonly payment = signal<PaymentDetailResponse | null>(null);
   readonly balance = signal<ContractBalanceResponse | null>(null);
   readonly schedule = signal<ReadonlyArray<ContractInstallmentResponse>>([]);
+  readonly receipt = signal<ReceiptListItemResponse | null>(null);
 
   readonly activeTab = signal<'detail' | 'balance'>('detail');
 
   readonly isLoading = signal(false);
   readonly isFinanceLoading = signal(false);
   readonly isSubmitting = signal(false);
+  readonly isDownloadingReceipt = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly financeError = signal<string | null>(null);
+
+  readonly appliedPercent = computed(() => {
+    const current = this.payment();
+    if (!current || current.amount <= 0) {
+      return 0;
+    }
+    const percent = Math.round((current.appliedAmount / current.amount) * 100);
+    return Math.min(100, Math.max(0, percent));
+  });
 
   readonly showApply = signal(false);
   readonly showVoid = signal(false);
@@ -353,9 +370,32 @@ export class PaymentDetailPageComponent implements OnInit {
     this.load();
   }
 
+  downloadReceipt(): void {
+    const current = this.receipt();
+    if (!current) {
+      return;
+    }
+    this.isDownloadingReceipt.set(true);
+    this.receiptsApi
+      .downloadReceiptPdf(current.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.isDownloadingReceipt.set(false);
+          const fileName = this.readFileName(response) ?? `${current.receiptNumber}.pdf`;
+          this.saveBlob(response.body, fileName);
+        },
+        error: (error) => {
+          this.isDownloadingReceipt.set(false);
+          this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
+        }
+      });
+  }
+
   private load(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
+    this.receipt.set(null);
 
     this.paymentsApi
       .getPaymentById(this.paymentId)
@@ -364,6 +404,7 @@ export class PaymentDetailPageComponent implements OnInit {
         next: (response) => {
           this.isLoading.set(false);
           this.payment.set(response);
+          this.loadReceipt();
           if (response.contractId) {
             this.loadFinance(response.contractId);
           } else {
@@ -410,6 +451,48 @@ export class PaymentDetailPageComponent implements OnInit {
           this.financeError.set(normalized.userMessage);
         }
       });
+  }
+
+  private loadReceipt(): void {
+    if (!this.canViewReceipts()) {
+      return;
+    }
+    this.receiptsApi
+      .getReceipts({ paymentId: this.paymentId, page: 1, pageSize: 1 })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          const emitted = result.items.find((item) => item.status === 'Emitido') ?? null;
+          this.receipt.set(emitted);
+        },
+        error: () => this.receipt.set(null)
+      });
+  }
+
+  private readFileName(response: HttpResponse<Blob>): string | null {
+    const disposition = response.headers.get('content-disposition');
+    if (!disposition) {
+      return null;
+    }
+    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8Match?.[1]) {
+      return decodeURIComponent(utf8Match[1]);
+    }
+    const asciiMatch = disposition.match(/filename="?([^";]+)"?/i);
+    return asciiMatch?.[1] ?? null;
+  }
+
+  private saveBlob(blob: Blob | null, fileName: string): void {
+    if (!blob) {
+      return;
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = fileName;
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(objectUrl);
   }
 
   private initializeApplyFromSchedule(): void {

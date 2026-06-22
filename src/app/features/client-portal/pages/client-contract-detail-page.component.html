@@ -70,6 +70,9 @@
       >
         Recibos
       </a>
+      <button type="button" class="btn-primary load-payment-btn" (click)="openProofModal()">
+        Cargar pago
+      </button>
     </nav>
 
     <section class="panel">
@@ -149,7 +152,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (item of schedule; track item.id) {
+                @for (item of pagedSchedule; track item.id) {
                   <tr>
                     <td>{{ item.installmentNumber }}</td>
                     <td>{{ item.dueDate }}</td>
@@ -162,6 +165,26 @@
               </tbody>
             </table>
           </section>
+
+          <div class="pager">
+            <label class="page-size">
+              Por página
+              <select [value]="schedulePageSize" (change)="onSchedulePageSizeChange($event)">
+                @for (size of schedulePageSizeOptions; track size) {
+                  <option [value]="size">{{ size }}</option>
+                }
+              </select>
+            </label>
+            <div class="pager-controls">
+              <button type="button" class="btn-secondary" [disabled]="schedulePage <= 1" (click)="prevSchedulePage()">
+                Anterior
+              </button>
+              <span class="pager-info">Página {{ schedulePage }} de {{ scheduleTotalPages }}</span>
+              <button type="button" class="btn-secondary" [disabled]="schedulePage >= scheduleTotalPages" (click)="nextSchedulePage()">
+                Siguiente
+              </button>
+            </div>
+          </div>
         }
       }
 
@@ -255,65 +278,70 @@
       }
     </section>
 
-    <section class="panel">
-      <header class="panel-header">
-        <h3>Cargar comprobante de pago</h3>
-        <p>El comprobante queda en estado PendienteRevision hasta aprobacion administrativa.</p>
-      </header>
+    @if (showProofModal) {
+      <app-modal (closed)="closeProofModal()" maxWidth="640px">
+        <section class="panel proof-modal">
+          <header class="panel-header">
+            <h3>Cargar pago</h3>
+            <p>El comprobante queda en estado PendienteRevision hasta aprobacion administrativa.</p>
+          </header>
 
-      <form class="proof-form" [formGroup]="proofForm" (ngSubmit)="submitPaymentProof()">
-        <label>
-          Fecha de pago *
-          <input type="date" formControlName="paymentDate" />
-          @if ((proofForm.controls.paymentDate.touched || proofSubmitted) && proofForm.controls.paymentDate.invalid) {
-            <small class="field-error">La fecha es obligatoria.</small>
-          }
-        </label>
+          <form class="proof-form" [formGroup]="proofForm" (ngSubmit)="submitPaymentProof()">
+            <label>
+              Fecha de pago *
+              <input type="date" formControlName="paymentDate" />
+              @if ((proofForm.controls.paymentDate.touched || proofSubmitted) && proofForm.controls.paymentDate.invalid) {
+                <small class="field-error">La fecha es obligatoria.</small>
+              }
+            </label>
 
-        <label>
-          Monto *
-          <input type="number" min="0.01" step="0.01" formControlName="amount" />
-          @if ((proofForm.controls.amount.touched || proofSubmitted) && proofForm.controls.amount.invalid) {
-            <small class="field-error">Ingresa un monto mayor que cero.</small>
-          }
-        </label>
+            <label>
+              Monto *
+              <input type="number" min="0.01" step="0.01" formControlName="amount" />
+              @if ((proofForm.controls.amount.touched || proofSubmitted) && proofForm.controls.amount.invalid) {
+                <small class="field-error">Ingresa un monto mayor que cero.</small>
+              }
+            </label>
 
-        <label>
-          Moneda
-          <input type="text" maxlength="16" formControlName="currency" placeholder="HNL" />
-        </label>
+            <label>
+              Moneda
+              <input type="text" maxlength="16" formControlName="currency" placeholder="HNL" />
+            </label>
 
-        <label>
-          Referencia externa
-          <input type="text" maxlength="256" formControlName="externalReference" />
-        </label>
+            <label>
+              Referencia externa
+              <input type="text" maxlength="256" formControlName="externalReference" />
+            </label>
 
-        <label class="full-width">
-          Notas
-          <textarea rows="3" maxlength="2048" formControlName="notes"></textarea>
-        </label>
+            <label class="full-width">
+              Notas
+              <textarea rows="3" maxlength="2048" formControlName="notes"></textarea>
+            </label>
 
-        <label class="full-width">
-          Archivo *
-          <input type="file" accept=".pdf,image/jpeg,image/jpg,image/png" (change)="onFileSelected($event)" />
-          @if (proofForm.controls.fileName.value) {
-            <small class="file-name">Archivo: {{ proofForm.controls.fileName.value }}</small>
-          }
-          @if ((proofForm.controls.fileName.touched || proofSubmitted) && proofForm.controls.fileName.invalid) {
-            <small class="field-error">Debes seleccionar un archivo PDF/JPG/PNG.</small>
-          }
-        </label>
+            <label class="full-width">
+              Archivo *
+              <input type="file" accept=".pdf,image/jpeg,image/jpg,image/png" (change)="onFileSelected($event)" />
+              @if (proofForm.controls.fileName.value) {
+                <small class="file-name">Archivo: {{ proofForm.controls.fileName.value }}</small>
+              }
+              @if ((proofForm.controls.fileName.touched || proofSubmitted) && proofForm.controls.fileName.invalid) {
+                <small class="field-error">Debes seleccionar un archivo PDF/JPG/PNG.</small>
+              }
+            </label>
 
-        @if (proofError) {
-          <p class="error-text full-width">{{ proofError }}</p>
-        }
+            @if (proofError) {
+              <p class="error-text full-width">{{ proofError }}</p>
+            }
 
-        <div class="form-actions full-width">
-          <button type="submit" class="btn-primary" [disabled]="isSubmittingProof || proofForm.invalid">
-            Enviar comprobante
-          </button>
-        </div>
-      </form>
-    </section>
+            <div class="form-actions full-width">
+              <button type="button" class="btn-secondary" (click)="closeProofModal()">Cancelar</button>
+              <button type="submit" class="btn-primary" [disabled]="isSubmittingProof || proofForm.invalid">
+                Enviar comprobante
+              </button>
+            </div>
+          </form>
+        </section>
+      </app-modal>
+    }
   }
 </section>

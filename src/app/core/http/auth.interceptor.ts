@@ -66,9 +66,12 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         return throwError(() => error);
       }
 
+      console.warn('[DEBUG-login] interceptor caught 401 on', request.url, '| hasAccessToken=', hasAccessToken, '| terminalPath=', (isLoginRequest || isRefreshRequest || isLogoutRequest || isRetriedRequest));
+
       if (isLoginRequest || isRefreshRequest || isLogoutRequest || isRetriedRequest) {
         authSession.clearSession();
         if (!isLoginRequest) {
+          console.warn('[DEBUG-login] interceptor → clearSession + redirectToLogin (terminal 401) for', request.url);
           feedback.showError('Tu sesion no es valida. Inicia sesion nuevamente.');
           void redirectToLogin(router);
         }
@@ -87,6 +90,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
           return next(retriedRequest);
         }),
         catchError((refreshError) => {
+          console.warn('[DEBUG-login] interceptor → refresh FAILED → clearSession + redirectToLogin for', request.url, refreshError);
           authSession.clearSession();
           feedback.showError('Tu sesion expiro. Inicia sesion nuevamente.');
           void redirectToLogin(router);
