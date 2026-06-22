@@ -93,9 +93,9 @@ export class PaymentsApiService {
     );
   }
 
-  emitReceipt(paymentId: string): Observable<ReceiptDetailResponse> {
+  emitReceiptForAllocation(paymentId: string, allocationId: string): Observable<ReceiptDetailResponse> {
     return this.apiClient.post<Record<string, never>, ReceiptDetailResponse>(
-      `/api/v1/admin/payments/${paymentId}/receipt`,
+      `/api/v1/admin/payments/${paymentId}/allocations/${allocationId}/receipt`,
       {}
     );
   }

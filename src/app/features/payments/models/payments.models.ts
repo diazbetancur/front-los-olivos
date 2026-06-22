@@ -75,6 +75,8 @@ export interface PaymentAllocationResponse {
   isVoided: boolean;
   appliedAtUtc: string;
   voidedAtUtc?: string | null;
+  hasReceipt?: boolean;
+  receiptId?: string | null;
 }
 
 export interface PaymentDetailResponse {

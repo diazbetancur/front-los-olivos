@@ -133,11 +133,6 @@
         <div class="pd-card-head">
           <h2 class="pd-card-title">Aplicaciones actuales</h2>
           <div class="pd-card-head-right">
-            @if ((receipt() && canDownloadReceipt()) || (isReceiptPending() && canGenerateReceipt())) {
-              <button type="button" class="pd-btn-soft" (click)="downloadComprobante()" [disabled]="isGeneratingReceipt() || isDownloadingReceipt()">
-                {{ isGeneratingReceipt() ? 'Generando…' : (isDownloadingReceipt() ? 'Descargando…' : '⬇ Descargar comprobante') }}
-              </button>
-            }
             <span class="pd-count">{{ detail.allocations.length }} {{ detail.allocations.length === 1 ? 'cuota' : 'cuotas' }}</span>
           </div>
         </div>
@@ -153,6 +148,7 @@
                   <th>Monto aplicado</th>
                   <th>Aplicado en</th>
                   <th>Estado</th>
+                  <th>Comprobante</th>
                 </tr>
               </thead>
               <tbody>
@@ -165,6 +161,15 @@
                       <span class="status-badge" [class.applied]="!allocation.isVoided" [class.blocked]="allocation.isVoided">
                         {{ allocation.isVoided ? 'Anulada' : 'Vigente' }}
                       </span>
+                    </td>
+                    <td>
+                      @if ((allocation.hasReceipt && canDownloadReceipt()) || (!allocation.hasReceipt && !allocation.isVoided && canGenerateReceipt())) {
+                        <button type="button" class="pd-btn-soft" (click)="onAllocationReceipt(allocation)" [disabled]="busyAllocationId() !== null">
+                          {{ allocation.hasReceipt ? '⬇ Descargar' : 'Generar' }}
+                        </button>
+                      } @else {
+                        -
+                      }
                     </td>
                   </tr>
                 }

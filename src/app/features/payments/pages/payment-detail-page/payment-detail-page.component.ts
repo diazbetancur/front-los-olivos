@@ -22,9 +22,9 @@ import {
   ApplyPaymentRequest,
   ContractBalanceResponse,
   ContractInstallmentResponse,
+  PaymentAllocationResponse,
   PaymentApplyResultResponse,
   PaymentDetailResponse,
-  ReceiptListItemResponse,
   VoidPaymentRequest
 } from '../../models/payments.models';
 import { PaymentsApiService } from '../../services/payments-api.service';
@@ -66,24 +66,22 @@ export class PaymentDetailPageComponent implements OnInit {
   readonly canApply = computed(() => this.authSession.hasPermission('Payments.Apply'));
   readonly canVoid = computed(() => this.authSession.hasPermission('Payments.Void'));
   readonly canReview = computed(() => this.authSession.hasPermission('Payments.ReviewProof'));
-  readonly canViewReceipts = computed(() => this.authSession.hasPermission('Receipts.View'));
   readonly canDownloadReceipt = computed(() => this.authSession.hasPermission('Receipts.Print'));
   readonly canGenerateReceipt = computed(() => this.authSession.hasPermission('Receipts.Generate'));
 
   readonly payment = signal<PaymentDetailResponse | null>(null);
   readonly balance = signal<ContractBalanceResponse | null>(null);
   readonly schedule = signal<ReadonlyArray<ContractInstallmentResponse>>([]);
-  readonly receipt = signal<ReceiptListItemResponse | null>(null);
 
   readonly activeTab = signal<'detail' | 'balance'>('detail');
 
   readonly isLoading = signal(false);
   readonly isFinanceLoading = signal(false);
   readonly isSubmitting = signal(false);
-  readonly isDownloadingReceipt = signal(false);
-  readonly isGeneratingReceipt = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly financeError = signal<string | null>(null);
+
+  readonly busyAllocationId = signal<string | null>(null);
 
   readonly appliedPercent = computed(() => {
     const current = this.payment();
@@ -92,11 +90,6 @@ export class PaymentDetailPageComponent implements OnInit {
     }
     const percent = Math.round((current.appliedAmount / current.amount) * 100);
     return Math.min(100, Math.max(0, percent));
-  });
-
-  readonly isReceiptPending = computed(() => {
-    const current = this.payment();
-    return !!current && current.status === 'Aplicado' && !!current.contractId && !this.receipt();
   });
 
   readonly showApply = signal(false);
@@ -377,48 +370,45 @@ export class PaymentDetailPageComponent implements OnInit {
     this.load();
   }
 
-  downloadComprobante(): void {
-    const existing = this.receipt();
-    if (existing) {
-      this.downloadPdf(existing.id, existing.receiptNumber);
+  onAllocationReceipt(allocation: PaymentAllocationResponse): void {
+    if (allocation.hasReceipt && allocation.receiptId) {
+      this.downloadReceiptPdf(allocation.receiptId);
       return;
     }
-
-    const current = this.payment();
-    if (!current) {
+    const payment = this.payment();
+    if (!payment) {
       return;
     }
-    this.isGeneratingReceipt.set(true);
+    this.busyAllocationId.set(allocation.id);
     this.paymentsApi
-      .emitReceipt(current.id)
+      .emitReceiptForAllocation(payment.id, allocation.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (created) => {
-          this.isGeneratingReceipt.set(false);
+          this.busyAllocationId.set(null);
           this.feedback.showSuccess('Comprobante generado.');
           this.reload();
-          this.downloadPdf(created.id, created.receiptNumber);
+          this.downloadReceiptPdf(created.id, created.receiptNumber);
         },
         error: (error) => {
-          this.isGeneratingReceipt.set(false);
+          this.busyAllocationId.set(null);
           this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
         }
       });
   }
 
-  private downloadPdf(receiptId: string, receiptNumber: string): void {
-    this.isDownloadingReceipt.set(true);
+  private downloadReceiptPdf(receiptId: string, fallbackNumber = 'recibo'): void {
+    this.busyAllocationId.set(receiptId);
     this.receiptsApi
       .downloadReceiptPdf(receiptId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
-          this.isDownloadingReceipt.set(false);
-          const fileName = this.readFileName(response) ?? `${receiptNumber}.pdf`;
-          this.saveBlob(response.body, fileName);
+          this.busyAllocationId.set(null);
+          this.saveBlob(response.body, this.readFileName(response) ?? `${fallbackNumber}.pdf`);
         },
         error: (error) => {
-          this.isDownloadingReceipt.set(false);
+          this.busyAllocationId.set(null);
           this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
         }
       });
@@ -427,7 +417,6 @@ export class PaymentDetailPageComponent implements OnInit {
   private load(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
-    this.receipt.set(null);
 
     this.paymentsApi
       .getPaymentById(this.paymentId)
@@ -436,7 +425,6 @@ export class PaymentDetailPageComponent implements OnInit {
         next: (response) => {
           this.isLoading.set(false);
           this.payment.set(response);
-          this.loadReceipt();
           if (response.contractId) {
             this.loadFinance(response.contractId);
           } else {
@@ -482,22 +470,6 @@ export class PaymentDetailPageComponent implements OnInit {
           const normalized = this.apiErrorService.normalize(error);
           this.financeError.set(normalized.userMessage);
         }
-      });
-  }
-
-  private loadReceipt(): void {
-    if (!this.canViewReceipts()) {
-      return;
-    }
-    this.receiptsApi
-      .getReceipts({ paymentId: this.paymentId, page: 1, pageSize: 1 })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (result) => {
-          const emitted = result.items.find((item) => item.status === 'Emitido') ?? null;
-          this.receipt.set(emitted);
-        },
-        error: () => this.receipt.set(null)
       });
   }
 
