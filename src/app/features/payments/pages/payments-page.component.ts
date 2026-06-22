@@ -66,14 +66,11 @@ export class PaymentsPageComponent implements OnInit {
   readonly canRegister = computed(() => this.authSession.hasPermission('Payments.Register'));
   readonly canViewContracts = computed(() => this.authSession.hasPermission('Contracts.View'));
   readonly canViewClients = computed(() => this.authSession.hasPermission('Clients.View'));
-  readonly canGenerateReceipt = computed(() => this.authSession.hasPermission('Receipts.Generate'));
 
   readonly paymentMethods = ['Efectivo', 'Transferencia'] as const;
 
   showCreditConfirm = false;
   creditConfirmAmount = 0;
-
-  generatingReceiptId: string | null = null;
 
   selectedProofFile: File | null = null;
 
@@ -388,40 +385,6 @@ export class PaymentsPageComponent implements OnInit {
       default:
         return 'status-badge';
     }
-  }
-
-  isReceiptPending(payment: PaymentListItemResponse): boolean {
-    return payment.status === 'Aplicado' && !!payment.contractId && !payment.hasReceipt;
-  }
-
-  receiptChipClass(payment: PaymentListItemResponse): string {
-    if (payment.hasReceipt) {
-      return 'status-badge applied';
-    }
-    return this.isReceiptPending(payment) ? 'status-badge pending' : '';
-  }
-
-  receiptChipLabel(payment: PaymentListItemResponse): string {
-    if (payment.hasReceipt) {
-      return 'Emitido';
-    }
-    return this.isReceiptPending(payment) ? 'Pendiente' : '-';
-  }
-
-  generateReceipt(payment: PaymentListItemResponse): void {
-    this.generatingReceiptId = payment.id;
-    this.paymentsApi
-      .emitReceipt(payment.id)
-      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => { this.generatingReceiptId = null; this.syncView(); }))
-      .subscribe({
-        next: () => {
-          this.feedback.showSuccess('Comprobante generado.');
-          this.loadPayments(this.currentPage);
-        },
-        error: (error) => {
-          this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
-        }
-      });
   }
 
   protected loadPayments(page: number): void {

@@ -377,7 +377,13 @@ export class PaymentDetailPageComponent implements OnInit {
     this.load();
   }
 
-  generateReceipt(): void {
+  downloadComprobante(): void {
+    const existing = this.receipt();
+    if (existing) {
+      this.downloadPdf(existing.id, existing.receiptNumber);
+      return;
+    }
+
     const current = this.payment();
     if (!current) {
       return;
@@ -387,10 +393,11 @@ export class PaymentDetailPageComponent implements OnInit {
       .emitReceipt(current.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => {
+        next: (created) => {
           this.isGeneratingReceipt.set(false);
           this.feedback.showSuccess('Comprobante generado.');
           this.reload();
+          this.downloadPdf(created.id, created.receiptNumber);
         },
         error: (error) => {
           this.isGeneratingReceipt.set(false);
@@ -399,19 +406,15 @@ export class PaymentDetailPageComponent implements OnInit {
       });
   }
 
-  downloadReceipt(): void {
-    const current = this.receipt();
-    if (!current) {
-      return;
-    }
+  private downloadPdf(receiptId: string, receiptNumber: string): void {
     this.isDownloadingReceipt.set(true);
     this.receiptsApi
-      .downloadReceiptPdf(current.id)
+      .downloadReceiptPdf(receiptId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
           this.isDownloadingReceipt.set(false);
-          const fileName = this.readFileName(response) ?? `${current.receiptNumber}.pdf`;
+          const fileName = this.readFileName(response) ?? `${receiptNumber}.pdf`;
           this.saveBlob(response.body, fileName);
         },
         error: (error) => {

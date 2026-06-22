@@ -133,14 +133,9 @@
         <div class="pd-card-head">
           <h2 class="pd-card-title">Aplicaciones actuales</h2>
           <div class="pd-card-head-right">
-            @if (isReceiptPending() && canGenerateReceipt()) {
-              <button type="button" class="pd-btn-soft" (click)="generateReceipt()" [disabled]="isGeneratingReceipt()">
-                {{ isGeneratingReceipt() ? 'Generando…' : 'Generar comprobante' }}
-              </button>
-            }
-            @if (receipt() && canDownloadReceipt()) {
-              <button type="button" class="pd-btn-soft" (click)="downloadReceipt()" [disabled]="isDownloadingReceipt()">
-                {{ isDownloadingReceipt() ? 'Descargando…' : '⬇ Descargar comprobante' }}
+            @if ((receipt() && canDownloadReceipt()) || (isReceiptPending() && canGenerateReceipt())) {
+              <button type="button" class="pd-btn-soft" (click)="downloadComprobante()" [disabled]="isGeneratingReceipt() || isDownloadingReceipt()">
+                {{ isGeneratingReceipt() ? 'Generando…' : (isDownloadingReceipt() ? 'Descargando…' : '⬇ Descargar comprobante') }}
               </button>
             }
             <span class="pd-count">{{ detail.allocations.length }} {{ detail.allocations.length === 1 ? 'cuota' : 'cuotas' }}</span>
@@ -157,7 +152,7 @@
                   <th>Cuota</th>
                   <th>Monto aplicado</th>
                   <th>Aplicado en</th>
-                  <th class="ta-right">Estado</th>
+                  <th>Estado</th>
                 </tr>
               </thead>
               <tbody>
@@ -166,7 +161,7 @@
                     <td><span class="pd-num-badge">#{{ allocation.installmentNumber }}</span></td>
                     <td class="strong">{{ allocation.amountApplied | number: '1.2-2' }} <span class="muted">{{ detail.currency }}</span></td>
                     <td class="muted">{{ allocation.appliedAtUtc | date: 'short' }}</td>
-                    <td class="ta-right">
+                    <td>
                       <span class="status-badge" [class.applied]="!allocation.isVoided" [class.blocked]="allocation.isVoided">
                         {{ allocation.isVoided ? 'Anulada' : 'Vigente' }}
                       </span>
