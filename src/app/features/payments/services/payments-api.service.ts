@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClientService } from '../../../core/http/api-client.service';
@@ -14,6 +14,7 @@ import {
   PaymentApplyResultResponse,
   PaymentDetailResponse,
   PaymentListItemResponse,
+  ReceiptDetailResponse,
   RegisterPaymentRequest,
   RejectPaymentRequest,
   VoidPaymentRequest
@@ -89,6 +90,20 @@ export class PaymentsApiService {
     return this.apiClient.post<RejectPaymentRequest, PaymentDetailResponse>(
       `/api/v1/admin/payments/${paymentId}/reject`,
       request
+    );
+  }
+
+  downloadProofContent(proofId: string): Observable<HttpResponse<Blob>> {
+    return this.httpClient.get(`/api/v1/payment-proofs/${proofId}/content`, {
+      observe: 'response',
+      responseType: 'blob'
+    });
+  }
+
+  emitReceiptForAllocation(paymentId: string, allocationId: string): Observable<ReceiptDetailResponse> {
+    return this.apiClient.post<Record<string, never>, ReceiptDetailResponse>(
+      `/api/v1/admin/payments/${paymentId}/allocations/${allocationId}/receipt`,
+      {}
     );
   }
 

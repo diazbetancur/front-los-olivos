@@ -9,6 +9,18 @@ export type PaymentStatus = 'Registrado' | 'Aplicado' | 'PendienteRevision' | 'R
 export type ReceiptStatus = 'Emitido' | 'Anulado';
 export type PaymentProofStatus = 'PendienteRevision' | 'Aprobado' | 'Rechazado';
 
+export interface PaymentProofSummaryResponse {
+  id: string;
+  status: string;
+  source: string;
+  externalReference: string;
+  paymentDate: string;
+  amount: number;
+  currency: string;
+  submittedAtUtc: string;
+  hasFile: boolean;
+}
+
 export interface GetPaymentsQuery {
   contractId?: string | null;
   clientId?: string | null;
@@ -35,6 +47,7 @@ export interface PaymentListItemResponse {
   transactionReference: string;
   contractNumber?: string | null;
   clientFullName?: string | null;
+  hasReceipt?: boolean;
 }
 
 export interface RegisterPaymentRequest {
@@ -74,6 +87,8 @@ export interface PaymentAllocationResponse {
   isVoided: boolean;
   appliedAtUtc: string;
   voidedAtUtc?: string | null;
+  hasReceipt?: boolean;
+  receiptId?: string | null;
 }
 
 export interface PaymentDetailResponse {
@@ -95,6 +110,7 @@ export interface PaymentDetailResponse {
   voidedAtUtc?: string | null;
   voidReason: string;
   allocations: ReadonlyArray<PaymentAllocationResponse>;
+  proofs?: ReadonlyArray<PaymentProofSummaryResponse>;
 }
 
 export interface ContractBalanceResponse {
@@ -165,70 +181,8 @@ export interface ReceiptDetailResponse {
   voidReason: string;
 }
 
-export interface CreateManualReceiptRequest {
-  paymentId?: string | null;
-  contractId?: string | null;
-  clientId?: string | null;
-  receiptDate: string;
-  amount: number;
-  currency?: string | null;
-  notes?: string | null;
-}
-
 export interface VoidReceiptRequest {
   reason?: string | null;
-}
-
-export interface GetPaymentProofsQuery {
-  contractId?: string | null;
-  clientId?: string | null;
-  paymentId?: string | null;
-  status?: string | null;
-  search?: string | null;
-  page: number;
-  pageSize: number;
-}
-
-export interface PaymentProofListItemResponse {
-  id: string;
-  paymentId?: string | null;
-  contractId?: string | null;
-  clientId?: string | null;
-  paymentDate: string;
-  amount: number;
-  currency: string;
-  status: string;
-  externalReference: string;
-  submittedAtUtc: string;
-}
-
-export interface PaymentProofDetailResponse {
-  id: string;
-  paymentId?: string | null;
-  contractId?: string | null;
-  clientId?: string | null;
-  paymentDate: string;
-  amount: number;
-  currency: string;
-  status: string;
-  source: string;
-  externalReference: string;
-  storageUrl: string;
-  notes: string;
-  submittedAtUtc: string;
-  reviewedAtUtc?: string | null;
-  reviewedBy: string;
-  reviewNotes: string;
-  rejectionReason: string;
-}
-
-export interface ApprovePaymentProofRequest {
-  notes?: string | null;
-}
-
-export interface RejectPaymentProofRequest {
-  reason: string;
-  notes?: string | null;
 }
 
 export interface ContractLookupItem {
