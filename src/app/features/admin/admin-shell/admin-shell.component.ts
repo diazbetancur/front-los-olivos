@@ -45,8 +45,7 @@ export class AdminShellComponent {
       label: 'Finanzas',
       children: [
         { label: 'Pagos', route: '/admin/payments', requiredPermissions: ['Payments.View'] },
-        { label: 'Recibos', route: '/admin/receipts', requiredPermissions: ['Receipts.View'] },
-        { label: 'Comprobantes', route: '/admin/payment-proofs', requiredPermissions: ['Payments.ReviewProof'] }
+        { label: 'Recibos', route: '/admin/receipts', requiredPermissions: ['Receipts.View'] }
       ]
     },
     { label: 'Reportes', route: '/admin/reports', requiredPermissions: ['Reports.View', 'Audit.View'] },

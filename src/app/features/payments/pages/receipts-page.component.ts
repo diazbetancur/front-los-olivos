@@ -15,7 +15,6 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import {
   ClientLookupItem,
   ContractLookupItem,
-  CreateManualReceiptRequest,
   GetReceiptsQuery,
   PagedResult,
   PaymentListItemResponse,
@@ -52,7 +51,6 @@ export class ReceiptsPageComponent implements OnInit {
   private readonly feedback = inject(AppFeedbackService);
   private readonly authSession = inject(AuthSessionService);
 
-  readonly canGenerate = computed(() => this.authSession.hasPermission('Receipts.Generate'));
   readonly canPrint = computed(() => this.authSession.hasPermission('Receipts.Print'));
   readonly canVoid = computed(() => this.authSession.hasPermission('Receipts.Void'));
 
@@ -67,16 +65,6 @@ export class ReceiptsPageComponent implements OnInit {
     fromDate: [''],
     toDate: [''],
     pageSize: [20, [Validators.min(1), Validators.max(200)]]
-  });
-
-  readonly manualReceiptForm = this.formBuilder.nonNullable.group({
-    paymentId: [''],
-    contractId: [''],
-    clientId: [''],
-    receiptDate: [this.todayString(), [Validators.required]],
-    amount: [0, [Validators.required, Validators.min(0.01)]],
-    currency: ['HNL', [Validators.maxLength(16)]],
-    notes: ['', [Validators.maxLength(2048)]]
   });
 
   readonly voidForm = this.formBuilder.nonNullable.group({
@@ -98,14 +86,11 @@ export class ReceiptsPageComponent implements OnInit {
   isDownloading = false;
   isLookupLoading = false;
 
-  showManualForm = false;
   showVoidForm = false;
 
-  manualSubmitted = false;
   voidSubmitted = false;
 
   listError: string | null = null;
-  manualError: string | null = null;
   detailError: string | null = null;
   voidError: string | null = null;
 
@@ -114,13 +99,6 @@ export class ReceiptsPageComponent implements OnInit {
     const pages = Math.ceil(this.totalCount / pageSize);
     return Math.max(1, pages);
   });
-
-  hasManualReferences(): boolean {
-    const paymentId = this.manualReceiptForm.controls.paymentId.value?.trim();
-    const contractId = this.manualReceiptForm.controls.contractId.value?.trim();
-    const clientId = this.manualReceiptForm.controls.clientId.value?.trim();
-    return !!(paymentId || contractId || clientId);
-  }
 
   ngOnInit(): void {
     this.loadLookupOptions();
@@ -148,76 +126,6 @@ export class ReceiptsPageComponent implements OnInit {
   onPageSizeChange(size: number): void {
     this.filterForm.controls.pageSize.setValue(size);
     this.loadReceipts(1);
-  }
-
-  openManualForm(): void {
-    this.showManualForm = true;
-    this.showVoidForm = false;
-    this.manualSubmitted = false;
-    this.manualError = null;
-    this.manualReceiptForm.reset({
-      paymentId: '',
-      contractId: '',
-      clientId: '',
-      receiptDate: this.todayString(),
-      amount: 0,
-      currency: 'HNL',
-      notes: ''
-    });
-  }
-
-  cancelManualForm(): void {
-    this.showManualForm = false;
-    this.manualSubmitted = false;
-    this.manualError = null;
-  }
-
-  submitManualReceipt(): void {
-    this.manualSubmitted = true;
-    this.manualError = null;
-
-    if (this.manualReceiptForm.invalid) {
-      this.manualReceiptForm.markAllAsTouched();
-      return;
-    }
-
-    if (!this.hasManualReferences()) {
-      this.manualError = 'Debes indicar al menos paymentId, contractId o clientId.';
-      return;
-    }
-
-    const payload = this.toCreateManualReceiptPayload();
-    this.isSubmitting = true;
-
-    this.receiptsApi
-      .createManualReceipt(payload)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => {
-          this.isSubmitting = false;
-          this.syncView();
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          this.feedback.show({ level: 'success', text: 'Recibo manual creado correctamente.' });
-          this.cancelManualForm();
-          this.reloadAfterMutation({
-            page: 1,
-            receiptId: response.id,
-            refreshLookups: true
-          });
-        },
-        error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.manualError = normalizedError.userMessage;
-          if (normalizedError.status === 409) {
-            this.feedback.showError(`Conflicto al crear recibo: ${normalizedError.userMessage}`);
-            return;
-          }
-          this.feedback.showError(normalizedError.userMessage);
-        }
-      });
   }
 
   viewReceiptDetail(receiptId: string): void {
@@ -544,19 +452,6 @@ export class ReceiptsPageComponent implements OnInit {
     URL.revokeObjectURL(objectUrl);
   }
 
-  private toCreateManualReceiptPayload(): CreateManualReceiptRequest {
-    const raw = this.manualReceiptForm.getRawValue();
-    return {
-      paymentId: this.cleanString(raw.paymentId),
-      contractId: this.cleanString(raw.contractId),
-      clientId: this.cleanString(raw.clientId),
-      receiptDate: raw.receiptDate,
-      amount: Number(raw.amount),
-      currency: this.cleanString(raw.currency) ?? 'HNL',
-      notes: this.cleanString(raw.notes)
-    };
-  }
-
   private cleanString(value: string | null | undefined): string | null {
     if (!value) {
       return null;
@@ -564,10 +459,6 @@ export class ReceiptsPageComponent implements OnInit {
 
     const normalized = value.trim();
     return normalized.length === 0 ? null : normalized;
-  }
-
-  private todayString(): string {
-    return new Date().toISOString().slice(0, 10);
   }
 
   private syncView(): void {

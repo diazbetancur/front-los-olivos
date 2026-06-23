@@ -51,12 +51,6 @@ export class AdminDashboardComponent {
       requiredPermissions: ['Receipts.View']
     },
     {
-      title: 'Comprobantes',
-      description: 'Aprueba o rechaza comprobantes de pago.',
-      route: '/admin/payment-proofs',
-      requiredPermissions: ['Payments.ReviewProof']
-    },
-    {
       title: 'Reportes',
       description: 'Resumenes operativos, saldos y auditoria administrativa.',
       route: '/admin/reports',
