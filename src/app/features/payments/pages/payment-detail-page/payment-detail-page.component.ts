@@ -11,6 +11,7 @@ import {
   Validators
 } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs/operators';
 import { ApiErrorService } from '../../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../../core/ui/app-feedback.service';
 import { AuthSessionService } from '../../../../core/auth/auth-session.service';
@@ -25,6 +26,7 @@ import {
   PaymentAllocationResponse,
   PaymentApplyResultResponse,
   PaymentDetailResponse,
+  PaymentProofSummaryResponse,
   VoidPaymentRequest
 } from '../../models/payments.models';
 import { PaymentsApiService } from '../../services/payments-api.service';
@@ -82,6 +84,9 @@ export class PaymentDetailPageComponent implements OnInit {
   readonly financeError = signal<string | null>(null);
 
   readonly busyAllocationId = signal<string | null>(null);
+
+  readonly isTransfer = computed(() => this.payment()?.paymentMethod === 'Transferencia');
+  readonly busyProofId = signal<string | null>(null);
 
   readonly appliedPercent = computed(() => {
     const current = this.payment();
@@ -153,6 +158,48 @@ export class PaymentDetailPageComponent implements OnInit {
       default:
         return 'status-badge';
     }
+  }
+
+  proofStatusClass(status: string): string {
+    switch (status) {
+      case 'Aprobado':
+        return 'status-badge applied';
+      case 'Rechazado':
+        return 'status-badge blocked';
+      default:
+        return 'status-badge pending';
+    }
+  }
+
+  viewProof(proof: PaymentProofSummaryResponse): void {
+    if (!proof.hasFile || this.busyProofId() !== null) {
+      return;
+    }
+    this.busyProofId.set(proof.id);
+    this.paymentsApi
+      .downloadProofContent(proof.id)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.busyProofId.set(null))
+      )
+      .subscribe({
+        next: (response) => {
+          const blob = response.body;
+          if (!blob) {
+            this.feedback.showError('No se recibio el archivo del comprobante.');
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const opened = globalThis.open(url, '_blank', 'noopener,noreferrer');
+          if (!opened) {
+            this.feedback.showError('El navegador bloqueo la apertura del comprobante. Permite ventanas emergentes.');
+          }
+          setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        },
+        error: (error) => {
+          this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
+        }
+      });
   }
 
   // --- Aprobar (transferencia pendiente) ---

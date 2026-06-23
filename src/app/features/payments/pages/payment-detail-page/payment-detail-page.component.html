@@ -128,6 +128,49 @@
         }
       </div>
 
+      <!-- Comprobante de transferencia -->
+      @if (isTransfer()) {
+        <div class="pd-card">
+          <h2 class="pd-card-title">Comprobante de transferencia</h2>
+          @if (detail.proofs && detail.proofs.length > 0) {
+            <div class="pd-table-wrap">
+              <table class="pd-table">
+                <thead>
+                  <tr>
+                    <th>Referencia</th>
+                    <th>Estado</th>
+                    <th>Enviado</th>
+                    <th>Monto</th>
+                    <th>Archivo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (proof of detail.proofs; track proof.id) {
+                    <tr>
+                      <td class="strong">{{ proof.externalReference || '—' }}</td>
+                      <td><span [class]="proofStatusClass(proof.status)">{{ proof.status }}</span></td>
+                      <td class="muted">{{ proof.submittedAtUtc | date: 'short' }}</td>
+                      <td>{{ proof.amount | number: '1.2-2' }} <span class="muted">{{ proof.currency }}</span></td>
+                      <td>
+                        @if (proof.hasFile) {
+                          <button type="button" class="pd-btn-soft" (click)="viewProof(proof)" [disabled]="busyProofId() !== null">
+                            Ver comprobante
+                          </button>
+                        } @else {
+                          -
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <app-empty-state title="Sin comprobante adjunto" message="Este pago de transferencia no tiene comprobante adjunto." />
+          }
+        </div>
+      }
+
       <!-- Aplicaciones actuales -->
       <div class="pd-card">
         <div class="pd-card-head">
