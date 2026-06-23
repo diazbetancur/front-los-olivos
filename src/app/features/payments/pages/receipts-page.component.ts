@@ -3,13 +3,13 @@ import { HttpResponse } from '@angular/common/http';
 import { AbstractControl, ValidationErrors } from '@angular/forms';
 import { ChangeDetectorRef, Component, DestroyRef, ViewRef, computed, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, finalize, forkJoin, map } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
 import { AuthSessionService } from '../../../core/auth/auth-session.service';
 import { ApiErrorService } from '../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
-import { AppModalComponent } from '../../../shared/components/app-modal/app-modal.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
@@ -19,9 +19,7 @@ import {
   ContractLookupItem,
   GetReceiptsQuery,
   PagedResult,
-  ReceiptDetailResponse,
-  ReceiptListItemResponse,
-  VoidReceiptRequest
+  ReceiptListItemResponse
 } from '../models/payments.models';
 import { PaymentsApiService } from '../services/payments-api.service';
 import { ReceiptsApiService } from '../services/receipts-api.service';
@@ -77,7 +75,7 @@ export function toContractOption(contract: ContractLookupItem): SearchSelectOpti
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    AppModalComponent,
+    RouterLink,
     LoadingStateComponent,
     EmptyStateComponent,
     HasPermissionDirective,
@@ -113,28 +111,15 @@ export class ReceiptsPageComponent {
 
   clearSignal = 0;
 
-  readonly voidForm = this.formBuilder.nonNullable.group({
-    reason: ['', [Validators.required, Validators.maxLength(1024)]]
-  });
-
   receipts: ReadonlyArray<ReceiptListItemResponse> = [];
-  selectedReceiptDetail: ReceiptDetailResponse | null = null;
 
   currentPage = 1;
   totalCount = 0;
 
   isLoading = false;
-  isSubmitting = false;
-  isDetailLoading = false;
   isDownloading = false;
 
-  showVoidForm = false;
-
-  voidSubmitted = false;
-
   listError: string | null = null;
-  detailError: string | null = null;
-  voidError: string | null = null;
 
   readonly totalPages = computed(() => {
     const pageSize = this.filterForm.controls.pageSize.value;
@@ -192,123 +177,11 @@ export class ReceiptsPageComponent {
     this.loadReceipts(1);
   }
 
-  viewReceiptDetail(receiptId: string): void {
-    this.detailError = null;
-    this.selectedReceiptDetail = null;
-    this.showVoidForm = false;
-    this.isDetailLoading = true;
-
-    this.receiptsApi
-      .getReceiptById(receiptId)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => {
-          this.isDetailLoading = false;
-          this.syncView();
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          this.selectedReceiptDetail = response;
-        },
-        error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.detailError = normalizedError.userMessage;
-          this.feedback.showError(normalizedError.userMessage);
-        }
-      });
-  }
-
   downloadPdf(receiptId: string, receiptNumber: string): void {
     this.downloadFile(
       this.receiptsApi.downloadReceiptPdf(receiptId),
       `${receiptNumber}.pdf`
     );
-  }
-
-  downloadDocx(receiptId: string, receiptNumber: string): void {
-    this.downloadFile(
-      this.receiptsApi.downloadReceiptDocx(receiptId),
-      `${receiptNumber}.docx`
-    );
-  }
-
-  openVoidForm(): void {
-    if (!this.selectedReceiptDetail) {
-      return;
-    }
-
-    this.showVoidForm = true;
-    this.voidSubmitted = false;
-    this.voidError = null;
-    this.voidForm.reset({ reason: '' });
-  }
-
-  cancelVoidForm(): void {
-    this.showVoidForm = false;
-    this.voidSubmitted = false;
-    this.voidError = null;
-  }
-
-  submitVoidReceipt(): void {
-    if (!this.selectedReceiptDetail) {
-      return;
-    }
-
-    this.voidSubmitted = true;
-    this.voidError = null;
-    if (this.voidForm.invalid) {
-      this.voidForm.markAllAsTouched();
-      return;
-    }
-
-    const confirmed = globalThis.confirm(
-      `Se anulara el recibo ${this.selectedReceiptDetail.receiptNumber}. Deseas continuar?`
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    const payload: VoidReceiptRequest = {
-      reason: this.cleanString(this.voidForm.controls.reason.value)
-    };
-
-    this.isSubmitting = true;
-    this.receiptsApi
-      .voidReceipt(this.selectedReceiptDetail.id, payload)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => {
-          this.isSubmitting = false;
-          this.syncView();
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          this.feedback.show({ level: 'success', text: 'Recibo anulado correctamente.' });
-          this.showVoidForm = false;
-          this.reloadAfterMutation({
-            page: this.currentPage,
-            receiptId: response.id
-          });
-        },
-        error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.voidError = normalizedError.userMessage;
-          if (normalizedError.status === 409) {
-            this.feedback.showError(`Conflicto al anular recibo: ${normalizedError.userMessage}`);
-            return;
-          }
-          this.feedback.showError(normalizedError.userMessage);
-        }
-      });
-  }
-
-  private reloadAfterMutation(options: { page: number; receiptId?: string }): void {
-    this.loadReceipts(options.page);
-    if (options.receiptId) {
-      this.viewReceiptDetail(options.receiptId);
-    }
   }
 
   statusClass(status: string): string {

@@ -82,24 +82,24 @@
               <td>{{ receipt.currency }}</td>
               <td><span [class]="statusClass(receipt.status)">{{ receipt.status }}</span></td>
               <td class="row-actions">
-                <button type="button" class="ghost" (click)="viewReceiptDetail(receipt.id)">Ver</button>
+                <a
+                  class="action-icon-btn"
+                  [routerLink]="['/admin/receipts', receipt.id]"
+                  title="Ver detalle"
+                  aria-label="Ver detalle"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>
                 <button
                   type="button"
-                  class="ghost"
+                  class="action-icon-btn"
                   (click)="downloadPdf(receipt.id, receipt.receiptNumber)"
                   [disabled]="isDownloading"
+                  title="Descargar PDF"
+                  aria-label="Descargar PDF"
                   *appHasPermission="['Receipts.Print']"
                 >
-                  PDF
-                </button>
-                <button
-                  type="button"
-                  class="ghost"
-                  (click)="downloadDocx(receipt.id, receipt.receiptNumber)"
-                  [disabled]="isDownloading"
-                  *appHasPermission="['Receipts.Print']"
-                >
-                  DOCX
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
               </td>
             </tr>
@@ -117,100 +117,4 @@
     (pageSizeChange)="onPageSizeChange($event)"
   />
 
-  @if (isDetailLoading) {
-    <app-loading-state message="Cargando detalle del recibo..." />
-  } @else if (detailError) {
-    <section class="error-box">
-      <p>{{ detailError }}</p>
-    </section>
-  } @else if (selectedReceiptDetail; as detail) {
-    <section class="detail-panel">
-      <header class="detail-header">
-        <div>
-          <h3>Detalle de recibo</h3>
-          <p>{{ detail.receiptNumber }}</p>
-        </div>
-        <span [class]="statusClass(detail.status)">{{ detail.status }}</span>
-      </header>
-
-      <div class="detail-grid">
-        <div><strong>Fecha:</strong> {{ detail.receiptDate }}</div>
-        <div><strong>Contrato:</strong> {{ detail.contractNumber || '-' }}</div>
-        <div><strong>Cliente:</strong> {{ detail.clientFullName || '-' }}</div>
-        <div><strong>Pago:</strong> {{ detail.paymentNumber || '-' }}</div>
-        <div><strong>Monto:</strong> {{ detail.amount | number: '1.2-2' }}</div>
-        <div><strong>Moneda:</strong> {{ detail.currency }}</div>
-        <div><strong>Generado:</strong> {{ detail.generatedAtUtc | date: 'short' }}</div>
-        <div><strong>Generado por:</strong> {{ detail.generatedBy }}</div>
-        <div><strong>Anulado en:</strong> {{ detail.voidedAtUtc ? (detail.voidedAtUtc | date: 'short') : '-' }}</div>
-        <div class="full-width"><strong>Notas:</strong> {{ detail.notes || '-' }}</div>
-        <div class="full-width"><strong>Razon anulacion:</strong> {{ detail.voidReason || '-' }}</div>
-      </div>
-
-      <section class="action-bar">
-        <button
-          type="button"
-          class="ghost"
-          (click)="downloadPdf(detail.id, detail.receiptNumber)"
-          [disabled]="isDownloading"
-          *appHasPermission="['Receipts.Print']"
-        >
-          Descargar PDF
-        </button>
-        <button
-          type="button"
-          class="ghost"
-          (click)="downloadDocx(detail.id, detail.receiptNumber)"
-          [disabled]="isDownloading"
-          *appHasPermission="['Receipts.Print']"
-        >
-          Descargar DOCX
-        </button>
-        <button
-          type="button"
-          class="danger"
-          (click)="openVoidForm()"
-          [disabled]="detail.status === 'Anulado'"
-          *appHasPermission="['Receipts.Void']"
-        >
-          Anular recibo
-        </button>
-      </section>
-
-      @if (showVoidForm) {
-        <app-modal (closed)="cancelVoidForm()">
-          <section class="form-panel nested-form">
-          <header>
-            <h5>Anular recibo</h5>
-            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelVoidForm()" aria-label="Cerrar" title="Cerrar">×</button>
-          </header>
-
-          @if (voidError) {
-            <p class="error-text">{{ voidError }}</p>
-          }
-
-          <form [formGroup]="voidForm" (ngSubmit)="submitVoidReceipt()" novalidate>
-            <div class="grid">
-              <label class="required full-width">
-                Razon de anulacion (obligatoria)
-                <textarea rows="3" formControlName="reason"></textarea>
-              </label>
-            </div>
-
-            <p class="field-error" *ngIf="voidForm.invalid && (voidForm.touched || voidSubmitted)">
-              Debes ingresar una razon valida para anular el recibo.
-            </p>
-
-            <div class="form-actions">
-              <button type="button" class="ghost" (click)="cancelVoidForm()">Cancelar</button>
-              <button type="submit" class="danger" [disabled]="isSubmitting || voidForm.invalid">
-                Confirmar anulacion
-              </button>
-            </div>
-          </form>
-          </section>
-        </app-modal>
-      }
-    </section>
-  }
 </section>
