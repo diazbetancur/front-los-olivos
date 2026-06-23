@@ -67,4 +67,27 @@ describe('PaymentDetailPageComponent', () => {
     expect(component.rejectForm.invalid).toBe(true);
     expect(component.showReject()).toBe(true);
   });
+
+  it('shows the transfer-proof section only for transfer payments', () => {
+    component.payment.set({
+      id: 'p1', paymentNumber: 'PG-1', contractId: 'c1', clientId: null,
+      paymentDate: '2026-06-01', amount: 100, appliedAmount: 0, unallocatedAmount: 100,
+      currency: 'HNL', status: 'PendienteRevision', paymentMethod: 'Transferencia', bankName: '',
+      transactionReference: '', concept: '', notes: '', voidReason: '', allocations: [],
+      proofs: [{
+        id: 'pr1', status: 'PendienteRevision', source: 'cliente', externalReference: 'REF-1',
+        paymentDate: '2026-06-01', amount: 100, currency: 'HNL',
+        submittedAtUtc: '2026-06-01T12:00:00Z', hasFile: true
+      }]
+    });
+    expect(component.isTransfer()).toBe(true);
+
+    component.payment.set({
+      id: 'p2', paymentNumber: 'PG-2', contractId: 'c1', clientId: null,
+      paymentDate: '2026-06-01', amount: 100, appliedAmount: 0, unallocatedAmount: 100,
+      currency: 'HNL', status: 'Registrado', paymentMethod: 'Efectivo', bankName: '',
+      transactionReference: '', concept: '', notes: '', voidReason: '', allocations: []
+    });
+    expect(component.isTransfer()).toBe(false);
+  });
 });

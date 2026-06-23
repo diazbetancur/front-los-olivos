@@ -178,7 +178,6 @@ export interface GenerateContractDocumentsResponse {
 
 export interface ProjectLookupItem {
   id: string;
-  code: string;
   name: string;
   status: string;
 }

@@ -118,16 +118,6 @@ export const routes: Routes = [
         }
       },
       {
-        path: 'payment-proofs',
-        loadComponent: () => import('./features/payments/pages/payment-proofs-page.component').then((m) => m.PaymentProofsPageComponent),
-        canActivate: [permissionGuard],
-        data: {
-          title: 'Comprobantes',
-          description: 'Revision y trazabilidad de comprobantes de pago.',
-          requiredPermissions: ['Payments.ReviewProof']
-        }
-      },
-      {
         path: 'reports',
         loadComponent: () => import('./features/reports/pages/reports-page.component').then((m) => m.ReportsPageComponent),
         canActivate: [permissionGuard],

@@ -346,7 +346,7 @@ export class ContractsPageComponent implements OnInit {
       lower.length < 1
         ? [...this.projectOptions]
         : this.projectOptions.filter(
-            (p) => p.code.toLowerCase().includes(lower) || p.name.toLowerCase().includes(lower)
+            (p) => p.name.toLowerCase().includes(lower)
           )
     ).slice(0, 8);
     this.showProjectDropdown = this.projectDropdownItems.length > 0;
@@ -367,7 +367,7 @@ export class ContractsPageComponent implements OnInit {
       lower.length < 1
         ? [...this.projectOptions]
         : this.projectOptions.filter(
-            (p) => p.code.toLowerCase().includes(lower) || p.name.toLowerCase().includes(lower)
+            (p) => p.name.toLowerCase().includes(lower)
           )
     ).slice(0, 8);
     this.showProjectDropdown = this.projectDropdownItems.length > 0;
@@ -377,7 +377,7 @@ export class ContractsPageComponent implements OnInit {
     this.contractForm.controls.projectId.setValue(project.id, { emitEvent: false });
     this.contractForm.controls.projectId.markAsDirty();
     this.contractForm.controls.projectId.markAsTouched();
-    this.projectSearchInput = `${project.code} - ${project.name}`;
+    this.projectSearchInput = project.name;
     this.showProjectDropdown = false;
     this.projectDropdownItems = [];
     this.contractForm.controls.lotId.setValue('', { emitEvent: false });
@@ -715,7 +715,7 @@ export class ContractsPageComponent implements OnInit {
       return projectId;
     }
 
-    return `${option.code} - ${option.name}`;
+    return option.name;
   }
 
   resolveLotLabel(lotId: string): string {
