@@ -118,6 +118,19 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'receipts/:id',
+        loadComponent: () =>
+          import('./features/payments/pages/receipt-detail-page/receipt-detail-page.component').then(
+            (m) => m.ReceiptDetailPageComponent
+          ),
+        canActivate: [permissionGuard],
+        data: {
+          title: 'Detalle de recibo',
+          description: 'Detalle, descarga y anulación de un recibo.',
+          requiredPermissions: ['Receipts.View']
+        }
+      },
+      {
         path: 'reports',
         loadComponent: () => import('./features/reports/pages/reports-page.component').then((m) => m.ReportsPageComponent),
         canActivate: [permissionGuard],
