@@ -14,7 +14,7 @@
         <div class="pd-eyebrow">Pago</div>
         <h1 class="pd-title">{{ detail.paymentNumber }}</h1>
       </div>
-      <span [class]="statusClass(detail.status)">{{ detail.status }}</span>
+      <span [class]="statusClass(detail.status)">{{ detail.status | statusLabel }}</span>
     </div>
 
     <!-- Hero summary -->
@@ -148,7 +148,7 @@
                   @for (proof of detail.proofs; track proof.id) {
                     <tr>
                       <td class="strong">{{ proof.externalReference || '—' }}</td>
-                      <td><span [class]="proofStatusClass(proof.status)">{{ proof.status }}</span></td>
+                      <td><span [class]="proofStatusClass(proof.status)">{{ proof.status | statusLabel }}</span></td>
                       <td class="muted">{{ proof.submittedAtUtc | date: 'short' }}</td>
                       <td>{{ proof.amount | number: '1.2-2' }} <span class="muted">{{ proof.currency }}</span></td>
                       <td>

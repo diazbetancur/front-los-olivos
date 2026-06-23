@@ -19,6 +19,7 @@ import { AppModalComponent } from '../../../../shared/components/app-modal/app-m
 import { HasPermissionDirective } from '../../../../core/auth/has-permission.directive';
 import { LoadingStateComponent } from '../../../../shared/components/loading-state/loading-state.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { StatusLabelPipe } from '../../../../shared/pipes/status-label.pipe';
 import {
   ApplyPaymentRequest,
   ContractBalanceResponse,
@@ -48,7 +49,8 @@ type AllocationFormGroup = FormGroup<{
     AppModalComponent,
     HasPermissionDirective,
     LoadingStateComponent,
-    EmptyStateComponent
+    EmptyStateComponent,
+    StatusLabelPipe
   ],
   templateUrl: './payment-detail-page.component.html',
   styleUrl: './payment-detail-page.component.scss',
@@ -186,13 +188,13 @@ export class PaymentDetailPageComponent implements OnInit {
         next: (response) => {
           const blob = response.body;
           if (!blob) {
-            this.feedback.showError('No se recibio el archivo del comprobante.');
+            this.feedback.showError('No se recibió el archivo del comprobante.');
             return;
           }
           const url = URL.createObjectURL(blob);
           const opened = globalThis.open(url, '_blank', 'noopener,noreferrer');
           if (!opened) {
-            this.feedback.showError('El navegador bloqueo la apertura del comprobante. Permite ventanas emergentes.');
+            this.feedback.showError('El navegador bloqueó la apertura del comprobante. Permite las ventanas emergentes.');
           }
           setTimeout(() => URL.revokeObjectURL(url), 60_000);
         },

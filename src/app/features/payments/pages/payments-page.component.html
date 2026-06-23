@@ -37,7 +37,7 @@
         <select formControlName="status" class="ui-form-control">
           <option value="">Todos los estados</option>
           @for (status of paymentStatuses; track status) {
-            <option [value]="status">{{ status }}</option>
+            <option [value]="status">{{ status | statusLabel }}</option>
           }
         </select>
       </label>
@@ -100,7 +100,7 @@
               <td>{{ payment.amount | number: '1.2-2' }}</td>
               <td>{{ payment.appliedAmount | number: '1.2-2' }}</td>
               <td>{{ payment.unallocatedAmount | number: '1.2-2' }}</td>
-              <td><span [class]="statusClass(payment.status)">{{ payment.status }}</span></td>
+              <td><span [class]="statusClass(payment.status)">{{ payment.status | statusLabel }}</span></td>
               <td>{{ payment.paymentMethod || '-' }}</td>
               <td class="row-actions">
                 <a

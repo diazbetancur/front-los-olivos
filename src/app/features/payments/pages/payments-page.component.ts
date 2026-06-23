@@ -19,6 +19,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { SearchSelectComponent, SearchSelectOption } from '../../../shared/components/search-select/search-select';
+import { StatusLabelPipe } from '../../../shared/pipes/status-label.pipe';
 import {
   ContractLookupItem,
   GetPaymentsQuery,
@@ -49,7 +50,8 @@ function dateRangeValidator(group: AbstractControl): ValidationErrors | null {
     EmptyStateComponent,
     HasPermissionDirective,
     PaginationComponent,
-    SearchSelectComponent
+    SearchSelectComponent,
+    StatusLabelPipe
   ],
   templateUrl: './payments-page.component.html',
   styleUrl: './payments-page.component.scss'
