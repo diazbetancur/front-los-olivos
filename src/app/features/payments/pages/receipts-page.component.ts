@@ -7,7 +7,6 @@ import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, finalize, forkJoin, map } from 'rxjs';
 import { HasPermissionDirective } from '../../../core/auth/has-permission.directive';
-import { AuthSessionService } from '../../../core/auth/auth-session.service';
 import { ApiErrorService } from '../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
@@ -93,11 +92,6 @@ export class ReceiptsPageComponent {
   private readonly paymentsApi = inject(PaymentsApiService);
   private readonly apiErrorService = inject(ApiErrorService);
   private readonly feedback = inject(AppFeedbackService);
-  private readonly authSession = inject(AuthSessionService);
-
-  readonly canPrint = computed(() => this.authSession.hasPermission('Receipts.Print'));
-  readonly canVoid = computed(() => this.authSession.hasPermission('Receipts.Void'));
-
   readonly filterForm = this.formBuilder.nonNullable.group(
     {
       contractId: [''],

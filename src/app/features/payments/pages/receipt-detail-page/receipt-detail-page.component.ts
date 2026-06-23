@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,7 +7,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { ApiErrorService } from '../../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../../core/ui/app-feedback.service';
-import { AuthSessionService } from '../../../../core/auth/auth-session.service';
 import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
 import { HasPermissionDirective } from '../../../../core/auth/has-permission.directive';
 import { LoadingStateComponent } from '../../../../shared/components/loading-state/loading-state.component';
@@ -29,9 +28,6 @@ export class ReceiptDetailPageComponent implements OnInit {
   private readonly receiptsApi = inject(ReceiptsApiService);
   private readonly apiErrorService = inject(ApiErrorService);
   private readonly feedback = inject(AppFeedbackService);
-  private readonly authSession = inject(AuthSessionService);
-
-  readonly canVoid = computed(() => this.authSession.hasPermission('Receipts.Void'));
 
   readonly receipt = signal<ReceiptDetailResponse | null>(null);
   readonly isLoading = signal(true);
