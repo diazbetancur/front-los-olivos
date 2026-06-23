@@ -3,7 +3,6 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClientService } from '../../../core/http/api-client.service';
 import {
-  CreateManualReceiptRequest,
   GetReceiptsQuery,
   PagedResult,
   ReceiptDetailResponse,
@@ -22,10 +21,6 @@ export class ReceiptsApiService {
     return this.apiClient.get<PagedResult<ReceiptListItemResponse>>('/api/v1/admin/receipts', {
       params: this.toParams(query)
     });
-  }
-
-  createManualReceipt(request: CreateManualReceiptRequest): Observable<ReceiptDetailResponse> {
-    return this.apiClient.post<CreateManualReceiptRequest, ReceiptDetailResponse>('/api/v1/admin/receipts/manual', request);
   }
 
   getReceiptById(receiptId: string): Observable<ReceiptDetailResponse> {
