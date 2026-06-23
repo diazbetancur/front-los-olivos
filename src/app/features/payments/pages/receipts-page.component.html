@@ -8,9 +8,10 @@
 
   <section class="filters">
     <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
-      <label>
+      <label for="receiptsTargetSearch">
         Cliente o contrato
         <app-search-select
+          inputId="receiptsTargetSearch"
           [searchFn]="searchTargetsFn"
           placeholder="Buscar por identificación o número de contrato..."
           [clearSignal]="clearSignal"
@@ -28,17 +29,8 @@
         <input type="date" formControlName="toDate" class="ui-form-control" />
       </label>
 
-      @if (filterForm.errors?.['periodIncomplete']) {
-        <p class="field-error">Completa ambas fechas del periodo.</p>
-      }
-      @if (filterForm.errors?.['dateRange']) {
-        <p class="field-error">La fecha "Desde" no puede ser mayor que "Hasta".</p>
-      }
       @if (filterForm.errors?.['periodTooLong']) {
         <p class="field-error">El periodo no puede superar 90 días.</p>
-      }
-      @if (filterForm.errors?.['noFilter']) {
-        <p class="field-error">Selecciona un cliente/contrato o un periodo (máx. 90 días).</p>
       }
 
       <div class="filter-actions">
