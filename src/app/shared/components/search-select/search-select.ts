@@ -19,6 +19,7 @@ export interface SearchSelectOption {
   id: string;
   label: string;
   sublabel?: string;
+  type?: string;
 }
 
 type SearchState = 'idle' | 'loading' | 'results' | 'empty' | 'error';

@@ -162,6 +162,9 @@ export interface ReceiptListItemResponse {
   currency: string;
   status: string;
   generatedAtUtc: string;
+  contractNumber?: string | null;
+  clientFullName?: string | null;
+  paymentNumber?: string | null;
 }
 
 export interface ReceiptDetailResponse {
@@ -179,6 +182,9 @@ export interface ReceiptDetailResponse {
   generatedBy: string;
   voidedAtUtc?: string | null;
   voidReason: string;
+  contractNumber?: string | null;
+  clientFullName?: string | null;
+  paymentNumber?: string | null;
 }
 
 export interface VoidReceiptRequest {
