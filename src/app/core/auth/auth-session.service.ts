@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { Observable, of, shareReplay, switchMap, tap, map, catchError, finalize, throwError, timeout } from 'rxjs';
+import { Observable, of, shareReplay, tap, map, catchError, finalize, throwError, timeout } from 'rxjs';
 import { AuthApiService } from './auth-api.service';
 import { AuthStorageService } from './auth-storage.service';
 import { AuthResponse, AuthSessionState, CurrentUserResponse, LoginRequest } from './models/auth.models';
@@ -30,13 +30,13 @@ export class AuthSessionService {
 
   login(request: LoginRequest): Observable<AuthSessionState> {
     return this.authApi.login(request).pipe(
-      switchMap((response) => this.enrichWithCurrentUser(response)),
+      map((response) => this.toSessionState(response)),
       tap((session) => this.setSession(session))
     );
   }
 
   loginWithResponse(response: AuthResponse): Observable<AuthSessionState> {
-    return this.enrichWithCurrentUser(response).pipe(
+    return of(this.toSessionState(response)).pipe(
       tap((session) => this.setSession(session))
     );
   }
@@ -149,13 +149,6 @@ export class AuthSessionService {
   clearSession(): void {
     this.sessionState.set(null);
     this.authStorage.clear();
-  }
-
-  private enrichWithCurrentUser(response: AuthResponse): Observable<AuthSessionState> {
-    return this.authApi.me().pipe(
-      map((user) => this.toSessionState({ ...response, user })),
-      catchError(() => of(this.toSessionState(response)))
-    );
   }
 
   private setSession(session: AuthSessionState): void {
