@@ -11,10 +11,10 @@ import { AppModalComponent } from '../../../shared/components/app-modal/app-moda
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import {
+  ClientAllocationItem,
   ClientContractDetail,
   ClientPaymentListItem,
   ClientPaymentProofDetail,
-  ClientReceiptListItem,
   ContractInstallmentItem
 } from '../models/client-portal.models';
 import { ClientPortalApiService } from '../services/client-portal-api.service';
@@ -51,14 +51,13 @@ export class ClientContractDetailPageComponent implements OnInit {
   contract: ClientContractDetail | null = null;
   schedule: ReadonlyArray<ContractInstallmentItem> = [];
   payments: ReadonlyArray<ClientPaymentListItem> = [];
-  receipts: ReadonlyArray<ClientReceiptListItem> = [];
+  allocations: ReadonlyArray<ClientAllocationItem> = [];
 
   isContractLoading = false;
   isScheduleLoading = false;
   isPaymentsLoading = false;
   isReceiptsLoading = false;
   isSubmittingProof = false;
-  isDownloading = false;
 
   contractError: string | null = null;
   scheduleError: string | null = null;
@@ -74,6 +73,11 @@ export class ClientContractDetailPageComponent implements OnInit {
   readonly schedulePageSizeOptions = [10, 25, 50];
   schedulePageSize = 10;
   schedulePage = 1;
+
+  readonly allocationsPageSizeOptions = [10, 25, 50];
+  allocationsPageSize = 10;
+  allocationsPage = 1;
+  busyAllocationId: string | null = null;
 
   ngOnInit(): void {
     this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
@@ -136,6 +140,83 @@ export class ClientContractDetailPageComponent implements OnInit {
     }
   }
 
+  get pagedAllocations(): ReadonlyArray<ClientAllocationItem> {
+    const start = (this.allocationsPage - 1) * this.allocationsPageSize;
+    return this.allocations.slice(start, start + this.allocationsPageSize);
+  }
+
+  get allocationsTotalPages(): number {
+    return Math.max(1, Math.ceil(this.allocations.length / this.allocationsPageSize));
+  }
+
+  onAllocationsPageSizeChange(event: Event): void {
+    this.allocationsPageSize = Number((event.target as HTMLSelectElement).value);
+    this.allocationsPage = 1;
+  }
+
+  prevAllocationsPage(): void {
+    if (this.allocationsPage > 1) { this.allocationsPage -= 1; }
+  }
+
+  nextAllocationsPage(): void {
+    if (this.allocationsPage < this.allocationsTotalPages) { this.allocationsPage += 1; }
+  }
+
+  onAllocationReceipt(allocation: ClientAllocationItem): void {
+    if (!this.contractId || this.busyAllocationId !== null) {
+      return;
+    }
+    if (allocation.hasReceipt && allocation.receiptId) {
+      this.downloadAllocationReceipt(allocation.receiptId);
+      return;
+    }
+    this.busyAllocationId = allocation.id;
+    this.syncView();
+    this.api
+      .generateAllocationReceipt(this.contractId, allocation.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (created) => {
+          this.busyAllocationId = null;
+          this.downloadAllocationReceipt(created.id);
+          if (this.contractId) {
+            this.loadAllocations(this.contractId);
+          }
+        },
+        error: (error) => {
+          this.busyAllocationId = null;
+          this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
+          this.syncView();
+        }
+      });
+  }
+
+  private downloadAllocationReceipt(receiptId: string): void {
+    if (!this.contractId) {
+      return;
+    }
+    this.busyAllocationId = receiptId;
+    this.api
+      .downloadReceiptPdf(this.contractId, receiptId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.busyAllocationId = null;
+          this.syncView();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          const fileName = this.readFileName(response) ?? `${receiptId}.pdf`;
+          this.saveBlob(response.body, fileName);
+          this.feedback.showSuccess('Comprobante descargado.');
+        },
+        error: (error) => {
+          this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
+        }
+      });
+  }
+
   submitPaymentProof(): void {
     this.proofSubmitted = true;
     this.proofError = null;
@@ -189,26 +270,6 @@ export class ClientContractDetailPageComponent implements OnInit {
       });
   }
 
-  downloadReceiptPdf(receipt: ClientReceiptListItem): void {
-    if (!this.contractId) {
-      return;
-    }
-    this.downloadFile(
-      this.api.downloadReceiptPdf(this.contractId, receipt.id),
-      `${receipt.receiptNumber}.pdf`
-    );
-  }
-
-  downloadReceiptDocx(receipt: ClientReceiptListItem): void {
-    if (!this.contractId) {
-      return;
-    }
-    this.downloadFile(
-      this.api.downloadReceiptDocx(this.contractId, receipt.id),
-      `${receipt.receiptNumber}.docx`
-    );
-  }
-
   contractStatusClass(status: string): string {
     switch (status) {
       case 'Activo':
@@ -260,15 +321,11 @@ export class ClientContractDetailPageComponent implements OnInit {
     }
   }
 
-  receiptStatusClass(status: string): string {
-    return status === 'Anulado' ? 'status-badge danger' : 'status-badge ok';
-  }
-
   private loadContractBundle(contractId: string): void {
     this.loadContract(contractId);
     this.loadSchedule(contractId);
     this.loadPayments(contractId);
-    this.loadReceipts(contractId);
+    this.loadAllocations(contractId);
   }
 
   private loadContract(contractId: string): void {
@@ -347,13 +404,13 @@ export class ClientContractDetailPageComponent implements OnInit {
       });
   }
 
-  private loadReceipts(contractId: string): void {
+  private loadAllocations(contractId: string): void {
     this.isReceiptsLoading = true;
     this.receiptsError = null;
-    this.receipts = [];
+    this.allocations = [];
 
     this.api
-      .getReceipts(contractId)
+      .getAllocations(contractId)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
@@ -363,35 +420,11 @@ export class ClientContractDetailPageComponent implements OnInit {
       )
       .subscribe({
         next: (response) => {
-          this.receipts = response;
+          this.allocations = response;
+          this.allocationsPage = 1;
         },
         error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.receiptsError = normalizedError.userMessage;
-        }
-      });
-  }
-
-  private downloadFile(download$: ReturnType<ClientPortalApiService['downloadReceiptPdf']>, fallbackName: string): void {
-    this.isDownloading = true;
-
-    download$
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => {
-          this.isDownloading = false;
-          this.syncView();
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          const fileName = this.readFileName(response) ?? fallbackName;
-          this.saveBlob(response.body, fileName);
-          this.feedback.showSuccess(`Descarga iniciada: ${fileName}`);
-        },
-        error: (error) => {
-          const normalizedError = this.apiErrorService.normalize(error);
-          this.feedback.showError(normalizedError.userMessage);
+          this.receiptsError = this.apiErrorService.normalize(error).userMessage;
         }
       });
   }

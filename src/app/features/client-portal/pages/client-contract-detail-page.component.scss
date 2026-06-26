@@ -323,6 +323,29 @@ textarea {
   color: #991b1b;
 }
 
+.action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.3rem;
+  cursor: pointer;
+  color: #475569;
+  line-height: 0;
+
+  &:hover:not(:disabled) {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 @media (max-width: 860px) {
   dl div {
     grid-template-columns: 1fr;
