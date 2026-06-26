@@ -87,6 +87,33 @@ export class PaymentDetailPageComponent implements OnInit {
 
   readonly busyAllocationId = signal<string | null>(null);
 
+  readonly allocationsPageSize = signal(10);
+  readonly allocationsPage = signal(1);
+
+  readonly pagedAllocations = computed(() => {
+    const all = this.payment()?.allocations ?? [];
+    const size = this.allocationsPageSize();
+    const start = (this.allocationsPage() - 1) * size;
+    return all.slice(start, start + size);
+  });
+
+  readonly allocationsTotalPages = computed(() => {
+    const total = this.payment()?.allocations?.length ?? 0;
+    return Math.max(1, Math.ceil(total / this.allocationsPageSize()));
+  });
+
+  prevAllocationsPage(): void {
+    if (this.allocationsPage() > 1) {
+      this.allocationsPage.update((page) => page - 1);
+    }
+  }
+
+  nextAllocationsPage(): void {
+    if (this.allocationsPage() < this.allocationsTotalPages()) {
+      this.allocationsPage.update((page) => page + 1);
+    }
+  }
+
   readonly isTransfer = computed(() => this.payment()?.paymentMethod === 'Transferencia');
   readonly busyProofId = signal<string | null>(null);
 
