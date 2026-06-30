@@ -8,63 +8,33 @@
 
   <section class="filters">
     <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
-      <label>
-        Contrato
-        <select formControlName="contractId">
-          <option value="">Todos</option>
-          @for (contract of contractOptions; track contract.id) {
-            <option [value]="contract.id">{{ contract.contractNumber }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        Cliente
-        <select formControlName="clientId">
-          <option value="">Todos</option>
-          @for (client of clientOptions; track client.id) {
-            <option [value]="client.id">{{ client.fullName }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        Pago
-        <select formControlName="paymentId">
-          <option value="">Todos</option>
-          @for (payment of paymentOptions; track payment.id) {
-            <option [value]="payment.id">{{ payment.paymentNumber }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        Estado
-        <select formControlName="status">
-          <option value="">Todos</option>
-          @for (status of receiptStatuses; track status) {
-            <option [value]="status">{{ status }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        Buscar
-        <input type="text" formControlName="search" placeholder="Numero o notas" />
+      <label for="receiptsTargetSearch">
+        Cliente o contrato
+        <app-search-select
+          inputId="receiptsTargetSearch"
+          [searchFn]="searchTargetsFn"
+          placeholder="Buscar por identificación o número de contrato..."
+          [clearSignal]="clearSignal"
+          (selectionChange)="onTargetSelected($event)"
+        />
       </label>
 
       <label>
         Desde
-        <input type="date" formControlName="fromDate" />
+        <input type="date" formControlName="fromDate" class="ui-form-control" />
       </label>
 
       <label>
         Hasta
-        <input type="date" formControlName="toDate" />
+        <input type="date" formControlName="toDate" class="ui-form-control" />
       </label>
 
+      @if (filterForm.errors?.['periodTooLong']) {
+        <p class="field-error">El periodo no puede superar 90 días.</p>
+      }
+
       <div class="filter-actions">
-        <button type="submit">Aplicar</button>
+        <button type="submit" [disabled]="filterForm.invalid">Aplicar</button>
         <button type="button" class="ghost" (click)="clearFilters()">Limpiar</button>
       </div>
     </form>
@@ -79,7 +49,11 @@
   @if (isLoading) {
     <app-loading-state message="Cargando recibos..." />
   } @else if (receipts.length === 0) {
-    <app-empty-state title="Sin recibos" message="No hay recibos que coincidan con el filtro actual." />
+    @if (filterForm.invalid) {
+      <app-empty-state title="Aplica un filtro" message="Selecciona un cliente/contrato o un periodo (máx. 90 días) para ver recibos." />
+    } @else {
+      <app-empty-state title="Sin recibos" message="No hay recibos que coincidan con el filtro actual." />
+    }
   } @else {
     <section class="table-wrap">
       <table>
@@ -101,31 +75,31 @@
             <tr>
               <td>{{ receipt.receiptNumber }}</td>
               <td>{{ receipt.receiptDate }}</td>
-              <td>{{ resolveContractLabel(receipt.contractId) }}</td>
-              <td>{{ resolveClientLabel(receipt.clientId) }}</td>
-              <td>{{ resolvePaymentLabel(receipt.paymentId) }}</td>
+              <td>{{ receipt.contractNumber || '-' }}</td>
+              <td>{{ receipt.clientFullName || '-' }}</td>
+              <td>{{ receipt.paymentNumber || '-' }}</td>
               <td>{{ receipt.amount | number: '1.2-2' }}</td>
               <td>{{ receipt.currency }}</td>
               <td><span [class]="statusClass(receipt.status)">{{ receipt.status }}</span></td>
               <td class="row-actions">
-                <button type="button" class="ghost" (click)="viewReceiptDetail(receipt.id)">Ver</button>
+                <a
+                  class="action-icon-btn"
+                  [routerLink]="['/admin/receipts', receipt.id]"
+                  title="Ver detalle"
+                  aria-label="Ver detalle"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>
                 <button
                   type="button"
-                  class="ghost"
+                  class="action-icon-btn"
                   (click)="downloadPdf(receipt.id, receipt.receiptNumber)"
                   [disabled]="isDownloading"
+                  title="Descargar PDF"
+                  aria-label="Descargar PDF"
                   *appHasPermission="['Receipts.Print']"
                 >
-                  PDF
-                </button>
-                <button
-                  type="button"
-                  class="ghost"
-                  (click)="downloadDocx(receipt.id, receipt.receiptNumber)"
-                  [disabled]="isDownloading"
-                  *appHasPermission="['Receipts.Print']"
-                >
-                  DOCX
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
               </td>
             </tr>
@@ -143,100 +117,4 @@
     (pageSizeChange)="onPageSizeChange($event)"
   />
 
-  @if (isDetailLoading) {
-    <app-loading-state message="Cargando detalle del recibo..." />
-  } @else if (detailError) {
-    <section class="error-box">
-      <p>{{ detailError }}</p>
-    </section>
-  } @else if (selectedReceiptDetail; as detail) {
-    <section class="detail-panel">
-      <header class="detail-header">
-        <div>
-          <h3>Detalle de recibo</h3>
-          <p>{{ detail.receiptNumber }}</p>
-        </div>
-        <span [class]="statusClass(detail.status)">{{ detail.status }}</span>
-      </header>
-
-      <div class="detail-grid">
-        <div><strong>Fecha:</strong> {{ detail.receiptDate }}</div>
-        <div><strong>Contrato:</strong> {{ resolveContractLabel(detail.contractId) }}</div>
-        <div><strong>Cliente:</strong> {{ resolveClientLabel(detail.clientId) }}</div>
-        <div><strong>Pago:</strong> {{ resolvePaymentLabel(detail.paymentId) }}</div>
-        <div><strong>Monto:</strong> {{ detail.amount | number: '1.2-2' }}</div>
-        <div><strong>Moneda:</strong> {{ detail.currency }}</div>
-        <div><strong>Generado:</strong> {{ detail.generatedAtUtc | date: 'short' }}</div>
-        <div><strong>Generado por:</strong> {{ detail.generatedBy }}</div>
-        <div><strong>Anulado en:</strong> {{ detail.voidedAtUtc ? (detail.voidedAtUtc | date: 'short') : '-' }}</div>
-        <div class="full-width"><strong>Notas:</strong> {{ detail.notes || '-' }}</div>
-        <div class="full-width"><strong>Razon anulacion:</strong> {{ detail.voidReason || '-' }}</div>
-      </div>
-
-      <section class="action-bar">
-        <button
-          type="button"
-          class="ghost"
-          (click)="downloadPdf(detail.id, detail.receiptNumber)"
-          [disabled]="isDownloading"
-          *appHasPermission="['Receipts.Print']"
-        >
-          Descargar PDF
-        </button>
-        <button
-          type="button"
-          class="ghost"
-          (click)="downloadDocx(detail.id, detail.receiptNumber)"
-          [disabled]="isDownloading"
-          *appHasPermission="['Receipts.Print']"
-        >
-          Descargar DOCX
-        </button>
-        <button
-          type="button"
-          class="danger"
-          (click)="openVoidForm()"
-          [disabled]="detail.status === 'Anulado'"
-          *appHasPermission="['Receipts.Void']"
-        >
-          Anular recibo
-        </button>
-      </section>
-
-      @if (showVoidForm) {
-        <app-modal (closed)="cancelVoidForm()">
-          <section class="form-panel nested-form">
-          <header>
-            <h5>Anular recibo</h5>
-            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelVoidForm()" aria-label="Cerrar" title="Cerrar">×</button>
-          </header>
-
-          @if (voidError) {
-            <p class="error-text">{{ voidError }}</p>
-          }
-
-          <form [formGroup]="voidForm" (ngSubmit)="submitVoidReceipt()" novalidate>
-            <div class="grid">
-              <label class="required full-width">
-                Razon de anulacion (obligatoria)
-                <textarea rows="3" formControlName="reason"></textarea>
-              </label>
-            </div>
-
-            <p class="field-error" *ngIf="voidForm.invalid && (voidForm.touched || voidSubmitted)">
-              Debes ingresar una razon valida para anular el recibo.
-            </p>
-
-            <div class="form-actions">
-              <button type="button" class="ghost" (click)="cancelVoidForm()">Cancelar</button>
-              <button type="submit" class="danger" [disabled]="isSubmitting || voidForm.invalid">
-                Confirmar anulacion
-              </button>
-            </div>
-          </form>
-          </section>
-        </app-modal>
-      }
-    </section>
-  }
 </section>

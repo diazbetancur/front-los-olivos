@@ -1,0 +1,81 @@
+<section class="receipt-detail-page">
+  @if (isLoading()) {
+    <app-loading-state message="Cargando detalle del recibo..." />
+  } @else if (loadError()) {
+    <section class="error-box">
+      <p>{{ loadError() }}</p>
+      <button type="button" class="ghost" (click)="goBack()">Volver</button>
+    </section>
+  } @else if (receipt(); as detail) {
+    <button type="button" class="back-link" (click)="goBack()">← Volver a recibos</button>
+
+    <div class="rd-title-row">
+      <div>
+        <div class="rd-eyebrow">Recibo</div>
+        <h1 class="rd-title">{{ detail.receiptNumber }}</h1>
+      </div>
+      <span [class]="statusClass(detail.status)">{{ detail.status }}</span>
+    </div>
+
+    <div class="rd-card">
+      <div class="rd-grid">
+        <div class="rd-field"><div class="k">Fecha</div><div class="v">{{ detail.receiptDate }}</div></div>
+        <div class="rd-field"><div class="k">Contrato</div><div class="v">{{ detail.contractNumber || '-' }}</div></div>
+        <div class="rd-field"><div class="k">Cliente</div><div class="v">{{ detail.clientFullName || '-' }}</div></div>
+        <div class="rd-field"><div class="k">Pago</div><div class="v">{{ detail.paymentNumber || '-' }}</div></div>
+        <div class="rd-field"><div class="k">Monto</div><div class="v">{{ detail.amount | number: '1.2-2' }} {{ detail.currency }}</div></div>
+        <div class="rd-field"><div class="k">Generado</div><div class="v">{{ detail.generatedAtUtc | date: 'short' }}</div></div>
+        <div class="rd-field"><div class="k">Generado por</div><div class="v">{{ detail.generatedBy || '-' }}</div></div>
+        <div class="rd-field rd-full"><div class="k">Notas</div><div class="v">{{ detail.notes || '-' }}</div></div>
+      </div>
+
+      @if (detail.status === 'Anulado') {
+        <div class="rd-grid">
+          <div class="rd-field"><div class="k">Anulado en</div><div class="v">{{ detail.voidedAtUtc ? (detail.voidedAtUtc | date: 'short') : '-' }}</div></div>
+          <div class="rd-field rd-full"><div class="k">Razón de anulación</div><div class="v">{{ detail.voidReason || '-' }}</div></div>
+        </div>
+      }
+
+      <div class="rd-actions">
+        <button type="button" class="ghost" (click)="downloadPdf()" [disabled]="isDownloading()" *appHasPermission="['Receipts.Print']">
+          Descargar PDF
+        </button>
+        @if (detail.status !== 'Anulado') {
+          <button type="button" class="danger" (click)="openVoid()" [disabled]="isSubmitting()" *appHasPermission="['Receipts.Void']">
+            Anular recibo
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (showVoid()) {
+      <app-modal (closed)="cancelVoid()">
+        <section class="form-panel">
+          <header>
+            <h3>Anular recibo</h3>
+            <button type="button" class="ghost ui-icon-close-btn" (click)="cancelVoid()" aria-label="Cerrar" title="Cerrar">×</button>
+          </header>
+
+          @if (voidError()) {
+            <p class="error-text">{{ voidError() }}</p>
+          }
+
+          <form [formGroup]="voidForm" (ngSubmit)="submitVoid()" novalidate>
+            <label>
+              <span class="required-label">Razón de anulación *</span>
+              <textarea rows="3" formControlName="reason" class="ui-form-control"></textarea>
+              <small class="ui-field-inline-error"
+                     [class.visible]="voidForm.controls.reason.invalid && (voidForm.controls.reason.touched || voidSubmitted())">
+                Debes ingresar una razón válida para anular el recibo.
+              </small>
+            </label>
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelVoid()">Cancelar</button>
+              <button type="submit" class="danger" [disabled]="isSubmitting() || voidForm.invalid">Confirmar anulación</button>
+            </div>
+          </form>
+        </section>
+      </app-modal>
+    }
+  }
+</section>

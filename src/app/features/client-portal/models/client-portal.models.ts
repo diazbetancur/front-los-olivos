@@ -140,6 +140,15 @@ export interface ClientReceiptListItem {
   generatedAtUtc: string;
 }
 
+export interface ClientAllocationItem {
+  id: string;
+  installmentNumber: number;
+  dueDate?: string | null;
+  amountApplied: number;
+  hasReceipt: boolean;
+  receiptId?: string | null;
+}
+
 export interface UploadClientPaymentProofRequest {
   paymentDate: string;
   amount: number;

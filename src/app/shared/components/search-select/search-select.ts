@@ -19,6 +19,7 @@ export interface SearchSelectOption {
   id: string;
   label: string;
   sublabel?: string;
+  type?: string;
 }
 
 type SearchState = 'idle' | 'loading' | 'results' | 'empty' | 'error';
@@ -36,6 +37,7 @@ export class SearchSelectComponent implements OnInit, OnChanges {
   @Input() placeholder = 'Buscar...';
   @Input() minChars = 4;
   @Input() clearSignal = 0;
+  @Input() inputId = '';
 
   @Output() selectionChange = new EventEmitter<SearchSelectOption | null>();
 

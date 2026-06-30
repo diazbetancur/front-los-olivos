@@ -1,0 +1,68 @@
+.receipt-detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.back-link {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--color-primary, #205326);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+}
+
+.rd-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rd-eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.rd-title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.rd-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #fff;
+}
+
+.rd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem 1.25rem;
+}
+
+.rd-field .k {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.rd-field .v {
+  font-size: 0.95rem;
+}
+
+.rd-field.rd-full {
+  grid-column: 1 / -1;
+}
+
+.rd-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

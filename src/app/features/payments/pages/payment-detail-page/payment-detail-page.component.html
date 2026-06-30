@@ -188,6 +188,7 @@
               <thead>
                 <tr>
                   <th>Cuota</th>
+                  <th>Periodo</th>
                   <th>Monto aplicado</th>
                   <th>Aplicado en</th>
                   <th>Estado</th>
@@ -195,9 +196,10 @@
                 </tr>
               </thead>
               <tbody>
-                @for (allocation of detail.allocations; track allocation.id) {
+                @for (allocation of pagedAllocations(); track allocation.id) {
                   <tr>
                     <td><span class="pd-num-badge">#{{ allocation.installmentNumber }}</span></td>
+                    <td class="muted">{{ allocation.dueDate || '—' }}</td>
                     <td class="strong">{{ allocation.amountApplied | number: '1.2-2' }} <span class="muted">{{ detail.currency }}</span></td>
                     <td class="muted">{{ allocation.appliedAtUtc | date: 'short' }}</td>
                     <td>
@@ -207,8 +209,15 @@
                     </td>
                     <td>
                       @if ((allocation.hasReceipt && canDownloadReceipt()) || (!allocation.hasReceipt && !allocation.isVoided && canGenerateReceipt())) {
-                        <button type="button" class="pd-btn-soft" (click)="onAllocationReceipt(allocation)" [disabled]="busyAllocationId() !== null">
-                          {{ allocation.hasReceipt ? '⬇ Descargar' : 'Generar' }}
+                        <button
+                          type="button"
+                          class="action-icon-btn"
+                          (click)="onAllocationReceipt(allocation)"
+                          [disabled]="busyAllocationId() !== null"
+                          title="Descargar comprobante"
+                          aria-label="Descargar comprobante"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         </button>
                       } @else {
                         -
@@ -219,6 +228,11 @@
               </tbody>
             </table>
           </div>
+              <div class="pd-pager">
+                <button type="button" class="pd-btn-soft" [disabled]="allocationsPage() <= 1" (click)="prevAllocationsPage()">Anterior</button>
+                <span class="muted">Página {{ allocationsPage() }} de {{ allocationsTotalPages() }}</span>
+                <button type="button" class="pd-btn-soft" [disabled]="allocationsPage() >= allocationsTotalPages()" (click)="nextAllocationsPage()">Siguiente</button>
+              </div>
         }
       </div>
     } @else {

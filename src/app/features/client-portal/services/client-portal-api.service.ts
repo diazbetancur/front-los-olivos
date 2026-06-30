@@ -19,11 +19,11 @@ export class PaymentProofUploadError extends Error {
   }
 }
 import {
+  ClientAllocationItem,
   ClientContractDetail,
   ClientContractListItem,
   ClientPaymentListItem,
   ClientPaymentProofDetail,
-  ClientReceiptListItem,
   ContractInstallmentItem,
   GetClientContractsQuery,
   PagedResult,
@@ -55,8 +55,15 @@ export class ClientPortalApiService {
     return this.apiClient.get<ReadonlyArray<ClientPaymentListItem>>(`/api/v1/client/contracts/${contractId}/payments`);
   }
 
-  getReceipts(contractId: string): Observable<ReadonlyArray<ClientReceiptListItem>> {
-    return this.apiClient.get<ReadonlyArray<ClientReceiptListItem>>(`/api/v1/client/contracts/${contractId}/receipts`);
+  getAllocations(contractId: string): Observable<ReadonlyArray<ClientAllocationItem>> {
+    return this.apiClient.get<ReadonlyArray<ClientAllocationItem>>(`/api/v1/client/contracts/${contractId}/allocations`);
+  }
+
+  generateAllocationReceipt(contractId: string, allocationId: string): Observable<{ id: string }> {
+    return this.apiClient.post<Record<string, never>, { id: string }>(
+      `/api/v1/client/contracts/${contractId}/allocations/${allocationId}/receipt`,
+      {}
+    );
   }
 
   uploadPaymentProof(contractId: string, request: UploadClientPaymentProofRequest): Observable<ClientPaymentProofDetail> {
@@ -97,13 +104,6 @@ export class ClientPortalApiService {
 
   downloadReceiptPdf(contractId: string, receiptId: string): Observable<HttpResponse<Blob>> {
     return this.httpClient.get(`/api/v1/client/contracts/${contractId}/receipts/${receiptId}/pdf`, {
-      observe: 'response',
-      responseType: 'blob'
-    });
-  }
-
-  downloadReceiptDocx(contractId: string, receiptId: string): Observable<HttpResponse<Blob>> {
-    return this.httpClient.get(`/api/v1/client/contracts/${contractId}/receipts/${receiptId}/docx`, {
       observe: 'response',
       responseType: 'blob'
     });

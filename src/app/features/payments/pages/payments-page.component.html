@@ -12,9 +12,10 @@
 
   <section class="filters">
     <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
-      <label>
+      <label for="paymentsClientSearch">
         Cliente
         <app-search-select
+          inputId="paymentsClientSearch"
           [searchFn]="searchClientsFn"
           placeholder="Buscar por nombre o documento..."
           [clearSignal]="clientClearSignal"
@@ -22,9 +23,10 @@
         />
       </label>
 
-      <label>
+      <label for="paymentsContractSearch">
         Contrato
         <app-search-select
+          inputId="paymentsContractSearch"
           [searchFn]="searchContractsFn"
           placeholder="Buscar por numero o cliente..."
           [clearSignal]="contractClearSignal"
@@ -143,9 +145,10 @@
         <div class="grid">
           <h4 class="form-section-title full-width">Referencia</h4>
 
-          <label class="required">
+          <label class="required" for="paymentsRegisterClientSearch">
             Cliente
             <app-search-select
+              inputId="paymentsRegisterClientSearch"
               [searchFn]="searchClientsFn"
               placeholder="Buscar por nombre o documento..."
               [clearSignal]="registerClientClearSignal"

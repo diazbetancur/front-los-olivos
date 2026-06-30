@@ -1,0 +1,264 @@
+.client-form-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  align-self: start;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+  }
+}
+
+.req-mark {
+  color: var(--danger);
+}
+
+/* Section cards (design base: Nuevo Cliente) */
+.form-cards {
+  display: grid;
+  gap: 1.1rem;
+}
+
+/* Top-align fields so a field with an error line never stretches taller than its
+   neighbours within the same row. */
+.grid.ui-form-grid-2,
+.grid.ui-form-grid-3 {
+  align-items: start;
+}
+
+.form-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 1.6rem 1.75rem;
+}
+
+.form-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1.35rem;
+}
+
+.form-card-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--bg-primary-soft);
+  color: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-card-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.form-card-sub {
+  margin: 0.1rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+/* Administración: Estado (1) | Notas (2) */
+.grid.ui-form-grid-admin {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.8rem 0.95rem;
+  align-items: start;
+}
+
+/* Sticky action bar */
+.form-actions-bar {
+  position: sticky;
+  bottom: 0.75rem;
+  margin-top: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 0.8rem 1.1rem;
+  box-shadow: var(--shadow-soft);
+}
+
+@media (max-width: 760px) {
+  .grid.ui-form-grid-admin {
+    grid-template-columns: 1fr;
+  }
+}
+
+.page-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+/* Span two columns within the 3-column form grid (collapses on mobile) */
+.span-2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 760px) {
+  .span-2 {
+    grid-column: auto;
+  }
+}
+
+/* Normalize select appearance so it matches text inputs visually */
+select.ui-form-control {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  padding-right: 2.25rem;
+  cursor: pointer;
+}
+
+textarea {
+  resize: vertical;
+}
+
+/* Apply hint color only to non-error small elements. */
+small:not(.ui-field-inline-error) {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+/* Action icon buttons in table rows */
+.action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0.3rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  color: #475569;
+  transition: background-color 0.15s, color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: #f1f5f9;
+    color: #1e293b;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &--danger {
+    &:hover:not(:disabled) {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  }
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+/* Status chips */
+.chip {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.client-chip-activo {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.client-chip-inactivo {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.client-chip-bloqueado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Form tabs */
+.client-form-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 0;
+}
+
+.client-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover {
+    color: #1e293b;
+  }
+
+  &.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+  }
+}
+
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.subsection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h5 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e293b;
+  }
+}

@@ -38,13 +38,6 @@ export class ReceiptsApiService {
     });
   }
 
-  downloadReceiptDocx(receiptId: string): Observable<HttpResponse<Blob>> {
-    return this.httpClient.get(`/api/v1/admin/receipts/${receiptId}/docx`, {
-      observe: 'response',
-      responseType: 'blob'
-    });
-  }
-
   private toParams(source: object): Record<string, string | number | boolean> {
     const entries = Object.entries(source).filter(([, value]) => value !== undefined && value !== null && value !== '');
     return Object.fromEntries(entries) as Record<string, string | number | boolean>;
