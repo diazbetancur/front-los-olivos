@@ -1,0 +1,527 @@
+<section class="client-form-page">
+  <button type="button" class="back-btn" (click)="goBack()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Volver a clientes
+  </button>
+
+  <header class="page-header">
+    <div class="page-header-title">
+      @if (isEditing()) {
+        <h2>{{ loadedClient()?.fullName || 'Cliente' }}</h2>
+        @if (loadedClient(); as detail) {
+          <span class="chip" [class]="'client-chip-' + detail.status.toLowerCase()">{{ detail.status }}</span>
+        }
+      } @else {
+        <h2>Nuevo cliente</h2>
+        <p>Registra los datos generales del cliente. Los campos con <span class="req-mark">*</span> son obligatorios.</p>
+      }
+    </div>
+  </header>
+
+  @if (isLoading) {
+    <app-loading-state message="Cargando cliente..." />
+  } @else if (isEditing() && loadError) {
+    <section class="error-box"><p>{{ loadError }}</p></section>
+  } @else {
+
+    @if (isEditing()) {
+      <div class="client-form-tabs">
+        <button
+          type="button"
+          class="client-tab-btn"
+          [class.active]="activeClientTab() === 'general'"
+          (click)="setClientTab('general')"
+        >Datos generales</button>
+        <button
+          type="button"
+          class="client-tab-btn"
+          [class.active]="activeClientTab() === 'beneficiaries'"
+          (click)="setClientTab('beneficiaries')"
+        >Beneficiarios</button>
+        <button
+          type="button"
+          class="client-tab-btn"
+          [class.active]="activeClientTab() === 'references'"
+          (click)="setClientTab('references')"
+        >Referencias</button>
+      </div>
+    }
+
+    @if (clientFormError) {
+      <p class="error-text">{{ clientFormError }}</p>
+    }
+
+    @if (activeClientTab() === 'general') {
+      <form [formGroup]="clientForm" (ngSubmit)="submitClient()" novalidate>
+        <div class="form-cards">
+
+          <section class="form-card">
+            <div class="form-card-head">
+              <span class="form-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="11" r="2.2"/><line x1="13.5" y1="9.5" x2="18" y2="9.5"/><line x1="13.5" y1="13" x2="18" y2="13"/></svg>
+              </span>
+              <div>
+                <h3 class="form-card-title">Identificación</h3>
+                <p class="form-card-sub">Tipo y número de documento del cliente.</p>
+              </div>
+            </div>
+
+            <div class="grid ui-form-grid-3">
+              <label class="required">
+                Tipo de persona
+                <select class="ui-form-control" formControlName="personType">
+                  @for (personType of personTypes; track personType) {
+                    <option [value]="personType">{{ personType }}</option>
+                  }
+                </select>
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('personType')">
+                  {{ getControlErrorMessage('personType') }}
+                </small>
+              </label>
+
+              <label class="required">
+                Tipo de documento
+                <select class="ui-form-control" formControlName="documentType">
+                  <option value="">Seleccionar</option>
+                  @for (dt of documentTypes; track dt.value) {
+                    <option [value]="dt.value">{{ dt.label }}</option>
+                  }
+                </select>
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('documentType')">
+                  {{ getControlErrorMessage('documentType') }}
+                </small>
+              </label>
+
+              <label>
+                Numero de documento
+                <input type="text" class="ui-form-control" formControlName="dni" />
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('dni')">
+                  {{ getControlErrorMessage('dni') }}
+                </small>
+              </label>
+
+              <label class="required">
+                {{ isJuridica() ? 'Razon social' : 'Nombres' }}
+                <input type="text" class="ui-form-control" formControlName="firstName" />
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('firstName')">
+                  {{ getControlErrorMessage('firstName') }}
+                </small>
+              </label>
+
+              @if (!isJuridica()) {
+                <label class="required">
+                  Apellidos
+                  <input type="text" class="ui-form-control" formControlName="lastName" />
+                  <small class="ui-field-inline-error" [class.visible]="hasControlError('lastName')">
+                    {{ getControlErrorMessage('lastName') }}
+                  </small>
+                </label>
+              }
+
+              <label>
+                RTN
+                <input type="text" class="ui-form-control" formControlName="rtn" />
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('rtn')">
+                  {{ getControlErrorMessage('rtn') }}
+                </small>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-card">
+            <div class="form-card-head">
+              <span class="form-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <div>
+                <h3 class="form-card-title">Datos personales</h3>
+                <p class="form-card-sub">Información complementaria del cliente.</p>
+              </div>
+            </div>
+
+            <div class="grid ui-form-grid-3">
+              <label class="required">
+                Fecha de nacimiento
+                <input type="date" class="ui-form-control" formControlName="birthDate" />
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('birthDate')">
+                  {{ getControlErrorMessage('birthDate') }}
+                </small>
+              </label>
+
+              <label>
+                Estado civil
+                <select class="ui-form-control" formControlName="maritalStatus">
+                  <option value="">Sin especificar</option>
+                  @for (ms of maritalStatuses; track ms.value) {
+                    <option [value]="ms.value">{{ ms.label }}</option>
+                  }
+                </select>
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('maritalStatus')">
+                  {{ getControlErrorMessage('maritalStatus') }}
+                </small>
+              </label>
+
+              @if (clientNationalityRequired()) {
+                <label class="required">
+                  Nacionalidad
+                  <input type="text" class="ui-form-control" formControlName="nationality" />
+                  <small class="ui-field-inline-error" [class.visible]="hasControlError('nationality')">
+                    {{ getControlErrorMessage('nationality') }}
+                  </small>
+                </label>
+              }
+            </div>
+          </section>
+
+          <section class="form-card">
+            <div class="form-card-head">
+              <span class="form-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+              </span>
+              <div>
+                <h3 class="form-card-title">Contacto</h3>
+                <p class="form-card-sub">Medios para comunicarse con el cliente.</p>
+              </div>
+            </div>
+
+            <div class="grid ui-form-grid-3">
+              <label>
+                Celular
+                <input type="text" class="ui-form-control" formControlName="mobile" />
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('mobile')">
+                  {{ getControlErrorMessage('mobile') }}
+                </small>
+              </label>
+
+              <label>
+                Email
+                <input type="email" class="ui-form-control" formControlName="email" />
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('email')">
+                  {{ getControlErrorMessage('email') }}
+                </small>
+              </label>
+
+              <label>
+                Direccion
+                <input type="text" class="ui-form-control" formControlName="address" />
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('address')">
+                  {{ getControlErrorMessage('address') }}
+                </small>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-card">
+            <div class="form-card-head">
+              <span class="form-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              </span>
+              <div>
+                <h3 class="form-card-title">Administración</h3>
+                <p class="form-card-sub">Estado interno y notas del registro.</p>
+              </div>
+            </div>
+
+            <div class="grid ui-form-grid-admin">
+              <label class="required">
+                Estado
+                <select class="ui-form-control" formControlName="status">
+                  @for (status of statuses; track status) {
+                    <option [value]="status">{{ status }}</option>
+                  }
+                </select>
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('status')">
+                  {{ getControlErrorMessage('status') }}
+                </small>
+              </label>
+
+              <label>
+                Notas
+                <textarea rows="3" class="ui-form-control" formControlName="notes"></textarea>
+                <small class="ui-field-inline-error" [class.visible]="hasControlError('notes')">
+                  {{ getControlErrorMessage('notes') }}
+                </small>
+              </label>
+            </div>
+          </section>
+
+        </div>
+
+        @if (canSave()) {
+          <div class="form-actions-bar">
+            <button type="button" class="ghost" (click)="goBack()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="isSubmitting || clientForm.invalid">
+              {{ isEditing() ? 'Guardar cambios' : 'Crear cliente' }}
+            </button>
+          </div>
+        }
+      </form>
+    }
+
+    @if (isEditing() && activeClientTab() === 'beneficiaries') {
+      <div class="tab-content">
+        @if (showBeneficiaryForm) {
+          <section class="form-card">
+            <div class="form-card-head">
+              <span class="form-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
+              <div>
+                <h3 class="form-card-title">{{ editingBeneficiaryId ? 'Editar beneficiario' : 'Nuevo beneficiario' }}</h3>
+                <p class="form-card-sub">Datos del beneficiario del cliente.</p>
+              </div>
+            </div>
+
+            @if (beneficiaryFormError) {
+              <p class="error-text">{{ beneficiaryFormError }}</p>
+            }
+
+            <form [formGroup]="beneficiaryForm" (ngSubmit)="submitBeneficiary()" novalidate>
+              <div class="grid ui-form-grid-3">
+                <label class="required">
+                  Nombre completo
+                  <input type="text" class="ui-form-control" formControlName="fullName" />
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.fullName)">{{ fieldErrorMessage(beneficiaryForm.controls.fullName) }}</small>
+                </label>
+                <label class="required">
+                  Fecha de nacimiento
+                  <input type="date" class="ui-form-control" formControlName="birthDate" />
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.birthDate)">{{ fieldErrorMessage(beneficiaryForm.controls.birthDate) }}</small>
+                </label>
+                <label>
+                  Tipo de documento
+                  <select class="ui-form-control" formControlName="documentType">
+                    <option value="">Sin especificar</option>
+                    @for (dt of documentTypes; track dt.value) {
+                      <option [value]="dt.value">{{ dt.label }}</option>
+                    }
+                  </select>
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.documentType)">{{ fieldErrorMessage(beneficiaryForm.controls.documentType) }}</small>
+                </label>
+                <label class="required">
+                  Número de documento
+                  <input type="text" class="ui-form-control" formControlName="dni" />
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.dni)">{{ fieldErrorMessage(beneficiaryForm.controls.dni) }}</small>
+                </label>
+                @if (beneficiaryNationalityRequired()) {
+                  <label class="required">
+                    Nacionalidad
+                    <input type="text" class="ui-form-control" formControlName="nationality" />
+                    <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.nationality)">{{ fieldErrorMessage(beneficiaryForm.controls.nationality) }}</small>
+                  </label>
+                }
+                <label>
+                  Telefono
+                  <input type="text" class="ui-form-control" formControlName="phone" />
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.phone)">{{ fieldErrorMessage(beneficiaryForm.controls.phone) }}</small>
+                </label>
+                <label>
+                  Relacion
+                  <input type="text" class="ui-form-control" formControlName="relationship" />
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.relationship)">{{ fieldErrorMessage(beneficiaryForm.controls.relationship) }}</small>
+                </label>
+                <label class="span-2">
+                  Direccion
+                  <input type="text" class="ui-form-control" formControlName="address" />
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.address)">{{ fieldErrorMessage(beneficiaryForm.controls.address) }}</small>
+                </label>
+                <label class="full-width">
+                  Notas
+                  <textarea rows="2" class="ui-form-control" formControlName="notes"></textarea>
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.notes)">{{ fieldErrorMessage(beneficiaryForm.controls.notes) }}</small>
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="ghost" (click)="cancelBeneficiaryForm()">Cancelar</button>
+                <button type="submit" class="btn-primary" [disabled]="isSubmitting || beneficiaryForm.invalid">
+                  {{ editingBeneficiaryId ? 'Guardar cambios' : 'Crear beneficiario' }}
+                </button>
+              </div>
+            </form>
+          </section>
+        } @else {
+          <div class="subsection-header">
+            <span></span>
+            <button type="button" (click)="openCreateBeneficiaryForm()" *appHasPermission="['Clients.Update']">
+              Nuevo beneficiario
+            </button>
+          </div>
+
+          @if (beneficiariesError) {
+            <p class="error-text">{{ beneficiariesError }}</p>
+          }
+
+          @if (isBeneficiariesLoading) {
+            <app-loading-state message="Cargando beneficiarios..." />
+          } @else if (beneficiaries.length === 0) {
+            <app-empty-state title="Sin beneficiarios" message="Este cliente no tiene beneficiarios registrados." />
+          } @else {
+            <section class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Fecha nac.</th>
+                    <th>Tipo doc.</th>
+                    <th>Núm. documento</th>
+                    <th>Nacionalidad</th>
+                    <th>Telefono</th>
+                    <th>Relacion</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (beneficiary of beneficiaries; track beneficiary.id) {
+                    <tr>
+                      <td>{{ beneficiary.fullName }}</td>
+                      <td>{{ beneficiary.birthDate || '-' }}</td>
+                      <td>{{ beneficiary.documentType || '-' }}</td>
+                      <td>{{ beneficiary.dni || '-' }}</td>
+                      <td>{{ beneficiary.nationality || '-' }}</td>
+                      <td>{{ beneficiary.phone || '-' }}</td>
+                      <td>{{ beneficiary.relationship || '-' }}</td>
+                      <td class="row-actions">
+                        <button
+                          type="button"
+                          class="action-icon-btn"
+                          (click)="openEditBeneficiaryForm(beneficiary)"
+                          title="Editar beneficiario"
+                          *appHasPermission="['Clients.Update']"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <button
+                          type="button"
+                          class="action-icon-btn action-icon-btn--danger"
+                          (click)="deleteBeneficiary(beneficiary)"
+                          title="Eliminar beneficiario"
+                          *appHasPermission="['Clients.Update']"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+          }
+        }
+      </div>
+    }
+
+    @if (isEditing() && activeClientTab() === 'references') {
+      <div class="tab-content">
+        @if (showReferenceForm) {
+          <section class="form-card">
+            <div class="form-card-head">
+              <span class="form-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </span>
+              <div>
+                <h3 class="form-card-title">{{ editingReferenceId ? 'Editar referencia' : 'Nueva referencia' }}</h3>
+                <p class="form-card-sub">Persona de referencia del cliente.</p>
+              </div>
+            </div>
+
+            @if (referenceFormError) {
+              <p class="error-text">{{ referenceFormError }}</p>
+            }
+
+            <form [formGroup]="referenceForm" (ngSubmit)="submitReference()" novalidate>
+              <div class="grid ui-form-grid-2">
+                <label class="required">
+                  Nombre completo
+                  <input type="text" class="ui-form-control" formControlName="fullName" />
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(referenceForm.controls.fullName)">{{ fieldErrorMessage(referenceForm.controls.fullName) }}</small>
+                </label>
+                <label>
+                  Telefono
+                  <input type="text" class="ui-form-control" formControlName="phone" />
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(referenceForm.controls.phone)">{{ fieldErrorMessage(referenceForm.controls.phone) }}</small>
+                </label>
+                <label class="full-width">
+                  Relacion
+                  <input type="text" class="ui-form-control" formControlName="relationshipOrNotes" />
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(referenceForm.controls.relationshipOrNotes)">{{ fieldErrorMessage(referenceForm.controls.relationshipOrNotes) }}</small>
+                </label>
+                <label class="full-width">
+                  Notas
+                  <textarea rows="2" class="ui-form-control" formControlName="notes"></textarea>
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(referenceForm.controls.notes)">{{ fieldErrorMessage(referenceForm.controls.notes) }}</small>
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="ghost" (click)="cancelReferenceForm()">Cancelar</button>
+                <button type="submit" class="btn-primary" [disabled]="isSubmitting || referenceForm.invalid">
+                  {{ editingReferenceId ? 'Guardar cambios' : 'Crear referencia' }}
+                </button>
+              </div>
+            </form>
+          </section>
+        } @else {
+          <div class="subsection-header">
+            <span></span>
+            <button type="button" (click)="openCreateReferenceForm()" *appHasPermission="['Clients.Update']">
+              Nueva referencia
+            </button>
+          </div>
+
+          @if (referencesError) {
+            <p class="error-text">{{ referencesError }}</p>
+          }
+
+          @if (isReferencesLoading) {
+            <app-loading-state message="Cargando referencias..." />
+          } @else if (references.length === 0) {
+            <app-empty-state title="Sin referencias" message="Este cliente no tiene referencias registradas." />
+          } @else {
+            <section class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Telefono</th>
+                    <th>Relacion</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (reference of references; track reference.id) {
+                    <tr>
+                      <td>{{ reference.fullName }}</td>
+                      <td>{{ reference.phone || '-' }}</td>
+                      <td>{{ reference.relationshipOrNotes || '-' }}</td>
+                      <td class="row-actions">
+                        <button
+                          type="button"
+                          class="action-icon-btn"
+                          (click)="openEditReferenceForm(reference)"
+                          title="Editar referencia"
+                          *appHasPermission="['Clients.Update']"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <button
+                          type="button"
+                          class="action-icon-btn action-icon-btn--danger"
+                          (click)="deleteReference(reference)"
+                          title="Eliminar referencia"
+                          *appHasPermission="['Clients.Update']"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+          }
+        }
+      </div>
+    }
+  }
+</section>

@@ -75,6 +75,32 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'clients/new',
+        loadComponent: () =>
+          import('./features/clients/pages/client-form-page/client-form-page.component').then(
+            (m) => m.ClientFormPageComponent
+          ),
+        canActivate: [permissionGuard],
+        data: {
+          title: 'Nuevo cliente',
+          description: 'Registro de un nuevo cliente.',
+          requiredPermissions: ['Clients.Create']
+        }
+      },
+      {
+        path: 'clients/:id',
+        loadComponent: () =>
+          import('./features/clients/pages/client-form-page/client-form-page.component').then(
+            (m) => m.ClientFormPageComponent
+          ),
+        canActivate: [permissionGuard],
+        data: {
+          title: 'Detalle de cliente',
+          description: 'Datos del cliente, beneficiarios y referencias.',
+          requiredPermissions: ['Clients.View']
+        }
+      },
+      {
         path: 'contracts',
         loadComponent: () => import('./features/contracts/pages/contracts-page.component').then((m) => m.ContractsPageComponent),
         canActivate: [permissionGuard],

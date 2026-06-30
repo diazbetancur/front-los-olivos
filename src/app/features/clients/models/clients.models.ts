@@ -73,8 +73,10 @@ export interface ClientBeneficiaryResponse {
   id: string;
   clientId: string;
   fullName: string;
+  birthDate: string;
   documentType: string | null;
   dni: string;
+  nationality: string;
   phone: string;
   relationship: string;
   address: string;
@@ -83,8 +85,10 @@ export interface ClientBeneficiaryResponse {
 
 export interface CreateClientBeneficiaryRequest {
   fullName: string;
+  birthDate?: string | null;
   documentType?: string | null;
   dni?: string | null;
+  nationality?: string | null;
   phone?: string | null;
   relationship?: string | null;
   address?: string | null;
