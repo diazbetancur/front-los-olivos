@@ -11,6 +11,7 @@ import {
   GenerateContractDocumentsResponse,
   GeneratedDocumentResponse,
   GetContractsQuery,
+  GetProjectContractsQuery,
   LotLookupItem,
   PagedResult,
   ProjectLookupItem,
@@ -54,6 +55,12 @@ export class ContractsApiService {
 
   getContracts(query: GetContractsQuery): Observable<PagedResult<ContractListItemResponse>> {
     return this.apiClient.get<PagedResult<ContractListItemResponse>>('/api/v1/admin/contracts', {
+      params: this.toParams(query)
+    });
+  }
+
+  getProjectContracts(query: GetProjectContractsQuery): Observable<PagedResult<ContractListItemResponse>> {
+    return this.apiClient.get<PagedResult<ContractListItemResponse>>('/api/v1/admin/contracts/by-project', {
       params: this.toParams(query)
     });
   }

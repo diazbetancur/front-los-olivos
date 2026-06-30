@@ -250,34 +250,27 @@
 
     <section class="filters">
       <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
-        <label>
+        <label class="filter-project">
           Proyecto
-          <select formControlName="projectId">
-            <option value="">Todos</option>
-            @for (project of projectOptions; track project.id) {
-              <option [value]="project.id">{{ project.name }}</option>
+          <div class="combobox">
+            <input
+              type="text"
+              class="combo-input"
+              [value]="listProjectSearch"
+              (input)="onListProjectSearch($any($event.target).value)"
+              (focus)="openListProjectDropdown()"
+              (blur)="closeListProjectDropdown()"
+              placeholder="Busca y selecciona un proyecto"
+              autocomplete="off"
+            />
+            @if (showListProjectDropdown) {
+              <ul class="combo-dropdown">
+                @for (project of listProjectDropdownItems; track project.id) {
+                  <li (mousedown)="selectListProject(project)">{{ project.name }}</li>
+                }
+              </ul>
             }
-          </select>
-        </label>
-
-        <label>
-          Lote
-          <select formControlName="lotId">
-            <option value="">Todos</option>
-            @for (lot of lotOptions; track lot.id) {
-              <option [value]="lot.id">{{ lot.fullCode }} ({{ lot.status }})</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          Cliente
-          <select formControlName="clientId">
-            <option value="">Todos</option>
-            @for (client of clientOptions; track client.id) {
-              <option [value]="client.id">{{ client.fullName }}</option>
-            }
-          </select>
+          </div>
         </label>
 
         <label>
@@ -318,12 +311,17 @@
       </section>
     }
 
-    @if (isLoading) {
+    @if (!hasProjectSelected) {
+      <app-empty-state
+        title="Selecciona un proyecto"
+        message="Elige un proyecto para ver sus contratos."
+      />
+    } @else if (isLoading) {
       <app-loading-state message="Cargando contratos..." />
     } @else if (contracts.length === 0) {
       <app-empty-state
         title="Sin contratos"
-        message="No hay contratos que coincidan con el filtro actual."
+        message="Este proyecto no tiene contratos que coincidan con el filtro."
       />
     } @else {
       <section class="table-wrap">
@@ -364,13 +362,15 @@
       </section>
     }
 
-    <app-pagination
-      [currentPage]="currentPage"
-      [totalCount]="totalCount"
-      [pageSize]="filterForm.controls.pageSize.value"
-      (pageChange)="loadContracts($event)"
-      (pageSizeChange)="onPageSizeChange($event)"
-    />
+    @if (hasProjectSelected) {
+      <app-pagination
+        [currentPage]="currentPage"
+        [totalCount]="totalCount"
+        [pageSize]="filterForm.controls.pageSize.value"
+        (pageChange)="loadContracts($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      />
+    }
 
     @if (showCreateForm) {
       <app-modal (closed)="cancelCreateForm()">

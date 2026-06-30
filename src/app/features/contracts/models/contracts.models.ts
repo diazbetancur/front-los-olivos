@@ -27,6 +27,16 @@ export interface GetContractsQuery {
   toDate?: string | null;
 }
 
+export interface GetProjectContractsQuery {
+  projectId: string;
+  page: number;
+  pageSize: number;
+  status?: string | null;
+  search?: string | null;
+  fromDate?: string | null;
+  toDate?: string | null;
+}
+
 export interface ContractListItemResponse {
   id: string;
   contractNumber: string;

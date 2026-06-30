@@ -20,7 +20,7 @@ import {
   ContractStatus,
   CreateContractRequest,
   GeneratedDocumentResponse,
-  GetContractsQuery,
+  GetProjectContractsQuery,
   LotLookupItem,
   PagedResult,
   ProjectLookupItem,
@@ -88,8 +88,6 @@ export class ContractsPageComponent implements OnInit {
 
   readonly filterForm = this.formBuilder.nonNullable.group({
     projectId: [''],
-    lotId: [''],
-    clientId: [''],
     status: [''],
     search: ['', [Validators.maxLength(128)]],
     fromDate: [''],
@@ -150,6 +148,11 @@ export class ContractsPageComponent implements OnInit {
   projectDropdownItems: ReadonlyArray<ProjectLookupItem> = [];
   showProjectDropdown = false;
 
+  // Combobox state — list project filter (typeahead)
+  listProjectSearch = '';
+  listProjectDropdownItems: ReadonlyArray<ProjectLookupItem> = [];
+  showListProjectDropdown = false;
+
   currentPage = 1;
   totalCount = 0;
 
@@ -198,9 +201,13 @@ export class ContractsPageComponent implements OnInit {
     return !!(raw.projectId?.trim() && raw.lotId?.trim() && raw.clientId?.trim());
   }
 
+  get hasProjectSelected(): boolean {
+    return !!this.filterForm.controls.projectId.value;
+  }
+
   ngOnInit(): void {
     this.loadLookupOptions();
-    this.loadContracts(1);
+    // No se precargan contratos: la lista exige seleccionar un proyecto primero.
   }
 
   applyFilters(): void {
@@ -208,22 +215,65 @@ export class ContractsPageComponent implements OnInit {
   }
 
   clearFilters(): void {
+    const projectId = this.filterForm.controls.projectId.value;
     this.filterForm.reset({
-      projectId: '',
-      lotId: '',
-      clientId: '',
+      projectId,
       status: '',
       search: '',
       fromDate: '',
       toDate: '',
       pageSize: 20
     });
-    this.loadContracts(1);
+    if (this.hasProjectSelected) {
+      this.loadContracts(1);
+    }
   }
 
   onPageSizeChange(size: number): void {
     this.filterForm.controls.pageSize.setValue(size);
     this.loadContracts(1);
+  }
+
+  // ── Selector de proyecto de la lista (typeahead) ──────────────────────
+  openListProjectDropdown(): void {
+    this.refreshListProjectDropdown(this.listProjectSearch);
+  }
+
+  onListProjectSearch(term: string): void {
+    this.listProjectSearch = term;
+    this.refreshListProjectDropdown(term);
+  }
+
+  selectListProject(project: ProjectLookupItem): void {
+    this.filterForm.controls.projectId.setValue(project.id, { emitEvent: false });
+    this.listProjectSearch = project.name;
+    this.showListProjectDropdown = false;
+    this.listProjectDropdownItems = [];
+    this.loadContracts(1);
+  }
+
+  closeListProjectDropdown(): void {
+    // Pequeño retraso para permitir el click en un ítem antes de ocultar.
+    setTimeout(() => {
+      this.showListProjectDropdown = false;
+      this.listProjectSearch = this.selectedListProjectName();
+      this.syncView();
+    }, 150);
+  }
+
+  private refreshListProjectDropdown(term: string): void {
+    const lower = term.toLowerCase().trim();
+    this.listProjectDropdownItems = (
+      lower.length < 1
+        ? [...this.projectOptions]
+        : this.projectOptions.filter((p) => p.name.toLowerCase().includes(lower))
+    ).slice(0, 8);
+    this.showListProjectDropdown = this.listProjectDropdownItems.length > 0;
+  }
+
+  private selectedListProjectName(): string {
+    const id = this.filterForm.controls.projectId.value;
+    return this.projectOptions.find((p) => p.id === id)?.name ?? '';
   }
 
   openCreateForm(): void {
@@ -738,15 +788,24 @@ export class ContractsPageComponent implements OnInit {
   }
 
   protected loadContracts(page: number): void {
+    const projectId = this.cleanString(this.filterForm.controls.projectId.value);
+    if (!projectId) {
+      // Sin proyecto no se consulta el backend; se muestra el estado vacio.
+      this.contracts = [];
+      this.totalCount = 0;
+      this.currentPage = 1;
+      this.listError = null;
+      this.isLoading = false;
+      return;
+    }
+
     this.listError = null;
     this.isLoading = true;
 
-    const query: GetContractsQuery = {
+    const query: GetProjectContractsQuery = {
+      projectId,
       page,
       pageSize: this.filterForm.controls.pageSize.value,
-      projectId: this.cleanString(this.filterForm.controls.projectId.value),
-      lotId: this.cleanString(this.filterForm.controls.lotId.value),
-      clientId: this.cleanString(this.filterForm.controls.clientId.value),
       status: this.cleanString(this.filterForm.controls.status.value),
       search: this.cleanString(this.filterForm.controls.search.value),
       fromDate: this.cleanString(this.filterForm.controls.fromDate.value),
@@ -754,7 +813,7 @@ export class ContractsPageComponent implements OnInit {
     };
 
     this.contractsApi
-      .getContracts(query)
+      .getProjectContracts(query)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
