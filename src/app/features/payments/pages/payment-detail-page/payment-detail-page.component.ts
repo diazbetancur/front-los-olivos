@@ -114,6 +114,32 @@ export class PaymentDetailPageComponent implements OnInit {
     }
   }
 
+  readonly schedulePageSize = signal(12);
+  readonly schedulePage = signal(1);
+
+  readonly pagedSchedule = computed(() => {
+    const all = this.schedule();
+    const size = this.schedulePageSize();
+    const start = (this.schedulePage() - 1) * size;
+    return all.slice(start, start + size);
+  });
+
+  readonly scheduleTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.schedule().length / this.schedulePageSize()))
+  );
+
+  prevSchedulePage(): void {
+    if (this.schedulePage() > 1) {
+      this.schedulePage.update((page) => page - 1);
+    }
+  }
+
+  nextSchedulePage(): void {
+    if (this.schedulePage() < this.scheduleTotalPages()) {
+      this.schedulePage.update((page) => page + 1);
+    }
+  }
+
   readonly isTransfer = computed(() => this.payment()?.paymentMethod === 'Transferencia');
   readonly busyProofId = signal<string | null>(null);
 
@@ -526,7 +552,10 @@ export class PaymentDetailPageComponent implements OnInit {
       .getContractSchedule(contractId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => this.schedule.set(response),
+        next: (response) => {
+          this.schedule.set(response);
+          this.schedulePage.set(1);
+        },
         error: (error) => {
           const normalized = this.apiErrorService.normalize(error);
           this.financeError.set(normalized.userMessage);

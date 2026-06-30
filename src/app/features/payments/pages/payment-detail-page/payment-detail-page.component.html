@@ -281,22 +281,29 @@
                     <th>Monto</th>
                     <th>Pagado</th>
                     <th>Saldo</th>
+                    <th>Fecha de pago</th>
                     <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (installment of schedule(); track installment.id) {
+                  @for (installment of pagedSchedule(); track installment.id) {
                     <tr>
                       <td><span class="pd-num-badge">#{{ installment.installmentNumber }}</span></td>
                       <td class="muted">{{ installment.dueDate }}</td>
                       <td>{{ installment.amount | number: '1.2-2' }}</td>
                       <td>{{ installment.paidAmount | number: '1.2-2' }}</td>
                       <td>{{ installment.remainingAmount | number: '1.2-2' }}</td>
+                      <td class="muted">{{ installment.lastPaymentDate || '-' }}</td>
                       <td>{{ installment.status }}</td>
                     </tr>
                   }
                 </tbody>
               </table>
+            </div>
+            <div class="pd-pager">
+              <button type="button" class="pd-btn-soft" [disabled]="schedulePage() <= 1" (click)="prevSchedulePage()">Anterior</button>
+              <span class="muted">Página {{ schedulePage() }} de {{ scheduleTotalPages() }}</span>
+              <button type="button" class="pd-btn-soft" [disabled]="schedulePage() >= scheduleTotalPages()" (click)="nextSchedulePage()">Siguiente</button>
             </div>
           }
         }
