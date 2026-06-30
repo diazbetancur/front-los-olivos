@@ -138,6 +138,7 @@ export interface ContractInstallmentResponse {
   paidAmount: number;
   remainingAmount: number;
   status: string;
+  lastPaymentDate?: string | null;
 }
 
 export interface GetReceiptsQuery {
