@@ -2,6 +2,7 @@
   <div class="search-select__input-wrap">
     <input
       type="text"
+      [attr.id]="inputId || null"
       [value]="inputValue"
       [placeholder]="placeholder"
       (input)="onInput($any($event.target).value)"

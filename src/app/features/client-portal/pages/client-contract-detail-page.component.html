@@ -235,45 +235,59 @@
           <p class="error-text">{{ receiptsError }}</p>
         }
         @if (isReceiptsLoading) {
-          <app-loading-state message="Cargando recibos..." />
-        } @else if (receipts.length === 0) {
-          <app-empty-state title="Sin recibos" message="No hay recibos registrados para este contrato." />
+          <app-loading-state message="Cargando comprobantes..." />
+        } @else if (allocations.length === 0) {
+          <app-empty-state title="Sin comprobantes" message="No hay cuotas aplicadas para este contrato." />
         } @else {
           <section class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Recibo</th>
-                  <th>Fecha</th>
+                  <th>Cuota</th>
+                  <th>Periodo</th>
                   <th>Monto</th>
-                  <th>Estado</th>
-                  <th>Emitido</th>
-                  <th>Acciones</th>
+                  <th>Comprobante</th>
                 </tr>
               </thead>
               <tbody>
-                @for (item of receipts; track item.id) {
+                @for (item of pagedAllocations; track item.id) {
                   <tr>
-                    <td>{{ item.receiptNumber }}</td>
-                    <td>{{ item.receiptDate }}</td>
-                    <td>{{ item.amount | number: '1.2-2' }}</td>
-                    <td><span [class]="receiptStatusClass(item.status)">{{ item.status }}</span></td>
-                    <td>{{ item.generatedAtUtc | date: 'short' }}</td>
+                    <td>{{ item.installmentNumber }}</td>
+                    <td>{{ item.dueDate || '-' }}</td>
+                    <td>{{ item.amountApplied | number: '1.2-2' }}</td>
                     <td>
-                      <div class="row-actions">
-                        <button type="button" class="btn-secondary" [disabled]="isDownloading" (click)="downloadReceiptPdf(item)">
-                          PDF
-                        </button>
-                        <button type="button" class="btn-secondary" [disabled]="isDownloading" (click)="downloadReceiptDocx(item)">
-                          DOCX
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        class="action-icon-btn"
+                        (click)="onAllocationReceipt(item)"
+                        [disabled]="busyAllocationId !== null"
+                        title="Descargar comprobante"
+                        aria-label="Descargar comprobante"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      </button>
                     </td>
                   </tr>
                 }
               </tbody>
             </table>
           </section>
+
+          <div class="pager">
+            <label class="page-size">
+              Por página
+              <select [value]="allocationsPageSize" (change)="onAllocationsPageSizeChange($event)">
+                @for (size of allocationsPageSizeOptions; track size) {
+                  <option [value]="size">{{ size }}</option>
+                }
+              </select>
+            </label>
+            <div class="pager-controls">
+              <button type="button" class="btn-secondary" [disabled]="allocationsPage <= 1" (click)="prevAllocationsPage()">Anterior</button>
+              <span class="pager-info">Página {{ allocationsPage }} de {{ allocationsTotalPages }}</span>
+              <button type="button" class="btn-secondary" [disabled]="allocationsPage >= allocationsTotalPages" (click)="nextAllocationsPage()">Siguiente</button>
+            </div>
+          </div>
         }
       }
     </section>
