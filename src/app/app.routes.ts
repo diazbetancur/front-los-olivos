@@ -111,6 +111,32 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'contracts/new',
+        loadComponent: () =>
+          import('./features/contracts/pages/contract-form-page/contract-form-page.component').then(
+            (m) => m.ContractFormPageComponent
+          ),
+        canActivate: [permissionGuard],
+        data: {
+          title: 'Nuevo contrato',
+          description: 'Registro de un nuevo contrato.',
+          requiredPermissions: ['Contracts.Create']
+        }
+      },
+      {
+        path: 'contracts/:id',
+        loadComponent: () =>
+          import('./features/contracts/pages/contract-form-page/contract-form-page.component').then(
+            (m) => m.ContractFormPageComponent
+          ),
+        canActivate: [permissionGuard],
+        data: {
+          title: 'Detalle de contrato',
+          description: 'Detalle del contrato, cronograma y documentos.',
+          requiredPermissions: ['Contracts.View']
+        }
+      },
+      {
         path: 'payments',
         loadComponent: () => import('./features/payments/pages/payments-page.component').then((m) => m.PaymentsPageComponent),
         canActivate: [permissionGuard],

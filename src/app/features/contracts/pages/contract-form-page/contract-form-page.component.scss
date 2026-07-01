@@ -1,0 +1,348 @@
+.contract-form-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  align-self: start;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+  }
+}
+
+.page-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.req-mark {
+  color: var(--danger);
+}
+
+/* ── Tarjetas por sección (estilo crear cliente) ── */
+.form-cards {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.grid.ui-form-grid-2,
+.grid.ui-form-grid-3 {
+  align-items: start;
+}
+
+.form-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 1.6rem 1.75rem;
+}
+
+.form-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1.35rem;
+}
+
+.form-card-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--bg-primary-soft);
+  color: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-card-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.form-card-sub {
+  margin: 0.1rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+.form-actions-bar {
+  position: sticky;
+  bottom: 0.75rem;
+  margin-top: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 0.8rem 1.1rem;
+  box-shadow: var(--shadow-soft);
+}
+
+select.ui-form-control,
+input.ui-form-control,
+textarea.ui-form-control {
+  width: 100%;
+}
+
+textarea.ui-form-control {
+  resize: vertical;
+}
+
+.checkbox-label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 0.5rem;
+}
+
+.checkbox-label input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.required-label::after {
+  content: ' *';
+  color: #ef4444;
+}
+
+/* ── Combobox (cliente / proyecto) ── */
+.combo-field {
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+}
+
+.combo-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.combobox {
+  position: relative;
+}
+
+.combo-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.combo-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.1);
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.combo-dropdown li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.combo-dropdown li:hover {
+  background: #f1f5f9;
+}
+
+.combo-item-name {
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.combo-item-meta {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.combo-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* ── Vista detalle ── */
+.detail-view-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.25rem 0 0.5rem;
+  flex-wrap: wrap;
+}
+
+.detail-view-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+
+  h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #0f172a;
+  }
+}
+
+.detail-view-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.detail-tabs {
+  display: flex;
+  border-bottom: 2px solid #e2e8f0;
+  gap: 0;
+  margin-bottom: 0;
+}
+
+.detail-tab-btn {
+  padding: 0.65rem 1.25rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  background: transparent;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+
+  &:hover {
+    color: #0f172a;
+    background: #f8fafc;
+  }
+
+  &.active {
+    color: #0f172a;
+    border-bottom-color: #0f172a;
+    font-weight: 600;
+  }
+}
+
+.detail-tab-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+}
+
+.detail-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.detail-subsection {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 1.25rem;
+
+  h4 {
+    margin: 0 0 0.75rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #475569;
+  }
+}
+
+.subsection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.inline-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.nested-form {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  .grid.ui-form-grid-2,
+  .grid.ui-form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-view-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
