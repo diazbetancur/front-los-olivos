@@ -156,6 +156,7 @@ export class ContractFormPageComponent implements OnInit {
 
   showStatusForm = false;
   showCancelForm = false;
+  showGenerateConfirm = false;
 
   createFormSubmitted = false;
   statusFormSubmitted = false;
@@ -747,18 +748,46 @@ export class ContractFormPageComponent implements OnInit {
       });
   }
 
-  generateDocuments(): void {
+  openGenerateConfirm(): void {
+    if (!this.selectedContractDetail) {
+      return;
+    }
+    this.showGenerateConfirm = true;
+  }
+
+  cancelGenerateConfirm(): void {
+    this.showGenerateConfirm = false;
+  }
+
+  downloadDocument(document: GeneratedDocumentResponse): void {
     if (!this.selectedContractDetail) {
       return;
     }
 
-    const confirmed = globalThis.confirm(
-      `Se generaran documentos para el contrato ${this.selectedContractDetail.contractNumber}. Deseas continuar?`
-    );
-    if (!confirmed) {
+    this.contractsApi
+      .downloadDocument(this.selectedContractDetail.id, document.id, 'docx')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const anchor = globalThis.document.createElement('a');
+          anchor.href = url;
+          anchor.download = `${document.documentType}.docx`;
+          anchor.click();
+          URL.revokeObjectURL(url);
+        },
+        error: (error) => {
+          this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
+        }
+      });
+  }
+
+  confirmGenerate(): void {
+    if (!this.selectedContractDetail) {
       return;
     }
 
+    this.showGenerateConfirm = false;
     this.isGeneratingDocuments = true;
     this.contractsApi
       .generateDocuments(this.selectedContractDetail.id)

@@ -103,6 +103,12 @@ export class ContractsApiService {
     return this.apiClient.get<ReadonlyArray<GeneratedDocumentResponse>>(`/api/v1/admin/contracts/${contractId}/documents`);
   }
 
+  downloadDocument(contractId: string, documentId: string, format: 'docx' | 'pdf' = 'docx'): Observable<Blob> {
+    return this.apiClient.getBlob(
+      `/api/v1/admin/contracts/${contractId}/documents/${documentId}/download?format=${format}`
+    );
+  }
+
   generateDocuments(contractId: string): Observable<GenerateContractDocumentsResponse> {
     return this.apiClient.post<Record<string, never>, GenerateContractDocumentsResponse>(
       `/api/v1/admin/contracts/${contractId}/generate-documents`,

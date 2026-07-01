@@ -118,7 +118,7 @@
               <h4>Documentos generados</h4>
               <div class="inline-actions">
                 <button type="button" class="ghost" (click)="refreshDocuments()">Refrescar</button>
-                <button type="button" (click)="generateDocuments()" [disabled]="isGeneratingDocuments" *appHasPermission="['Contracts.GenerateDocument']">
+                <button type="button" (click)="openGenerateConfirm()" [disabled]="isGeneratingDocuments" *appHasPermission="['Contracts.GenerateDocument']">
                   {{ isGeneratingDocuments ? 'Generando...' : 'Generar documentos' }}
                 </button>
               </div>
@@ -134,7 +134,7 @@
               <section class="table-wrap">
                 <table>
                   <thead>
-                    <tr><th>Tipo</th><th>Generado</th><th>Usuario</th><th>PDF</th><th>DOCX</th></tr>
+                    <tr><th>Tipo</th><th>Generado</th><th>Usuario</th><th>Descargar</th></tr>
                   </thead>
                   <tbody>
                     @for (document of documents; track document.id) {
@@ -142,8 +142,11 @@
                         <td>{{ document.documentType }}</td>
                         <td>{{ document.generatedAt | date: 'short' }}</td>
                         <td>{{ document.generatedBy }}</td>
-                        <td>@if (document.pdfUrl) { <a [href]="document.pdfUrl" target="_blank" rel="noopener noreferrer">Abrir PDF</a> } @else { - }</td>
-                        <td>@if (document.docxUrl) { <a [href]="document.docxUrl" target="_blank" rel="noopener noreferrer">Abrir DOCX</a> } @else { - }</td>
+                        <td>
+                          <button type="button" class="ghost icon-btn" (click)="downloadDocument(document)" title="Descargar DOCX" aria-label="Descargar DOCX">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                          </button>
+                        </td>
                       </tr>
                     }
                   </tbody>
@@ -244,6 +247,24 @@
                 <button type="submit" class="danger" [disabled]="isSubmitting || cancelForm.invalid">Confirmar cancelación</button>
               </div>
             </form>
+          </section>
+        </app-modal>
+      }
+
+      @if (showGenerateConfirm) {
+        <app-modal (closed)="cancelGenerateConfirm()">
+          <section class="form-panel nested-form">
+            <header>
+              <h5>Generar contrato</h5>
+              <button type="button" class="ghost ui-icon-close-btn" (click)="cancelGenerateConfirm()" aria-label="Cerrar" title="Cerrar">×</button>
+            </header>
+            <p>¿Está seguro que desea generar el contrato?</p>
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelGenerateConfirm()">Cancelar</button>
+              <button type="button" class="btn-primary" (click)="confirmGenerate()" [disabled]="isGeneratingDocuments">
+                {{ isGeneratingDocuments ? 'Generando...' : 'Generar' }}
+              </button>
+            </div>
           </section>
         </app-modal>
       }
