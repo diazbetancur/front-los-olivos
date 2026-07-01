@@ -82,7 +82,6 @@ export class LotsPageComponent implements OnInit {
 
   readonly filterForm = this.formBuilder.nonNullable.group({
     projectId: [''],
-    blockId: [''],
     status: [''],
     search: ['', [Validators.maxLength(256)]],
     minArea: [''],
@@ -94,7 +93,6 @@ export class LotsPageComponent implements OnInit {
 
   readonly lotForm = this.formBuilder.nonNullable.group({
     projectId: ['', [Validators.required]],
-    blockId: [''],
     code: ['', [Validators.required, Validators.maxLength(64)]],
     fullCode: ['', [Validators.required, Validators.maxLength(128)]],
     areaM2: [0, [Validators.required, Validators.min(0.000001)]],
@@ -190,7 +188,6 @@ export class LotsPageComponent implements OnInit {
     const projectId = this.filterForm.controls.projectId.value;
     this.filterForm.reset({
       projectId,
-      blockId: '',
       status: '',
       search: '',
       minArea: '',
@@ -226,7 +223,6 @@ export class LotsPageComponent implements OnInit {
     this.showForm = true;
     this.lotForm.reset({
       projectId,
-      blockId: '',
       code: '',
       fullCode: '',
       areaM2: 0,
@@ -593,7 +589,6 @@ export class LotsPageComponent implements OnInit {
 
     const query: GetLotsQuery = {
       projectId: this.cleanString(this.filterForm.controls.projectId.value),
-      blockId: this.cleanString(this.filterForm.controls.blockId.value),
       status: this.cleanString(this.filterForm.controls.status.value),
       search: this.cleanString(this.filterForm.controls.search.value),
       minArea: this.toNullableNumber(this.filterForm.controls.minArea.value),
@@ -650,7 +645,6 @@ export class LotsPageComponent implements OnInit {
   private fillLotForm(lotDetail: LotDetailResponse): void {
     this.lotForm.reset({
       projectId: lotDetail.projectId,
-      blockId: lotDetail.blockId ?? '',
       code: lotDetail.code,
       fullCode: lotDetail.fullCode,
       areaM2: lotDetail.areaM2,
@@ -674,7 +668,6 @@ export class LotsPageComponent implements OnInit {
     const raw = this.lotForm.getRawValue();
     return {
       projectId: raw.projectId.trim(),
-      blockId: this.cleanString(raw.blockId),
       code: raw.code.trim(),
       fullCode: raw.fullCode.trim(),
       areaM2: Number(raw.areaM2),
@@ -698,7 +691,6 @@ export class LotsPageComponent implements OnInit {
     const raw = this.lotForm.getRawValue();
     return {
       projectId: raw.projectId.trim(),
-      blockId: this.cleanString(raw.blockId),
       code: raw.code.trim(),
       fullCode: raw.fullCode.trim(),
       areaM2: Number(raw.areaM2),
