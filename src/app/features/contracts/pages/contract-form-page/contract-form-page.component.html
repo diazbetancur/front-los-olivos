@@ -92,6 +92,27 @@
             </section>
           }
 
+          @if (detail.status === 'PendienteFirma' || detail.signedDocumentStorageKey) {
+            <section class="detail-subsection">
+              <h4>Firma del contrato</h4>
+              @if (detail.signedDocumentStorageKey) {
+                <p>
+                  Contrato firmado cargado@if (detail.signedDocumentUploadedAtUtc) { el {{ detail.signedDocumentUploadedAtUtc | date: 'short' }} }.
+                </p>
+              } @else if (detail.status === 'PendienteFirma') {
+                <div class="inline-actions" *appHasPermission="['Contracts.Activate']">
+                  <input type="file" accept=".pdf,.docx" (change)="onSignedFileSelected($event)" />
+                  <button type="button" (click)="uploadSignedContract()" [disabled]="isUploadingSigned || !signedFile">
+                    {{ isUploadingSigned ? 'Subiendo...' : 'Subir contrato firmado' }}
+                  </button>
+                </div>
+                @if (signedUploadError) {
+                  <p class="error-text">{{ signedUploadError }}</p>
+                }
+              }
+            </section>
+          }
+
           <section class="detail-subsection" *appHasPermission="['Documents.View']">
             <header class="subsection-header">
               <h4>Documentos generados</h4>

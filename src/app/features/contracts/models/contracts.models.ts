@@ -123,6 +123,9 @@ export interface ContractDetailResponse {
   beneficiarySnapshots: ReadonlyArray<ContractBeneficiarySnapshotResponse>;
   lotIds: ReadonlyArray<string>;
   lotSnapshots: ReadonlyArray<ContractLotSnapshotResponse>;
+  documentGeneratedAtUtc?: string | null;
+  signedDocumentStorageKey?: string | null;
+  signedDocumentUploadedAtUtc?: string | null;
 }
 
 export interface CreateContractRequest {

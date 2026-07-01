@@ -110,6 +110,15 @@ export class ContractsApiService {
     );
   }
 
+  uploadSignedContract(contractId: string, file: File): Observable<ContractDetailResponse> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.apiClient.post<FormData, ContractDetailResponse>(
+      `/api/v1/admin/contracts/${contractId}/signed-document`,
+      form
+    );
+  }
+
   getProjectOptions(query: ProjectListQuery): Observable<PagedResult<ProjectLookupItem>> {
     return this.apiClient.get<PagedResult<ProjectLookupItem>>('/api/v1/admin/projects', {
       params: this.toParams(query)

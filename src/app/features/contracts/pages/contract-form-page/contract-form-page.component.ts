@@ -148,6 +148,9 @@ export class ContractFormPageComponent implements OnInit {
   isScheduleLoading = false;
   isDocumentsLoading = false;
   isGeneratingDocuments = false;
+  isUploadingSigned = false;
+  signedFile: File | null = null;
+  signedUploadError: string | null = null;
 
   readonly detailTab = signal<'info' | 'schedule'>('info');
 
@@ -767,11 +770,10 @@ export class ContractFormPageComponent implements OnInit {
         })
       )
       .subscribe({
-        next: () => {
-          this.feedback.show({ level: 'success', text: 'Documentos generados correctamente.' });
-          if (this.selectedContractDetail) {
-            this.loadDocuments(this.selectedContractDetail.id);
-          }
+        next: (response) => {
+          this.feedback.show({ level: 'success', text: 'Documentos generados. El contrato queda Pendiente de firma.' });
+          // Recarga el detalle para reflejar el nuevo estado (PendienteFirma).
+          this.viewContractDetail(response.contractId);
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
@@ -780,6 +782,45 @@ export class ContractFormPageComponent implements OnInit {
             return;
           }
           this.feedback.showError(normalizedError.userMessage);
+        }
+      });
+  }
+
+  onSignedFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.signedFile = input.files && input.files.length > 0 ? input.files[0] : null;
+    this.signedUploadError = null;
+  }
+
+  uploadSignedContract(): void {
+    if (!this.selectedContractDetail || !this.signedFile) {
+      this.signedUploadError = 'Selecciona el archivo del contrato firmado.';
+      return;
+    }
+
+    this.isUploadingSigned = true;
+    this.signedUploadError = null;
+    this.contractsApi
+      .uploadSignedContract(this.selectedContractDetail.id, this.signedFile)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.isUploadingSigned = false;
+          this.syncView();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          this.feedback.show({ level: 'success', text: 'Contrato firmado cargado. El contrato queda Activo.' });
+          this.signedFile = null;
+          this.viewContractDetail(response.id);
+        },
+        error: (error) => {
+          const normalizedError = this.apiErrorService.normalize(error);
+          this.signedUploadError = normalizedError.userMessage;
+          if (normalizedError.status === 409) {
+            this.feedback.showError(`Conflicto al cargar el firmado: ${normalizedError.userMessage}`);
+          }
         }
       });
   }
