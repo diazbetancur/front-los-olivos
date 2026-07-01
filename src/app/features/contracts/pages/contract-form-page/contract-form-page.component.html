@@ -354,7 +354,9 @@
                         [checked]="isLotSelected(lot.id)"
                         (change)="toggleLot(lot.id)"
                       />
-                      <span class="lot-option-code">{{ lot.fullCode }}</span>
+                      <span class="lot-option-code">
+                        @if (lot.code) { Bloque {{ lot.code }} · }Lote {{ lot.fullCode }}
+                      </span>
                       <span class="lot-option-price">{{ lot.listPrice | number: '1.2-2' }} {{ lot.currency }}</span>
                     </label>
                   </li>

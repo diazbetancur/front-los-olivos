@@ -221,6 +221,7 @@ export interface ProjectLookupItem {
 export interface LotLookupItem {
   id: string;
   projectId: string;
+  code: string;
   fullCode: string;
   number: string;
   status: string;

@@ -237,7 +237,11 @@ export class ContractFormPageComponent implements OnInit {
     this.contractForm.controls.lotIds.setValue(next);
     this.contractForm.controls.lotIds.markAsDirty();
     this.contractForm.controls.lotIds.markAsTouched();
-    if (this.amountAuto) {
+    if (next.length === 0) {
+      // Sin lotes no hay base para el monto: vuelve a 0 y reactiva el modo automatico.
+      this.amountAuto = true;
+      this.applyLotsAmount(next);
+    } else if (this.amountAuto) {
       this.applyLotsAmount(next);
     }
   }
