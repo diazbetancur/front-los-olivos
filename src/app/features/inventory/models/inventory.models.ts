@@ -154,6 +154,7 @@ export interface LotImportRowPreviewResponse {
   areaVr2?: number | null;
   isValid: boolean;
   errors: ReadonlyArray<string>;
+  willSkip: boolean;
 }
 
 export interface LotImportPreviewResponse {
@@ -163,6 +164,7 @@ export interface LotImportPreviewResponse {
   validRows: number;
   invalidRows: number;
   rows: ReadonlyArray<LotImportRowPreviewResponse>;
+  skippedRows: number;
 }
 
 export interface LotImportConfirmRequest {
@@ -174,4 +176,5 @@ export interface LotImportConfirmResponse {
   isSuccess: boolean;
   persistedRows: number;
   rows: ReadonlyArray<LotImportRowPreviewResponse>;
+  skippedRows: number;
 }
