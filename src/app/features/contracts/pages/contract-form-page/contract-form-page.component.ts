@@ -78,6 +78,7 @@ export class ContractFormPageComponent implements OnInit {
   readonly isView = computed(() => this.mode() === 'view');
   editContractNumber = '';
   amountAuto = true;
+  monthlyAuto = true;
 
   readonly contractStatuses: ReadonlyArray<ContractStatus> = [
     'Borrador',
@@ -185,6 +186,21 @@ export class ContractFormPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.amountAuto = false;
+        this.recalcMonthlySuggestion();
+      });
+
+    // La cuota se sugiere como piso((monto - prima) / plazo); se recalcula al cambiar
+    // monto, prima o plazo, salvo que el usuario ya haya editado la cuota manualmente.
+    this.contractForm.controls.downPayment.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.recalcMonthlySuggestion());
+    this.contractForm.controls.termMonths.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.recalcMonthlySuggestion());
+    this.contractForm.controls.monthlyPayment.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.monthlyAuto = false;
       });
 
     const id = this.route.snapshot.paramMap.get('id');
@@ -260,6 +276,24 @@ export class ContractFormPageComponent implements OnInit {
       .reduce((sum, lot) => sum + lot.listPrice, 0);
     // No dispara valueChanges para conservar el modo automatico.
     this.contractForm.controls.contractAmount.setValue(total, { emitEvent: false });
+    this.recalcMonthlySuggestion();
+  }
+
+  // Sugiere la cuota = piso((monto - prima) / plazo), redondeada al peso menor.
+  private recalcMonthlySuggestion(): void {
+    if (!this.monthlyAuto) {
+      return;
+    }
+    const raw = this.contractForm.getRawValue();
+    const amount = Number(raw.contractAmount);
+    const downPayment = Number(raw.downPayment);
+    const term = Number(raw.termMonths);
+    if (!Number.isFinite(amount) || !Number.isFinite(downPayment) || !Number.isFinite(term) || term <= 0) {
+      return;
+    }
+    const financed = amount - downPayment;
+    const suggestion = financed > 0 ? Math.floor(financed / term) : 0;
+    this.contractForm.controls.monthlyPayment.setValue(suggestion, { emitEvent: false });
   }
 
   // ---- Client combobox ----
@@ -488,6 +522,10 @@ export class ContractFormPageComponent implements OnInit {
           this.projectSearchInput = this.resolveProjectLabel(detail.projectId);
           this.clientSearchInput = this.resolveClientLabel(detail.clientId);
 
+          // El borrador se carga con sus valores propios; no auto-sugerir monto ni cuota.
+          this.amountAuto = false;
+          this.monthlyAuto = false;
+
           this.contractForm.patchValue({
             projectId: detail.projectId,
             clientId: detail.clientId,
@@ -512,7 +550,6 @@ export class ContractFormPageComponent implements OnInit {
           // El monto se carga como valor propio del borrador (no autosuma sobre lo guardado).
           this.contractForm.controls.contractAmount.setValue(detail.contractAmount, { emitEvent: false });
           this.contractForm.controls.lotIds.setValue([...detail.lotIds]);
-          this.amountAuto = false;
 
           this.loadCreateLotOptions(detail.projectId, detail.lotIds);
         },
