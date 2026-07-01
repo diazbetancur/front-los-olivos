@@ -170,7 +170,7 @@
     <section class="import-panel" *appHasPermission="['Lots.Import']">
       <header>
         <h3>Importacion Excel</h3>
-        <p>Primero genera preview, luego confirma cuando todas las filas validen.</p>
+        <p>Primero genera el preview, luego confirma. Los lotes que ya existan se omiten automaticamente e importa el resto.</p>
       </header>
 
       <div class="import-form">
@@ -206,9 +206,12 @@
             {{ importPreview.expiresAtUtc | date: 'short' }}
           </p>
           <p>
-            Filas totales: {{ importPreview.totalRows }} | Validas: {{ importPreview.validRows }} |
-            Invalidas: {{ importPreview.invalidRows }}
+            Filas totales: {{ importPreview.totalRows }} | A importar: {{ importPreview.validRows }} |
+            Se omitiran (ya existen): {{ importPreview.skippedRows }} | Invalidas: {{ importPreview.invalidRows }}
           </p>
+          @if (importPreview.invalidRows > 0) {
+            <p class="warning-text">Corrige las filas invalidas para poder confirmar. Las filas que ya existen se omitiran automaticamente.</p>
+          }
         </section>
 
         <section class="table-wrap">
@@ -220,8 +223,8 @@
                 <th>Lote</th>
                 <th>M2</th>
                 <th>VR2</th>
-                <th>Valida</th>
-                <th>Errores</th>
+                <th>Estado</th>
+                <th>Detalle</th>
               </tr>
             </thead>
             <tbody>
@@ -232,7 +235,7 @@
                   <td>{{ row.code }}</td>
                   <td>{{ row.areaM2 }}</td>
                   <td>{{ row.areaVr2 ?? '-' }}</td>
-                  <td>{{ row.isValid ? 'Si' : 'No' }}</td>
+                  <td>{{ !row.isValid ? 'Invalida' : (row.willSkip ? 'Se omitira' : 'A importar') }}</td>
                   <td>{{ row.errors.length > 0 ? row.errors.join(', ') : '-' }}</td>
                 </tr>
               }
@@ -246,7 +249,8 @@
           <h4>Resultado confirmacion</h4>
           <p>
             Estado: {{ importConfirmResult.isSuccess ? 'Exitoso' : 'Con conflictos' }} | Filas
-            persistidas: {{ importConfirmResult.persistedRows }}
+            importadas: {{ importConfirmResult.persistedRows }} | Omitidas (ya existian):
+            {{ importConfirmResult.skippedRows }}
           </p>
         </section>
       }

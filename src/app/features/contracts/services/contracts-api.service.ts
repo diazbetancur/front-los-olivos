@@ -11,9 +11,11 @@ import {
   GenerateContractDocumentsResponse,
   GeneratedDocumentResponse,
   GetContractsQuery,
+  GetProjectContractsQuery,
   LotLookupItem,
   PagedResult,
   ProjectLookupItem,
+  UpdateContractRequest,
   UpdateContractStatusRequest
 } from '../models/contracts.models';
 
@@ -58,12 +60,25 @@ export class ContractsApiService {
     });
   }
 
+  getProjectContracts(query: GetProjectContractsQuery): Observable<PagedResult<ContractListItemResponse>> {
+    return this.apiClient.get<PagedResult<ContractListItemResponse>>('/api/v1/admin/contracts/by-project', {
+      params: this.toParams(query)
+    });
+  }
+
   createContract(request: CreateContractRequest): Observable<ContractDetailResponse> {
     return this.apiClient.post<CreateContractRequest, ContractDetailResponse>('/api/v1/admin/contracts', request);
   }
 
   getContractById(contractId: string): Observable<ContractDetailResponse> {
     return this.apiClient.get<ContractDetailResponse>(`/api/v1/admin/contracts/${contractId}`);
+  }
+
+  updateContract(contractId: string, request: UpdateContractRequest): Observable<ContractDetailResponse> {
+    return this.apiClient.put<UpdateContractRequest, ContractDetailResponse>(
+      `/api/v1/admin/contracts/${contractId}`,
+      request
+    );
   }
 
   updateContractStatus(contractId: string, request: UpdateContractStatusRequest): Observable<ContractDetailResponse> {
@@ -88,10 +103,25 @@ export class ContractsApiService {
     return this.apiClient.get<ReadonlyArray<GeneratedDocumentResponse>>(`/api/v1/admin/contracts/${contractId}/documents`);
   }
 
+  downloadDocument(contractId: string, documentId: string, format: 'docx' | 'pdf' = 'docx'): Observable<Blob> {
+    return this.apiClient.getBlob(
+      `/api/v1/admin/contracts/${contractId}/documents/${documentId}/download?format=${format}`
+    );
+  }
+
   generateDocuments(contractId: string): Observable<GenerateContractDocumentsResponse> {
     return this.apiClient.post<Record<string, never>, GenerateContractDocumentsResponse>(
       `/api/v1/admin/contracts/${contractId}/generate-documents`,
       {}
+    );
+  }
+
+  uploadSignedContract(contractId: string, file: File): Observable<ContractDetailResponse> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.apiClient.post<FormData, ContractDetailResponse>(
+      `/api/v1/admin/contracts/${contractId}/signed-document`,
+      form
     );
   }
 
