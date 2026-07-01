@@ -107,7 +107,7 @@
               <td>{{ contract.contractNumber }}</td>
               <td>{{ contract.contractDate }}</td>
               <td>{{ resolveProjectLabel(contract.projectId) }}</td>
-              <td>{{ resolveLotLabel(contract.lotId) }}</td>
+              <td>{{ lotSummary(contract) }}</td>
               <td>{{ resolveClientLabel(contract.clientId) }}</td>
               <td>{{ contract.contractAmount | number: '1.2-2' }}</td>
               <td>{{ contract.currency }}</td>

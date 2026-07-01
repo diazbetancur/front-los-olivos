@@ -174,6 +174,11 @@ export class ContractsPageComponent implements OnInit {
     return this.lotOptions.find((item) => item.id === lotId)?.fullCode ?? lotId;
   }
 
+  lotSummary(contract: ContractListItemResponse): string {
+    const code = this.resolveLotLabel(contract.lotId);
+    return contract.lotCount > 1 ? `${code} (+${contract.lotCount - 1})` : code;
+  }
+
   resolveClientLabel(clientId: string): string {
     return this.clientOptions.find((item) => item.id === clientId)?.fullName ?? clientId;
   }

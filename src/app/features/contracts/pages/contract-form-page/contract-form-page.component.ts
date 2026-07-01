@@ -21,6 +21,7 @@ import {
   GeneratedDocumentResponse,
   LotLookupItem,
   ProjectLookupItem,
+  UpdateContractRequest,
   UpdateContractStatusRequest
 } from '../../models/contracts.models';
 import { ContractsApiService } from '../../services/contracts-api.service';
@@ -66,11 +67,17 @@ export class ContractFormPageComponent implements OnInit {
   private readonly authSession = inject(AuthSessionService);
 
   readonly canCreate = computed(() => this.authSession.hasPermission('Contracts.Create'));
+  readonly canUpdateDraft = computed(() => this.authSession.hasPermission('Contracts.UpdateDraft'));
   readonly canViewSchedule = computed(() => this.authSession.hasPermission('PaymentSchedules.View'));
   readonly canViewDocuments = computed(() => this.authSession.hasPermission('Documents.View'));
 
   readonly contractId = signal<string | null>(null);
-  readonly isView = computed(() => this.contractId() !== null);
+  readonly mode = signal<'create' | 'view' | 'edit'>('create');
+  readonly isCreate = computed(() => this.mode() === 'create');
+  readonly isEdit = computed(() => this.mode() === 'edit');
+  readonly isView = computed(() => this.mode() === 'view');
+  editContractNumber = '';
+  amountAuto = true;
 
   readonly contractStatuses: ReadonlyArray<ContractStatus> = [
     'Borrador',
@@ -86,7 +93,7 @@ export class ContractFormPageComponent implements OnInit {
   readonly contractForm = this.formBuilder.nonNullable.group(
     {
       projectId: ['', [Validators.required]],
-      lotId: ['', [Validators.required]],
+      lotIds: [[] as string[], [Validators.required]],
       clientId: ['', [Validators.required]],
       contractDate: [this.todayString(), [Validators.required]],
       startDate: [this.todayString(), [Validators.required]],
@@ -167,23 +174,88 @@ export class ContractFormPageComponent implements OnInit {
 
   hasCreateSelections(): boolean {
     const raw = this.contractForm.getRawValue();
-    return !!(raw.projectId?.trim() && raw.lotId?.trim() && raw.clientId?.trim());
+    return !!(raw.projectId?.trim() && (raw.lotIds?.length ?? 0) > 0 && raw.clientId?.trim());
   }
 
   ngOnInit(): void {
     this.loadLookupOptions();
 
+    // Al editar manualmente el monto se desactiva la precarga automatica (suma de lotes).
+    this.contractForm.controls.contractAmount.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.amountAuto = false;
+      });
+
     const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
+    const routeMode = this.route.snapshot.data['mode'] as string | undefined;
+
+    if (id && routeMode === 'edit') {
+      this.mode.set('edit');
+      this.contractId.set(id);
+      this.loadContractForEdit(id);
+    } else if (id) {
+      this.mode.set('view');
       this.contractId.set(id);
       this.viewContractDetail(id);
     } else {
-      this.contractForm.controls.lotId.disable({ emitEvent: false });
+      this.mode.set('create');
     }
   }
 
   goBack(): void {
+    const id = this.contractId();
+    if (this.isEdit() && id) {
+      void this.router.navigate(['/admin/contracts', id]);
+      return;
+    }
     void this.router.navigate(['/admin/contracts']);
+  }
+
+  startEdit(): void {
+    const id = this.contractId();
+    if (id) {
+      void this.router.navigate(['/admin/contracts', id, 'edit']);
+    }
+  }
+
+  // ---- Selección de lotes (multi) ----
+
+  get selectedLotIds(): ReadonlyArray<string> {
+    return this.contractForm.controls.lotIds.value ?? [];
+  }
+
+  isLotSelected(lotId: string): boolean {
+    return this.selectedLotIds.includes(lotId);
+  }
+
+  toggleLot(lotId: string): void {
+    const current = this.selectedLotIds;
+    const next = current.includes(lotId)
+      ? current.filter((id) => id !== lotId)
+      : [...current, lotId];
+    this.contractForm.controls.lotIds.setValue(next);
+    this.contractForm.controls.lotIds.markAsDirty();
+    this.contractForm.controls.lotIds.markAsTouched();
+    if (this.amountAuto) {
+      this.applyLotsAmount(next);
+    }
+  }
+
+  selectedLotsTotal(): number {
+    const selected = new Set(this.selectedLotIds);
+    return this.createLotOptions
+      .filter((lot) => selected.has(lot.id))
+      .reduce((sum, lot) => sum + lot.listPrice, 0);
+  }
+
+  private applyLotsAmount(lotIds: ReadonlyArray<string>): void {
+    const selected = new Set(lotIds);
+    const total = this.createLotOptions
+      .filter((lot) => selected.has(lot.id))
+      .reduce((sum, lot) => sum + lot.listPrice, 0);
+    // No dispara valueChanges para conservar el modo automatico.
+    this.contractForm.controls.contractAmount.setValue(total, { emitEvent: false });
   }
 
   // ---- Client combobox ----
@@ -201,8 +273,8 @@ export class ContractFormPageComponent implements OnInit {
     if (this.contractForm.controls.clientId.value) {
       this.contractForm.controls.clientId.setValue('', { emitEvent: false });
       this.contractForm.controls.projectId.setValue('', { emitEvent: false });
-      this.contractForm.controls.lotId.setValue('', { emitEvent: false });
-      this.contractForm.controls.lotId.disable({ emitEvent: false });
+      this.contractForm.controls.lotIds.setValue([], { emitEvent: false });
+      this.amountAuto = true;
       this.projectSearchInput = '';
       this.createLotOptions = [];
     }
@@ -232,8 +304,8 @@ export class ContractFormPageComponent implements OnInit {
     this.showClientDropdown = false;
     this.clientDropdownItems = [];
     this.contractForm.controls.projectId.setValue('', { emitEvent: false });
-    this.contractForm.controls.lotId.setValue('', { emitEvent: false });
-    this.contractForm.controls.lotId.disable({ emitEvent: false });
+    this.contractForm.controls.lotIds.setValue([], { emitEvent: false });
+    this.amountAuto = true;
     this.projectSearchInput = '';
     this.createLotOptions = [];
   }
@@ -268,8 +340,8 @@ export class ContractFormPageComponent implements OnInit {
 
     if (this.contractForm.controls.projectId.value) {
       this.contractForm.controls.projectId.setValue('', { emitEvent: false });
-      this.contractForm.controls.lotId.setValue('', { emitEvent: false });
-      this.contractForm.controls.lotId.disable({ emitEvent: false });
+      this.contractForm.controls.lotIds.setValue([], { emitEvent: false });
+      this.amountAuto = true;
       this.createLotOptions = [];
     }
 
@@ -289,8 +361,8 @@ export class ContractFormPageComponent implements OnInit {
     this.projectSearchInput = project.name;
     this.showProjectDropdown = false;
     this.projectDropdownItems = [];
-    this.contractForm.controls.lotId.setValue('', { emitEvent: false });
-    this.contractForm.controls.lotId.enable({ emitEvent: false });
+    this.contractForm.controls.lotIds.setValue([], { emitEvent: false });
+    this.amountAuto = true;
     this.loadCreateLotOptions(project.id);
   }
 
@@ -302,6 +374,14 @@ export class ContractFormPageComponent implements OnInit {
       }
       this.syncView();
     }, 150);
+  }
+
+  submitContract(): void {
+    if (this.isEdit()) {
+      this.submitUpdateContract();
+    } else {
+      this.submitCreateContract();
+    }
   }
 
   submitCreateContract(): void {
@@ -333,6 +413,108 @@ export class ContractFormPageComponent implements OnInit {
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
           this.createFormError = normalizedError.userMessage;
+        }
+      });
+  }
+
+  submitUpdateContract(): void {
+    this.createFormSubmitted = true;
+    this.createFormError = null;
+
+    const contractId = this.contractId();
+    if (!contractId) {
+      return;
+    }
+
+    if (this.contractForm.invalid) {
+      this.contractForm.markAllAsTouched();
+      return;
+    }
+
+    const payload = this.toUpdateContractPayload();
+    this.isSubmitting = true;
+
+    this.contractsApi
+      .updateContract(contractId, payload)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.isSubmitting = false;
+          this.syncView();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          this.feedback.show({ level: 'success', text: 'Contrato actualizado correctamente.' });
+          void this.router.navigate(['/admin/contracts', response.id]);
+        },
+        error: (error) => {
+          const normalizedError = this.apiErrorService.normalize(error);
+          this.createFormError = normalizedError.userMessage;
+          if (normalizedError.status === 409) {
+            this.feedback.showError(`Conflicto al actualizar contrato: ${normalizedError.userMessage}`);
+          }
+        }
+      });
+  }
+
+  private loadContractForEdit(contractId: string): void {
+    this.detailError = null;
+    this.isDetailLoading = true;
+
+    this.contractsApi
+      .getContractById(contractId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.isDetailLoading = false;
+          this.syncView();
+        })
+      )
+      .subscribe({
+        next: (detail) => {
+          if (detail.status !== 'Borrador') {
+            this.feedback.showError('Solo los contratos en Borrador se pueden editar.');
+            void this.router.navigate(['/admin/contracts', contractId]);
+            return;
+          }
+
+          this.selectedContractDetail = detail;
+          this.editContractNumber = detail.contractNumber;
+          this.projectSearchInput = this.resolveProjectLabel(detail.projectId);
+          this.clientSearchInput = this.resolveClientLabel(detail.clientId);
+
+          this.contractForm.patchValue({
+            projectId: detail.projectId,
+            clientId: detail.clientId,
+            contractDate: detail.contractDate,
+            startDate: detail.startDate,
+            termMonths: detail.termMonths,
+            downPayment: detail.downPayment,
+            monthlyPayment: detail.monthlyPayment,
+            interestRate: detail.interestRate,
+            lateFeeRate: String(detail.lateFeeRate ?? 0),
+            lateFeeRateEnabled: detail.lateFeeRateEnabled,
+            annualTotalCost: detail.annualTotalCost != null ? String(detail.annualTotalCost) : '',
+            purchaseOptionValue: detail.purchaseOptionValue != null ? String(detail.purchaseOptionValue) : '',
+            monthlyPaymentDay: detail.monthlyPaymentDay,
+            currency: detail.currency,
+            specialConditionText: detail.specialConditionText ?? '',
+            discountPreparedAmount: detail.discountPreparedAmount != null ? String(detail.discountPreparedAmount) : '',
+            discountPreparedDeadline: detail.discountPreparedDeadline ?? '',
+            discountPreparedEnabled: detail.discountPreparedEnabled,
+            notes: detail.notes ?? ''
+          });
+          // El monto se carga como valor propio del borrador (no autosuma sobre lo guardado).
+          this.contractForm.controls.contractAmount.setValue(detail.contractAmount, { emitEvent: false });
+          this.contractForm.controls.lotIds.setValue([...detail.lotIds]);
+          this.amountAuto = false;
+
+          this.loadCreateLotOptions(detail.projectId, detail.lotIds);
+        },
+        error: (error) => {
+          const normalizedError = this.apiErrorService.normalize(error);
+          this.detailError = normalizedError.userMessage;
         }
       });
   }
@@ -585,6 +767,11 @@ export class ContractFormPageComponent implements OnInit {
     return option?.fullCode ?? lotId;
   }
 
+  lotCodesSummary(detail: ContractDetailResponse): string {
+    const codes = detail.lotSnapshots.map((snapshot) => snapshot.lotFullCode).filter((code) => !!code);
+    return codes.length > 0 ? codes.join(', ') : this.resolveLotLabel(detail.lotId);
+  }
+
   resolveClientLabel(clientId: string): string {
     return this.clientOptions.find((item) => item.id === clientId)?.fullName ?? clientId;
   }
@@ -653,12 +840,13 @@ export class ContractFormPageComponent implements OnInit {
       });
   }
 
-  private loadCreateLotOptions(projectId: string | null): void {
+  private loadCreateLotOptions(projectId: string | null, keepSelectedIds: ReadonlyArray<string> = []): void {
     if (!projectId) {
       this.createLotOptions = [];
       return;
     }
 
+    const keep = new Set(keepSelectedIds);
     this.contractsApi
       .getLotOptions({
         page: 1,
@@ -675,7 +863,10 @@ export class ContractFormPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
-          this.createLotOptions = response.items.filter((item) => item.status === 'Disponible');
+          // Disponibles para elegir + los ya seleccionados del contrato (que estan Contratado).
+          this.createLotOptions = response.items.filter(
+            (item) => item.status === 'Disponible' || keep.has(item.id)
+          );
           this.syncView();
         },
         error: () => {
@@ -740,8 +931,34 @@ export class ContractFormPageComponent implements OnInit {
 
     return {
       projectId: raw.projectId.trim(),
-      lotId: raw.lotId.trim(),
+      lotIds: [...raw.lotIds],
       clientId: raw.clientId.trim(),
+      contractDate: raw.contractDate,
+      startDate: raw.startDate,
+      termMonths: Number(raw.termMonths),
+      contractAmount: Number(raw.contractAmount),
+      downPayment: Number(raw.downPayment),
+      monthlyPayment: Number(raw.monthlyPayment),
+      interestRate: Number(raw.interestRate),
+      lateFeeRate: this.toNullableNumber(raw.lateFeeRate),
+      lateFeeRateEnabled: raw.lateFeeRateEnabled,
+      annualTotalCost: this.toNullableNumber(raw.annualTotalCost),
+      purchaseOptionValue: this.toNullableNumber(raw.purchaseOptionValue),
+      monthlyPaymentDay: Number(raw.monthlyPaymentDay),
+      currency: this.cleanString(raw.currency) ?? 'HNL',
+      specialConditionText: this.cleanString(raw.specialConditionText),
+      discountPreparedAmount: this.toNullableNumber(raw.discountPreparedAmount),
+      discountPreparedDeadline: this.cleanString(raw.discountPreparedDeadline),
+      discountPreparedEnabled: raw.discountPreparedEnabled,
+      notes: this.cleanString(raw.notes)
+    };
+  }
+
+  private toUpdateContractPayload(): UpdateContractRequest {
+    const raw = this.contractForm.getRawValue();
+
+    return {
+      lotIds: [...raw.lotIds],
       contractDate: raw.contractDate,
       startDate: raw.startDate,
       termMonths: Number(raw.termMonths),

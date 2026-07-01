@@ -15,6 +15,7 @@ import {
   LotLookupItem,
   PagedResult,
   ProjectLookupItem,
+  UpdateContractRequest,
   UpdateContractStatusRequest
 } from '../models/contracts.models';
 
@@ -71,6 +72,13 @@ export class ContractsApiService {
 
   getContractById(contractId: string): Observable<ContractDetailResponse> {
     return this.apiClient.get<ContractDetailResponse>(`/api/v1/admin/contracts/${contractId}`);
+  }
+
+  updateContract(contractId: string, request: UpdateContractRequest): Observable<ContractDetailResponse> {
+    return this.apiClient.put<UpdateContractRequest, ContractDetailResponse>(
+      `/api/v1/admin/contracts/${contractId}`,
+      request
+    );
   }
 
   updateContractStatus(contractId: string, request: UpdateContractStatusRequest): Observable<ContractDetailResponse> {

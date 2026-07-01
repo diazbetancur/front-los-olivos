@@ -124,6 +124,20 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'contracts/:id/edit',
+        loadComponent: () =>
+          import('./features/contracts/pages/contract-form-page/contract-form-page.component').then(
+            (m) => m.ContractFormPageComponent
+          ),
+        canActivate: [permissionGuard],
+        data: {
+          title: 'Editar contrato',
+          description: 'Edicion de un contrato en borrador.',
+          requiredPermissions: ['Contracts.UpdateDraft'],
+          mode: 'edit'
+        }
+      },
+      {
         path: 'contracts/:id',
         loadComponent: () =>
           import('./features/contracts/pages/contract-form-page/contract-form-page.component').then(

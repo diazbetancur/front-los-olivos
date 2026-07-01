@@ -16,6 +16,9 @@
           <span class="chip">{{ detail.status }}</span>
         </div>
         <div class="detail-view-actions">
+          @if (detail.status === 'Borrador' && canUpdateDraft()) {
+            <button type="button" (click)="startEdit()">Editar</button>
+          }
           <button type="button" class="ghost" (click)="openStatusForm()" *appHasPermission="['Contracts.Approve']">Cambiar estado</button>
           <button type="button" class="danger" (click)="openCancelForm()" *appHasPermission="['Contracts.Cancel']">Cancelar contrato</button>
         </div>
@@ -30,7 +33,7 @@
         <section class="detail-tab-panel" role="tabpanel">
           <div class="detail-grid">
             <div><span class="detail-label">Proyecto</span><span>{{ resolveProjectLabel(detail.projectId) }}</span></div>
-            <div><span class="detail-label">Lote</span><span>{{ resolveLotLabel(detail.lotId) }}</span></div>
+            <div><span class="detail-label">Lotes</span><span>{{ lotCodesSummary(detail) }}</span></div>
             <div><span class="detail-label">Cliente</span><span>{{ resolveClientLabel(detail.clientId) }}</span></div>
             <div><span class="detail-label">Fecha contrato</span><span>{{ detail.contractDate }}</span></div>
             <div><span class="detail-label">Fecha inicio</span><span>{{ detail.startDate }}</span></div>
@@ -71,19 +74,21 @@
             </section>
           }
 
-          @if (detail.lotSnapshot) {
+          @if (detail.lotSnapshots.length > 0) {
             <section class="detail-subsection">
-              <h4>Datos del lote al firmar</h4>
-              <div class="detail-grid">
-                <div><span class="detail-label">Proyecto</span><span>{{ detail.lotSnapshot.projectName }}</span></div>
-                <div><span class="detail-label">Lote</span><span>{{ detail.lotSnapshot.lotFullCode }}</span></div>
-                <div><span class="detail-label">Área m²</span><span>{{ detail.lotSnapshot.lotAreaM2 }}</span></div>
-                <div><span class="detail-label">Área v²</span><span>{{ detail.lotSnapshot.lotAreaV2 ?? '-' }}</span></div>
-                <div><span class="detail-label">Norte</span><span>{{ detail.lotSnapshot.northMeasure ?? '-' }} — {{ detail.lotSnapshot.northBoundary || '-' }}</span></div>
-                <div><span class="detail-label">Sur</span><span>{{ detail.lotSnapshot.southMeasure ?? '-' }} — {{ detail.lotSnapshot.southBoundary || '-' }}</span></div>
-                <div><span class="detail-label">Este</span><span>{{ detail.lotSnapshot.eastMeasure ?? '-' }} — {{ detail.lotSnapshot.eastBoundary || '-' }}</span></div>
-                <div><span class="detail-label">Oeste</span><span>{{ detail.lotSnapshot.westMeasure ?? '-' }} — {{ detail.lotSnapshot.westBoundary || '-' }}</span></div>
-              </div>
+              <h4>Datos de los lotes al firmar</h4>
+              @for (lotSnapshot of detail.lotSnapshots; track lotSnapshot.id) {
+                <div class="detail-grid lot-snapshot-block">
+                  <div><span class="detail-label">Proyecto</span><span>{{ lotSnapshot.projectName }}</span></div>
+                  <div><span class="detail-label">Lote</span><span>{{ lotSnapshot.lotFullCode }}</span></div>
+                  <div><span class="detail-label">Área m²</span><span>{{ lotSnapshot.lotAreaM2 }}</span></div>
+                  <div><span class="detail-label">Área v²</span><span>{{ lotSnapshot.lotAreaV2 ?? '-' }}</span></div>
+                  <div><span class="detail-label">Norte</span><span>{{ lotSnapshot.northMeasure ?? '-' }} — {{ lotSnapshot.northBoundary || '-' }}</span></div>
+                  <div><span class="detail-label">Sur</span><span>{{ lotSnapshot.southMeasure ?? '-' }} — {{ lotSnapshot.southBoundary || '-' }}</span></div>
+                  <div><span class="detail-label">Este</span><span>{{ lotSnapshot.eastMeasure ?? '-' }} — {{ lotSnapshot.eastBoundary || '-' }}</span></div>
+                  <div><span class="detail-label">Oeste</span><span>{{ lotSnapshot.westMeasure ?? '-' }} — {{ lotSnapshot.westBoundary || '-' }}</span></div>
+                </div>
+              }
             </section>
           }
 
@@ -225,8 +230,13 @@
   } @else {
     <header class="page-header">
       <div class="page-header-title">
-        <h2>Nuevo contrato</h2>
-        <p>Registra los datos del contrato. Los campos con <span class="req-mark">*</span> son obligatorios.</p>
+        @if (isEdit()) {
+          <h2>Editar contrato {{ editContractNumber }}</h2>
+          <p>Modifica los datos del borrador. Los campos con <span class="req-mark">*</span> son obligatorios.</p>
+        } @else {
+          <h2>Nuevo contrato</h2>
+          <p>Registra los datos del contrato. Los campos con <span class="req-mark">*</span> son obligatorios.</p>
+        }
       </div>
     </header>
 
@@ -234,7 +244,7 @@
       <p class="error-text">{{ createFormError }}</p>
     }
 
-    <form [formGroup]="contractForm" (ngSubmit)="submitCreateContract()" novalidate>
+    <form [formGroup]="contractForm" (ngSubmit)="submitContract()" novalidate>
       <div class="form-cards">
 
         <section class="form-card">
@@ -248,77 +258,110 @@
             </div>
           </div>
 
-          <div class="grid ui-form-grid-3">
-            <div class="combo-field full-width">
-              <span class="combo-label required-label">Cliente</span>
-              <div class="combobox">
-                <input
-                  type="text"
-                  class="combo-input ui-form-control"
-                  [value]="clientSearchInput"
-                  (input)="onClientSearchInput($any($event.target).value)"
-                  (focus)="onClientFocus()"
-                  (blur)="closeClientDropdown()"
-                  placeholder="Buscar por nombre o DNI..."
-                  autocomplete="off"
-                />
-                @if (showClientDropdown) {
-                  <ul class="combo-dropdown">
-                    @for (client of clientDropdownItems; track client.id) {
-                      <li (mousedown)="selectClient(client)">
-                        <span class="combo-item-name">{{ client.fullName }}</span>
-                        @if (client.dni) {
-                          <span class="combo-item-meta">DNI: {{ client.dni }}</span>
-                        }
-                      </li>
-                    }
-                  </ul>
+          @if (isEdit()) {
+            <div class="grid ui-form-grid-2">
+              <div>
+                <span class="detail-label">Cliente</span>
+                <span>{{ clientSearchInput || '-' }}</span>
+              </div>
+              <div>
+                <span class="detail-label">Proyecto</span>
+                <span>{{ projectSearchInput || '-' }}</span>
+              </div>
+            </div>
+          } @else {
+            <div class="grid ui-form-grid-2">
+              <div class="combo-field full-width">
+                <span class="combo-label required-label">Cliente</span>
+                <div class="combobox">
+                  <input
+                    type="text"
+                    class="combo-input ui-form-control"
+                    [value]="clientSearchInput"
+                    (input)="onClientSearchInput($any($event.target).value)"
+                    (focus)="onClientFocus()"
+                    (blur)="closeClientDropdown()"
+                    placeholder="Buscar por nombre o DNI..."
+                    autocomplete="off"
+                  />
+                  @if (showClientDropdown) {
+                    <ul class="combo-dropdown">
+                      @for (client of clientDropdownItems; track client.id) {
+                        <li (mousedown)="selectClient(client)">
+                          <span class="combo-item-name">{{ client.fullName }}</span>
+                          @if (client.dni) {
+                            <span class="combo-item-meta">DNI: {{ client.dni }}</span>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+                @if (contractForm.controls.clientId.invalid && (contractForm.controls.clientId.touched || createFormSubmitted)) {
+                  <span class="field-error">Selecciona un cliente.</span>
                 }
               </div>
-              @if (contractForm.controls.clientId.invalid && (contractForm.controls.clientId.touched || createFormSubmitted)) {
-                <span class="field-error">Selecciona un cliente.</span>
-              }
-            </div>
 
-            <div class="combo-field" [class.combo-disabled]="!isClientSelected">
-              <span class="combo-label required-label">Proyecto</span>
-              <div class="combobox">
-                <input
-                  type="text"
-                  class="combo-input ui-form-control"
-                  [value]="projectSearchInput"
-                  [attr.disabled]="isClientSelected ? null : true"
-                  (input)="onProjectSearchInput($any($event.target).value)"
-                  (focus)="openProjectDropdown()"
-                  (blur)="closeProjectDropdown()"
-                  [placeholder]="isClientSelected ? 'Buscar proyecto...' : 'Selecciona un cliente primero'"
-                  autocomplete="off"
-                />
-                @if (showProjectDropdown) {
-                  <ul class="combo-dropdown">
-                    @for (project of projectDropdownItems; track project.id) {
-                      <li (mousedown)="selectProject(project)">{{ project.name }}</li>
-                    }
-                  </ul>
+              <div class="combo-field" [class.combo-disabled]="!isClientSelected">
+                <span class="combo-label required-label">Proyecto</span>
+                <div class="combobox">
+                  <input
+                    type="text"
+                    class="combo-input ui-form-control"
+                    [value]="projectSearchInput"
+                    [attr.disabled]="isClientSelected ? null : true"
+                    (input)="onProjectSearchInput($any($event.target).value)"
+                    (focus)="openProjectDropdown()"
+                    (blur)="closeProjectDropdown()"
+                    [placeholder]="isClientSelected ? 'Buscar proyecto...' : 'Selecciona un cliente primero'"
+                    autocomplete="off"
+                  />
+                  @if (showProjectDropdown) {
+                    <ul class="combo-dropdown">
+                      @for (project of projectDropdownItems; track project.id) {
+                        <li (mousedown)="selectProject(project)">{{ project.name }}</li>
+                      }
+                    </ul>
+                  }
+                </div>
+                @if (isClientSelected && contractForm.controls.projectId.invalid && (contractForm.controls.projectId.touched || createFormSubmitted)) {
+                  <span class="field-error">Selecciona un proyecto.</span>
                 }
               </div>
-              @if (isClientSelected && contractForm.controls.projectId.invalid && (contractForm.controls.projectId.touched || createFormSubmitted)) {
-                <span class="field-error">Selecciona un proyecto.</span>
+            </div>
+          }
+
+          <div class="lots-picker" [class.combo-disabled]="!isProjectSelected">
+            <div class="lots-picker-head">
+              <span class="required-label">Lotes</span>
+              @if (selectedLotIds.length > 0) {
+                <span class="lots-picker-sum">
+                  {{ selectedLotIds.length }} seleccionado(s) — suma lista: {{ selectedLotsTotal() | number: '1.2-2' }}
+                </span>
               }
             </div>
-
-            <label [class.combo-disabled]="!isProjectSelected">
-              <span class="required-label">Lote</span>
-              <select formControlName="lotId" class="ui-form-control" title="Lote">
-                <option value="">
-                  {{ isProjectSelected ? 'Selecciona lote' : 'Selecciona un proyecto primero' }}
-                </option>
+            @if (!isProjectSelected) {
+              <p class="warning-text">Selecciona un proyecto para listar sus lotes.</p>
+            } @else if (createLotOptions.length === 0) {
+              <p class="warning-text">No hay lotes disponibles para el proyecto seleccionado.</p>
+            } @else {
+              <ul class="lots-picker-list">
                 @for (lot of createLotOptions; track lot.id) {
-                  <option [value]="lot.id">{{ lot.fullCode }} — {{ lot.listPrice | number: '1.2-2' }} {{ lot.currency }}</option>
+                  <li>
+                    <label class="lot-option">
+                      <input
+                        type="checkbox"
+                        [checked]="isLotSelected(lot.id)"
+                        (change)="toggleLot(lot.id)"
+                      />
+                      <span class="lot-option-code">{{ lot.fullCode }}</span>
+                      <span class="lot-option-price">{{ lot.listPrice | number: '1.2-2' }} {{ lot.currency }}</span>
+                    </label>
+                  </li>
                 }
-              </select>
-              <small class="ui-field-inline-error" [class.visible]="contractForm.controls.lotId.invalid && (contractForm.controls.lotId.touched || createFormSubmitted)">Selecciona un lote.</small>
-            </label>
+              </ul>
+            }
+            <small class="ui-field-inline-error" [class.visible]="contractForm.controls.lotIds.invalid && (contractForm.controls.lotIds.touched || createFormSubmitted)">Selecciona al menos un lote.</small>
           </div>
         </section>
 
@@ -449,11 +492,8 @@
 
       </div>
 
-      @if (!hasCreateSelections()) {
-        <p class="warning-text">Debes seleccionar proyecto, lote y cliente para crear el contrato.</p>
-      }
-      @if (isProjectSelected && createLotOptions.length === 0) {
-        <p class="warning-text">No hay lotes disponibles para el proyecto seleccionado.</p>
+      @if (isCreate() && !hasCreateSelections()) {
+        <p class="warning-text">Debes seleccionar cliente, proyecto y al menos un lote para crear el contrato.</p>
       }
       @if (contractForm.errors?.['startDateBeforeContractDate'] && (contractForm.touched || createFormSubmitted)) {
         <p class="field-error">La fecha inicio no puede ser anterior a la fecha contrato.</p>
@@ -464,8 +504,12 @@
 
       <div class="form-actions-bar">
         <button type="button" class="ghost" (click)="goBack()">Cancelar</button>
-        <button type="submit" class="btn-primary" [disabled]="isSubmitting || contractForm.invalid || !hasCreateSelections()">Guardar</button>
-        <button type="button" (click)="generateFromTemplate()" title="Pendiente: mapeo de datos del template">Generar</button>
+        @if (isEdit()) {
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting || contractForm.invalid">Guardar cambios</button>
+        } @else {
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting || contractForm.invalid || !hasCreateSelections()">Guardar</button>
+          <button type="button" (click)="generateFromTemplate()" title="Pendiente: mapeo de datos del template">Generar</button>
+        }
       </div>
     </form>
   }
