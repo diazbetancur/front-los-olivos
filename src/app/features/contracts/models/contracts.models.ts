@@ -48,6 +48,7 @@ export interface ContractListItemResponse {
   currency: string;
   status: string;
   lotCount: number;
+  lotsCode: string;
 }
 
 export interface ContractClientSnapshotResponse {

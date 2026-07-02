@@ -175,6 +175,11 @@ export class ContractsPageComponent implements OnInit {
   }
 
   lotSummary(contract: ContractListItemResponse): string {
+    // Preferir el código resuelto server-side (incluye todos los lotes); así no se muestra el
+    // UUID cuando el lote no está en la página de opciones cargada en el cliente (OBS-011).
+    if (contract.lotsCode && contract.lotsCode.trim().length > 0) {
+      return contract.lotsCode;
+    }
     const code = this.resolveLotLabel(contract.lotId);
     return contract.lotCount > 1 ? `${code} (+${contract.lotCount - 1})` : code;
   }
