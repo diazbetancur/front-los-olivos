@@ -250,7 +250,7 @@
         @if (canSave()) {
           <div class="form-actions-bar">
             <button type="button" class="ghost" (click)="goBack()">Cancelar</button>
-            <button type="submit" class="btn-primary" [disabled]="isSubmitting || clientForm.invalid">
+            <button type="submit" class="btn-primary" [disabled]="isSubmitting">
               {{ isEditing() ? 'Guardar cambios' : 'Crear cliente' }}
             </button>
           </div>
