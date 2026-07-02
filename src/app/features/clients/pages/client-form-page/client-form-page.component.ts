@@ -166,7 +166,11 @@ export class ClientFormPageComponent implements OnInit {
     this.clientFormError = null;
 
     if (this.clientForm.invalid) {
+      // OBS-010: antes el boton se ocultaba/deshabilitaba con el form invalido y no se indicaba
+      // que faltaba. Ahora se resaltan los campos y se lista cual(es) falta(n) completar.
       this.clientForm.markAllAsTouched();
+      this.clientFormError = this.buildMissingFieldsMessage();
+      this.syncView();
       return;
     }
 
@@ -774,6 +778,35 @@ export class ClientFormPageComponent implements OnInit {
       return 'Email invalido.';
     }
     return 'Valor invalido.';
+  }
+
+  private readonly clientFieldLabels: Record<string, string> = {
+    personType: 'Tipo de persona',
+    firstName: 'Nombre',
+    lastName: 'Apellido',
+    documentType: 'Tipo de documento',
+    dni: 'Número de documento',
+    rtn: 'RTN',
+    nationality: 'Nacionalidad',
+    maritalStatus: 'Estado civil',
+    birthDate: 'Fecha de nacimiento',
+    mobile: 'Celular',
+    email: 'Correo',
+    address: 'Dirección',
+    status: 'Estado',
+    notes: 'Notas'
+  };
+
+  private buildMissingFieldsMessage(): string {
+    const invalidLabels = Object.keys(this.clientForm.controls)
+      .filter((name) => this.clientForm.get(name)?.invalid)
+      .map((name) => this.clientFieldLabels[name] ?? name);
+
+    if (invalidLabels.length === 0) {
+      return 'Revisa los campos del formulario.';
+    }
+
+    return `Faltan o son inválidos estos campos: ${invalidLabels.join(', ')}.`;
   }
 
   hasControlError(controlName: string): boolean {
