@@ -303,13 +303,11 @@
                   <input type="text" class="ui-form-control" formControlName="dni" />
                   <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.dni)">{{ fieldErrorMessage(beneficiaryForm.controls.dni) }}</small>
                 </label>
-                @if (beneficiaryNationalityRequired()) {
-                  <label class="required">
-                    Nacionalidad
-                    <input type="text" class="ui-form-control" formControlName="nationality" />
-                    <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.nationality)">{{ fieldErrorMessage(beneficiaryForm.controls.nationality) }}</small>
-                  </label>
-                }
+                <label [class.required]="beneficiaryNationalityRequired()">
+                  Nacionalidad
+                  <input type="text" class="ui-form-control" formControlName="nationality" />
+                  <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.nationality)">{{ fieldErrorMessage(beneficiaryForm.controls.nationality) }}</small>
+                </label>
                 <label>
                   Telefono
                   <input type="text" class="ui-form-control" formControlName="phone" />
