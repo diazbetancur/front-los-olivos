@@ -6,10 +6,14 @@ import { AuthSessionService } from '../auth/auth-session.service';
 import { AppFeedbackService } from '../ui/app-feedback.service';
 
 const RefreshAttemptHeader = 'x-refresh-attempt';
+// Sufijos que cubren tanto el login admin (/api/v1/auth/...) como el del portal cliente
+// (/api/v1/client/auth/...). Antes solo matcheaba el admin, por lo que un 401 del login del
+// cliente se trataba como sesion expirada (intentaba refresh y redirigia) en vez de dejar que
+// el componente mostrara "credenciales incorrectas" (OBS-008).
 const AuthPaths = {
-  login: '/api/v1/auth/login',
-  refresh: '/api/v1/auth/refresh',
-  logout: '/api/v1/auth/logout',
+  login: '/auth/login',
+  refresh: '/auth/refresh',
+  logout: '/auth/logout',
 } as const;
 
 async function redirectToLogin(router: Router): Promise<void> {
