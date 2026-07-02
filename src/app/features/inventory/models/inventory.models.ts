@@ -55,7 +55,6 @@ export interface UpdateProjectRequest extends CreateProjectRequest {}
 
 export interface GetLotsQuery {
   projectId?: string | null;
-  blockId?: string | null;
   status?: string | null;
   search?: string | null;
   minArea?: number | null;
@@ -69,7 +68,6 @@ export interface GetLotsQuery {
 export interface LotListItemResponse {
   id: string;
   projectId: string;
-  blockId?: string | null;
   code: string;
   fullCode: string;
   areaM2: number;
@@ -81,7 +79,6 @@ export interface LotListItemResponse {
 export interface LotDetailResponse {
   id: string;
   projectId: string;
-  blockId?: string | null;
   code: string;
   fullCode: string;
   areaM2: number;
@@ -102,7 +99,6 @@ export interface LotDetailResponse {
 
 export interface CreateLotRequest {
   projectId: string;
-  blockId?: string | null;
   code: string;
   fullCode: string;
   areaM2: number;
@@ -123,7 +119,6 @@ export interface CreateLotRequest {
 
 export interface UpdateLotRequest {
   projectId: string;
-  blockId?: string | null;
   code: string;
   fullCode: string;
   areaM2: number;
@@ -154,6 +149,7 @@ export interface LotImportRowPreviewResponse {
   areaVr2?: number | null;
   isValid: boolean;
   errors: ReadonlyArray<string>;
+  willSkip: boolean;
 }
 
 export interface LotImportPreviewResponse {
@@ -163,6 +159,7 @@ export interface LotImportPreviewResponse {
   validRows: number;
   invalidRows: number;
   rows: ReadonlyArray<LotImportRowPreviewResponse>;
+  skippedRows: number;
 }
 
 export interface LotImportConfirmRequest {
@@ -174,4 +171,5 @@ export interface LotImportConfirmResponse {
   isSuccess: boolean;
   persistedRows: number;
   rows: ReadonlyArray<LotImportRowPreviewResponse>;
+  skippedRows: number;
 }

@@ -27,6 +27,16 @@ export interface GetContractsQuery {
   toDate?: string | null;
 }
 
+export interface GetProjectContractsQuery {
+  projectId: string;
+  page: number;
+  pageSize: number;
+  status?: string | null;
+  search?: string | null;
+  fromDate?: string | null;
+  toDate?: string | null;
+}
+
 export interface ContractListItemResponse {
   id: string;
   contractNumber: string;
@@ -37,6 +47,7 @@ export interface ContractListItemResponse {
   contractAmount: number;
   currency: string;
   status: string;
+  lotCount: number;
 }
 
 export interface ContractClientSnapshotResponse {
@@ -51,6 +62,7 @@ export interface ContractClientSnapshotResponse {
 
 export interface ContractLotSnapshotResponse {
   id: string;
+  lotId: string;
   projectName: string;
   lotFullCode: string;
   lotAreaM2: number;
@@ -109,12 +121,39 @@ export interface ContractDetailResponse {
   clientSnapshot?: ContractClientSnapshotResponse | null;
   lotSnapshot?: ContractLotSnapshotResponse | null;
   beneficiarySnapshots: ReadonlyArray<ContractBeneficiarySnapshotResponse>;
+  lotIds: ReadonlyArray<string>;
+  lotSnapshots: ReadonlyArray<ContractLotSnapshotResponse>;
+  documentGeneratedAtUtc?: string | null;
+  signedDocumentStorageKey?: string | null;
+  signedDocumentUploadedAtUtc?: string | null;
 }
 
 export interface CreateContractRequest {
   projectId: string;
-  lotId: string;
+  lotIds: ReadonlyArray<string>;
   clientId: string;
+  contractDate: string;
+  startDate: string;
+  termMonths: number;
+  contractAmount: number;
+  downPayment: number;
+  monthlyPayment: number;
+  interestRate: number;
+  lateFeeRate?: number | null;
+  lateFeeRateEnabled?: boolean | null;
+  annualTotalCost?: number | null;
+  purchaseOptionValue?: number | null;
+  monthlyPaymentDay: number;
+  currency?: string | null;
+  specialConditionText?: string | null;
+  discountPreparedAmount?: number | null;
+  discountPreparedDeadline?: string | null;
+  discountPreparedEnabled?: boolean | null;
+  notes?: string | null;
+}
+
+export interface UpdateContractRequest {
+  lotIds: ReadonlyArray<string>;
   contractDate: string;
   startDate: string;
   termMonths: number;
@@ -185,6 +224,7 @@ export interface ProjectLookupItem {
 export interface LotLookupItem {
   id: string;
   projectId: string;
+  code: string;
   fullCode: string;
   number: string;
   status: string;

@@ -1,0 +1,560 @@
+<section class="contract-form-page">
+  <button type="button" class="back-btn" (click)="goBack()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Volver a contratos
+  </button>
+
+  @if (isView()) {
+    @if (isDetailLoading) {
+      <app-loading-state message="Cargando detalle del contrato..." />
+    } @else if (detailError) {
+      <section class="error-box"><p>{{ detailError }}</p></section>
+    } @else if (selectedContractDetail; as detail) {
+      <header class="detail-view-header">
+        <div class="detail-view-title">
+          <h2>{{ detail.contractNumber }}</h2>
+          <span class="chip">{{ detail.status }}</span>
+        </div>
+        <div class="detail-view-actions">
+          @if (detail.status === 'Borrador' && canUpdateDraft()) {
+            <button type="button" (click)="startEdit()">Editar</button>
+          }
+          <button type="button" class="ghost" (click)="openStatusForm()" *appHasPermission="['Contracts.Approve']">Cambiar estado</button>
+          <button type="button" class="danger" (click)="openCancelForm()" *appHasPermission="['Contracts.Cancel']">Cancelar contrato</button>
+        </div>
+      </header>
+
+      <div class="detail-tabs" role="tablist">
+        <button class="detail-tab-btn" role="tab" [class.active]="detailTab() === 'info'" [attr.aria-selected]="detailTab() === 'info'" (click)="detailTab.set('info')" type="button">Información</button>
+        <button class="detail-tab-btn" role="tab" [class.active]="detailTab() === 'schedule'" [attr.aria-selected]="detailTab() === 'schedule'" (click)="detailTab.set('schedule')" type="button" *appHasPermission="['PaymentSchedules.View']">Plan de pagos</button>
+      </div>
+
+      @if (detailTab() === 'info') {
+        <section class="detail-tab-panel" role="tabpanel">
+          <div class="detail-grid">
+            <div><span class="detail-label">Proyecto</span><span>{{ resolveProjectLabel(detail.projectId) }}</span></div>
+            <div><span class="detail-label">Lotes</span><span>{{ lotCodesSummary(detail) }}</span></div>
+            <div><span class="detail-label">Cliente</span><span>{{ resolveClientLabel(detail.clientId) }}</span></div>
+            <div><span class="detail-label">Fecha contrato</span><span>{{ detail.contractDate }}</span></div>
+            <div><span class="detail-label">Fecha inicio</span><span>{{ detail.startDate }}</span></div>
+            <div><span class="detail-label">Fecha fin</span><span>{{ detail.endDate || '-' }}</span></div>
+            <div><span class="detail-label">Plazo</span><span>{{ detail.termMonths }} meses</span></div>
+            <div><span class="detail-label">Moneda</span><span>{{ detail.currency }}</span></div>
+            <div><span class="detail-label">Monto contrato</span><span>{{ detail.contractAmount | number: '1.2-2' }}</span></div>
+            <div><span class="detail-label">Prima</span><span>{{ detail.downPayment | number: '1.2-2' }}</span></div>
+            <div><span class="detail-label">Cuota mensual</span><span>{{ detail.monthlyPayment | number: '1.2-2' }}</span></div>
+            <div><span class="detail-label">Tasa interés</span><span>{{ detail.interestRate }}</span></div>
+            <div><span class="detail-label">Tasa mora</span><span>{{ detail.lateFeeRate ?? '-' }}</span></div>
+            <div><span class="detail-label">Mora habilitada</span><span>{{ detail.lateFeeRateEnabled ? 'Sí' : 'No' }}</span></div>
+            <div><span class="detail-label">CAT anual</span><span>{{ detail.annualTotalCost != null ? (detail.annualTotalCost | number: '1.2-2') : '-' }}</span></div>
+            <div><span class="detail-label">Opción de compra</span><span>{{ detail.purchaseOptionValue != null ? (detail.purchaseOptionValue | number: '1.2-2') : '-' }}</span></div>
+            <div><span class="detail-label">Día de pago</span><span>{{ detail.monthlyPaymentDay }}</span></div>
+            <div><span class="detail-label">Descuento</span><span>{{ detail.discountPreparedAmount != null ? (detail.discountPreparedAmount | number: '1.2-2') : '-' }}</span></div>
+            <div><span class="detail-label">Límite descuento</span><span>{{ detail.discountPreparedDeadline || '-' }}</span></div>
+            <div><span class="detail-label">Descuento habilitado</span><span>{{ detail.discountPreparedEnabled ? 'Sí' : 'No' }}</span></div>
+            @if (detail.specialConditionText) {
+              <div class="full-width"><span class="detail-label">Condición especial</span><span>{{ detail.specialConditionText }}</span></div>
+            }
+            @if (detail.notes) {
+              <div class="full-width"><span class="detail-label">Notas</span><span>{{ detail.notes }}</span></div>
+            }
+          </div>
+
+          @if (detail.clientSnapshot) {
+            <section class="detail-subsection">
+              <h4>Datos del cliente al firmar</h4>
+              <div class="detail-grid">
+                <div><span class="detail-label">Nombre</span><span>{{ detail.clientSnapshot.clientFullName }}</span></div>
+                <div><span class="detail-label">DNI</span><span>{{ detail.clientSnapshot.clientDni || '-' }}</span></div>
+                <div><span class="detail-label">RTN</span><span>{{ detail.clientSnapshot.clientRtn || '-' }}</span></div>
+                <div><span class="detail-label">Teléfono</span><span>{{ detail.clientSnapshot.clientPhone || '-' }}</span></div>
+                <div><span class="detail-label">Correo</span><span>{{ detail.clientSnapshot.clientEmail || '-' }}</span></div>
+                <div class="full-width"><span class="detail-label">Dirección</span><span>{{ detail.clientSnapshot.clientAddress || '-' }}</span></div>
+              </div>
+            </section>
+          }
+
+          @if (detail.lotSnapshots.length > 0) {
+            <section class="detail-subsection">
+              <h4>Datos de los lotes al firmar</h4>
+              @for (lotSnapshot of detail.lotSnapshots; track lotSnapshot.id) {
+                <div class="detail-grid lot-snapshot-block">
+                  <div><span class="detail-label">Proyecto</span><span>{{ lotSnapshot.projectName }}</span></div>
+                  <div><span class="detail-label">Lote</span><span>{{ lotSnapshot.lotFullCode }}</span></div>
+                  <div><span class="detail-label">Área m²</span><span>{{ lotSnapshot.lotAreaM2 }}</span></div>
+                  <div><span class="detail-label">Área v²</span><span>{{ lotSnapshot.lotAreaV2 ?? '-' }}</span></div>
+                  <div><span class="detail-label">Norte</span><span>{{ lotSnapshot.northMeasure ?? '-' }} — {{ lotSnapshot.northBoundary || '-' }}</span></div>
+                  <div><span class="detail-label">Sur</span><span>{{ lotSnapshot.southMeasure ?? '-' }} — {{ lotSnapshot.southBoundary || '-' }}</span></div>
+                  <div><span class="detail-label">Este</span><span>{{ lotSnapshot.eastMeasure ?? '-' }} — {{ lotSnapshot.eastBoundary || '-' }}</span></div>
+                  <div><span class="detail-label">Oeste</span><span>{{ lotSnapshot.westMeasure ?? '-' }} — {{ lotSnapshot.westBoundary || '-' }}</span></div>
+                </div>
+              }
+            </section>
+          }
+
+          @if (detail.status === 'PendienteFirma' || detail.signedDocumentStorageKey) {
+            <section class="detail-subsection">
+              <h4>Firma del contrato</h4>
+              @if (detail.signedDocumentStorageKey) {
+                <p>
+                  Contrato firmado cargado@if (detail.signedDocumentUploadedAtUtc) { el {{ detail.signedDocumentUploadedAtUtc | date: 'short' }} }.
+                </p>
+              } @else if (detail.status === 'PendienteFirma') {
+                <div class="inline-actions" *appHasPermission="['Contracts.Activate']">
+                  <input type="file" accept=".pdf,.docx" (change)="onSignedFileSelected($event)" />
+                  <button type="button" (click)="uploadSignedContract()" [disabled]="isUploadingSigned || !signedFile">
+                    {{ isUploadingSigned ? 'Subiendo...' : 'Subir contrato firmado' }}
+                  </button>
+                </div>
+                @if (signedUploadError) {
+                  <p class="error-text">{{ signedUploadError }}</p>
+                }
+              }
+            </section>
+          }
+
+          <section class="detail-subsection" *appHasPermission="['Documents.View']">
+            <header class="subsection-header">
+              <h4>Documentos generados</h4>
+              <div class="inline-actions">
+                <button type="button" class="ghost" (click)="refreshDocuments()">Refrescar</button>
+                <button type="button" (click)="openGenerateConfirm()" [disabled]="isGeneratingDocuments" *appHasPermission="['Contracts.GenerateDocument']">
+                  {{ isGeneratingDocuments ? 'Generando...' : 'Generar documentos' }}
+                </button>
+              </div>
+            </header>
+            @if (documentsError) {
+              <p class="error-text">{{ documentsError }}</p>
+            }
+            @if (isDocumentsLoading) {
+              <app-loading-state message="Cargando documentos..." />
+            } @else if (documents.length === 0) {
+              <app-empty-state title="Sin documentos" message="No hay documentos generados para este contrato." />
+            } @else {
+              <section class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Tipo</th><th>Generado</th><th>Usuario</th><th>Descargar</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (document of documents; track document.id) {
+                      <tr>
+                        <td>{{ document.documentType }}</td>
+                        <td>{{ document.generatedAt | date: 'short' }}</td>
+                        <td>{{ document.generatedBy }}</td>
+                        <td>
+                          <button type="button" class="ghost icon-btn" (click)="downloadDocument(document)" title="Descargar DOCX" aria-label="Descargar DOCX">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </section>
+            }
+          </section>
+        </section>
+      }
+
+      @if (detailTab() === 'schedule') {
+        <section class="detail-tab-panel" role="tabpanel" *appHasPermission="['PaymentSchedules.View']">
+          <header class="subsection-header">
+            <h4>Cronograma de pagos</h4>
+            <button type="button" class="ghost" (click)="refreshSchedule()">Refrescar</button>
+          </header>
+          @if (scheduleError) {
+            <p class="error-text">{{ scheduleError }}</p>
+          }
+          @if (isScheduleLoading) {
+            <app-loading-state message="Cargando cronograma..." />
+          } @else if (schedule.length === 0) {
+            <app-empty-state title="Sin cuotas" message="No hay cuotas registradas para este contrato." />
+          } @else {
+            <section class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>#</th><th>Vencimiento</th><th>Monto</th><th>Pagado</th><th>Saldo</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                  @for (installment of schedule; track installment.id) {
+                    <tr>
+                      <td>{{ installment.installmentNumber }}</td>
+                      <td>{{ installment.dueDate }}</td>
+                      <td>{{ installment.amount | number: '1.2-2' }}</td>
+                      <td>{{ installment.paidAmount | number: '1.2-2' }}</td>
+                      <td>{{ installment.remainingAmount | number: '1.2-2' }}</td>
+                      <td><span class="chip">{{ installment.status }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+          }
+        </section>
+      }
+
+      @if (showStatusForm) {
+        <app-modal (closed)="cancelStatusForm()">
+          <section class="form-panel nested-form">
+            <header>
+              <h5>Cambio de estado</h5>
+              <button type="button" class="ghost ui-icon-close-btn" (click)="cancelStatusForm()" aria-label="Cerrar" title="Cerrar">×</button>
+            </header>
+            @if (statusError) { <p class="error-text">{{ statusError }}</p> }
+            <form [formGroup]="statusForm" (ngSubmit)="submitStatusUpdate()" novalidate>
+              <div class="grid">
+                <label>
+                  <span class="required-label">Nuevo estado</span>
+                  <select formControlName="status" class="ui-form-control">
+                    @for (status of contractStatuses; track status) {
+                      <option [value]="status">{{ status }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="full-width">
+                  Notas
+                  <textarea rows="2" formControlName="notes" class="ui-form-control"></textarea>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="ghost" (click)="cancelStatusForm()">Cancelar</button>
+                <button type="submit" [disabled]="isSubmitting || statusForm.invalid">Actualizar estado</button>
+              </div>
+            </form>
+          </section>
+        </app-modal>
+      }
+
+      @if (showCancelForm) {
+        <app-modal (closed)="cancelCancelForm()">
+          <section class="form-panel nested-form">
+            <header>
+              <h5>Cancelar contrato</h5>
+              <button type="button" class="ghost ui-icon-close-btn" (click)="cancelCancelForm()" aria-label="Cerrar" title="Cerrar">×</button>
+            </header>
+            @if (cancelError) { <p class="error-text">{{ cancelError }}</p> }
+            <form [formGroup]="cancelForm" (ngSubmit)="submitCancelContract()" novalidate>
+              <div class="grid">
+                <label class="full-width">
+                  <span class="required-label">Razón de cancelación</span>
+                  <textarea rows="3" formControlName="notes" class="ui-form-control"></textarea>
+                  <small class="ui-field-inline-error" [class.visible]="cancelForm.controls.notes.invalid && (cancelForm.controls.notes.touched || cancelFormSubmitted)">La razón de cancelación es obligatoria.</small>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="ghost" (click)="cancelCancelForm()">Cancelar</button>
+                <button type="submit" class="danger" [disabled]="isSubmitting || cancelForm.invalid">Confirmar cancelación</button>
+              </div>
+            </form>
+          </section>
+        </app-modal>
+      }
+
+      @if (showGenerateConfirm) {
+        <app-modal (closed)="cancelGenerateConfirm()">
+          <section class="form-panel nested-form">
+            <header>
+              <h5>Generar contrato</h5>
+              <button type="button" class="ghost ui-icon-close-btn" (click)="cancelGenerateConfirm()" aria-label="Cerrar" title="Cerrar">×</button>
+            </header>
+            <p>¿Está seguro que desea generar el contrato?</p>
+            <div class="form-actions">
+              <button type="button" class="ghost" (click)="cancelGenerateConfirm()">Cancelar</button>
+              <button type="button" class="btn-primary" (click)="confirmGenerate()" [disabled]="isGeneratingDocuments">
+                {{ isGeneratingDocuments ? 'Generando...' : 'Generar' }}
+              </button>
+            </div>
+          </section>
+        </app-modal>
+      }
+    }
+  } @else {
+    <header class="page-header">
+      <div class="page-header-title">
+        @if (isEdit()) {
+          <h2>Editar contrato {{ editContractNumber }}</h2>
+          <p>Modifica los datos del borrador. Los campos con <span class="req-mark">*</span> son obligatorios.</p>
+        } @else {
+          <h2>Nuevo contrato</h2>
+          <p>Registra los datos del contrato. Los campos con <span class="req-mark">*</span> son obligatorios.</p>
+        }
+      </div>
+    </header>
+
+    @if (createFormError) {
+      <p class="error-text">{{ createFormError }}</p>
+    }
+
+    <form [formGroup]="contractForm" (ngSubmit)="submitContract()" novalidate>
+      <div class="form-cards">
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="form-card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <div>
+              <h3 class="form-card-title">Selección</h3>
+              <p class="form-card-sub">Cliente, proyecto y lote del contrato.</p>
+            </div>
+          </div>
+
+          @if (isEdit()) {
+            <div class="grid ui-form-grid-2">
+              <div>
+                <span class="detail-label">Cliente</span>
+                <span>{{ clientSearchInput || '-' }}</span>
+              </div>
+              <div>
+                <span class="detail-label">Proyecto</span>
+                <span>{{ projectSearchInput || '-' }}</span>
+              </div>
+            </div>
+          } @else {
+            <div class="grid ui-form-grid-2">
+              <div class="combo-field full-width">
+                <span class="combo-label required-label">Cliente</span>
+                <div class="combobox">
+                  <input
+                    type="text"
+                    class="combo-input ui-form-control"
+                    [value]="clientSearchInput"
+                    (input)="onClientSearchInput($any($event.target).value)"
+                    (focus)="onClientFocus()"
+                    (blur)="closeClientDropdown()"
+                    placeholder="Buscar por nombre o DNI..."
+                    autocomplete="off"
+                  />
+                  @if (showClientDropdown) {
+                    <ul class="combo-dropdown">
+                      @for (client of clientDropdownItems; track client.id) {
+                        <li (mousedown)="selectClient(client)">
+                          <span class="combo-item-name">{{ client.fullName }}</span>
+                          @if (client.dni) {
+                            <span class="combo-item-meta">DNI: {{ client.dni }}</span>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+                @if (contractForm.controls.clientId.invalid && (contractForm.controls.clientId.touched || createFormSubmitted)) {
+                  <span class="field-error">Selecciona un cliente.</span>
+                }
+              </div>
+
+              <div class="combo-field" [class.combo-disabled]="!isClientSelected">
+                <span class="combo-label required-label">Proyecto</span>
+                <div class="combobox">
+                  <input
+                    type="text"
+                    class="combo-input ui-form-control"
+                    [value]="projectSearchInput"
+                    [attr.disabled]="isClientSelected ? null : true"
+                    (input)="onProjectSearchInput($any($event.target).value)"
+                    (focus)="openProjectDropdown()"
+                    (blur)="closeProjectDropdown()"
+                    [placeholder]="isClientSelected ? 'Buscar proyecto...' : 'Selecciona un cliente primero'"
+                    autocomplete="off"
+                  />
+                  @if (showProjectDropdown) {
+                    <ul class="combo-dropdown">
+                      @for (project of projectDropdownItems; track project.id) {
+                        <li (mousedown)="selectProject(project)">{{ project.name }}</li>
+                      }
+                    </ul>
+                  }
+                </div>
+                @if (isClientSelected && contractForm.controls.projectId.invalid && (contractForm.controls.projectId.touched || createFormSubmitted)) {
+                  <span class="field-error">Selecciona un proyecto.</span>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="lots-picker" [class.combo-disabled]="!isProjectSelected">
+            <div class="lots-picker-head">
+              <span class="required-label">Lotes</span>
+              @if (selectedLotIds.length > 0) {
+                <span class="lots-picker-sum">
+                  {{ selectedLotIds.length }} seleccionado(s) — suma lista: {{ selectedLotsTotal() | number: '1.2-2' }}
+                </span>
+              }
+            </div>
+            @if (!isProjectSelected) {
+              <p class="warning-text">Selecciona un proyecto para listar sus lotes.</p>
+            } @else if (createLotOptions.length === 0) {
+              <p class="warning-text">No hay lotes disponibles para el proyecto seleccionado.</p>
+            } @else {
+              <ul class="lots-picker-list">
+                @for (lot of createLotOptions; track lot.id) {
+                  <li>
+                    <label class="lot-option">
+                      <input
+                        type="checkbox"
+                        [checked]="isLotSelected(lot.id)"
+                        (change)="toggleLot(lot.id)"
+                      />
+                      <span class="lot-option-code">
+                        @if (lot.code) { Bloque {{ lot.code }} · }Lote {{ lot.fullCode }}
+                      </span>
+                      <span class="lot-option-price">{{ lot.listPrice | number: '1.2-2' }} {{ lot.currency }}</span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            }
+            <small class="ui-field-inline-error" [class.visible]="contractForm.controls.lotIds.invalid && (contractForm.controls.lotIds.touched || createFormSubmitted)">Selecciona al menos un lote.</small>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="form-card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </span>
+            <div>
+              <h3 class="form-card-title">Fechas y plazo</h3>
+              <p class="form-card-sub">Vigencia y duración del contrato.</p>
+            </div>
+          </div>
+
+          <div class="grid ui-form-grid-3">
+            <label>
+              <span class="required-label">Fecha contrato</span>
+              <input type="date" formControlName="contractDate" class="ui-form-control" />
+              <small class="ui-field-inline-error" [class.visible]="contractForm.controls.contractDate.invalid && (contractForm.controls.contractDate.touched || createFormSubmitted)">La fecha de contrato es requerida.</small>
+            </label>
+            <label>
+              <span class="required-label">Fecha inicio</span>
+              <input type="date" formControlName="startDate" class="ui-form-control" />
+              <small class="ui-field-inline-error" [class.visible]="contractForm.controls.startDate.invalid && (contractForm.controls.startDate.touched || createFormSubmitted)">La fecha de inicio es requerida.</small>
+            </label>
+            <label>
+              <span class="required-label">Plazo (meses)</span>
+              <input type="number" formControlName="termMonths" class="ui-form-control" min="1" max="600" />
+              <small class="ui-field-inline-error" [class.visible]="contractForm.controls.termMonths.invalid && (contractForm.controls.termMonths.touched || createFormSubmitted)">Plazo entre 1 y 600 meses.</small>
+            </label>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="form-card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </span>
+            <div>
+              <h3 class="form-card-title">Condiciones financieras</h3>
+              <p class="form-card-sub">Montos, cuotas y tasas.</p>
+            </div>
+          </div>
+
+          <div class="grid ui-form-grid-3">
+            <label>
+              <span class="required-label">Monto contrato</span>
+              <input type="number" formControlName="contractAmount" class="ui-form-control" min="0" step="0.01" />
+              <small class="ui-field-inline-error" [class.visible]="contractForm.controls.contractAmount.invalid && (contractForm.controls.contractAmount.touched || createFormSubmitted)">Ingresa un monto mayor a 0.</small>
+            </label>
+            <label>
+              <span class="required-label">Prima</span>
+              <input type="number" formControlName="downPayment" class="ui-form-control" min="0" step="0.01" />
+              <small class="ui-field-inline-error" [class.visible]="contractForm.controls.downPayment.invalid && (contractForm.controls.downPayment.touched || createFormSubmitted)">La prima no puede ser negativa.</small>
+            </label>
+            <label>
+              <span class="required-label">Cuota mensual</span>
+              <input type="number" formControlName="monthlyPayment" class="ui-form-control" min="0" step="0.01" />
+              <small class="ui-field-inline-error" [class.visible]="contractForm.controls.monthlyPayment.invalid && (contractForm.controls.monthlyPayment.touched || createFormSubmitted)">Ingresa una cuota mayor a 0.</small>
+            </label>
+            <label>
+              <span class="required-label">Tasa interés</span>
+              <input type="number" formControlName="interestRate" class="ui-form-control" min="0" step="0.0001" />
+              <small class="ui-field-inline-error" [class.visible]="contractForm.controls.interestRate.invalid && (contractForm.controls.interestRate.touched || createFormSubmitted)">La tasa de interés no puede ser negativa.</small>
+            </label>
+            <label>
+              Tasa mora
+              <input type="number" formControlName="lateFeeRate" class="ui-form-control" min="0" step="0.0001" />
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="lateFeeRateEnabled" />
+              Tasa mora habilitada
+            </label>
+            <label>
+              CAT anual
+              <input type="number" formControlName="annualTotalCost" class="ui-form-control" min="0" step="0.01" />
+            </label>
+            <label>
+              Valor opción compra
+              <input type="number" formControlName="purchaseOptionValue" class="ui-form-control" min="0" step="0.01" />
+            </label>
+            <label>
+              <span class="required-label">Día de pago mensual</span>
+              <input type="number" formControlName="monthlyPaymentDay" class="ui-form-control" min="1" max="31" />
+              <small class="ui-field-inline-error" [class.visible]="contractForm.controls.monthlyPaymentDay.invalid && (contractForm.controls.monthlyPaymentDay.touched || createFormSubmitted)">Día entre 1 y 31.</small>
+            </label>
+            <label>
+              Moneda
+              <input type="text" formControlName="currency" class="ui-form-control" />
+            </label>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="form-card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </span>
+            <div>
+              <h3 class="form-card-title">Condiciones y notas</h3>
+              <p class="form-card-sub">Descuentos, condiciones especiales y notas.</p>
+            </div>
+          </div>
+
+          <div class="grid ui-form-grid-3">
+            <label>
+              Descuento preparado
+              <input type="number" formControlName="discountPreparedAmount" class="ui-form-control" min="0" step="0.01" />
+            </label>
+            <label>
+              Fecha limite descuento
+              <input type="date" formControlName="discountPreparedDeadline" class="ui-form-control" />
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="discountPreparedEnabled" />
+              Descuento habilitado
+            </label>
+            <label class="full-width">
+              Condicion especial
+              <textarea rows="2" formControlName="specialConditionText" class="ui-form-control"></textarea>
+            </label>
+            <label class="full-width">
+              Notas
+              <textarea rows="2" formControlName="notes" class="ui-form-control"></textarea>
+            </label>
+          </div>
+        </section>
+
+      </div>
+
+      @if (isCreate() && !hasCreateSelections()) {
+        <p class="warning-text">Debes seleccionar cliente, proyecto y al menos un lote para crear el contrato.</p>
+      }
+      @if (contractForm.errors?.['startDateBeforeContractDate'] && (contractForm.touched || createFormSubmitted)) {
+        <p class="field-error">La fecha inicio no puede ser anterior a la fecha contrato.</p>
+      }
+      @if (contractForm.errors?.['downPaymentExceedsAmount'] && (contractForm.touched || createFormSubmitted)) {
+        <p class="field-error">La prima no puede ser mayor al monto del contrato.</p>
+      }
+
+      <div class="form-actions-bar">
+        <button type="button" class="ghost" (click)="goBack()">Cancelar</button>
+        @if (isEdit()) {
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting || contractForm.invalid">Guardar cambios</button>
+        } @else {
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting || contractForm.invalid || !hasCreateSelections()">Guardar</button>
+          <button type="button" (click)="generateFromTemplate()" title="Pendiente: mapeo de datos del template">Generar</button>
+        }
+      </div>
+    </form>
+  }
+</section>

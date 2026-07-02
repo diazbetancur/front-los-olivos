@@ -31,5 +31,9 @@ export class ApiClientService {
   delete<TResponse>(path: string, options?: ApiRequestOptions): Observable<TResponse> {
     return this.http.delete<TResponse>(path, options);
   }
+
+  getBlob(path: string): Observable<Blob> {
+    return this.http.get(path, { responseType: 'blob' });
+  }
 }
 
