@@ -16,6 +16,7 @@ export class AuthSessionService {
   readonly permissions = computed(() => this.sessionState()?.user.permissions ?? []);
   readonly roles = computed(() => this.sessionState()?.user.roles ?? []);
   readonly isAuthenticated = computed(() => this.sessionState() !== null);
+  readonly mustChangePassword = computed(() => this.sessionState()?.user.mustChangePassword ?? false);
 
   constructor(
     private readonly authApi: AuthApiService,
@@ -130,6 +131,10 @@ export class AuthSessionService {
   }
 
   resolveHomeRoute(): string {
+    if (this.mustChangePassword()) {
+      return '/client/cambiar-password';
+    }
+
     const roles = this.roles();
     const hasAdminRole = roles.some((role) =>
       AuthSessionService.adminRoleNames.has(role.name.trim().toLowerCase())

@@ -4,7 +4,7 @@ import { AuthApiService } from './auth-api.service';
 import { AuthStorageService } from './auth-storage.service';
 import { AuthResponse } from './models/auth.models';
 
-function buildResponse(roleName: string): AuthResponse {
+function buildResponse(roleName: string, mustChangePassword = false): AuthResponse {
   return {
     accessToken: 'access-token',
     refreshToken: 'refresh-token',
@@ -17,6 +17,7 @@ function buildResponse(roleName: string): AuthResponse {
       firstName: 'Cli',
       lastName: 'Ente',
       isActive: true,
+      mustChangePassword,
       roles: [{ id: 'r1', name: roleName }],
       permissions: []
     }
@@ -70,5 +71,43 @@ describe('AuthSessionService login flow', () => {
 
     expect(service.hasRole('superadmin')).toBe(true);
     expect(meCalled).toBe(false);
+  });
+
+  it('resolveHomeRoute sends a client with a pending password change to the forced-change page', () => {
+    const authApi = {
+      me: () => throwError(() => new Error('/me must not be called during login')),
+      login: () => of(buildResponse('Cliente', true)),
+      refresh: () => throwError(() => new Error('refresh must not be called during login')),
+      logout: () => of(void 0)
+    } as unknown as AuthApiService;
+    const authStorage = {
+      load: () => null,
+      save: () => undefined,
+      clear: () => undefined
+    } as unknown as AuthStorageService;
+
+    const service = new AuthSessionService(authApi, authStorage);
+    service.loginWithResponse(buildResponse('Cliente', true)).subscribe();
+
+    expect(service.resolveHomeRoute()).toBe('/client/cambiar-password');
+  });
+
+  it('resolveHomeRoute sends a client without a pending change to the contracts page', () => {
+    const authApi = {
+      me: () => throwError(() => new Error('/me must not be called during login')),
+      login: () => of(buildResponse('Cliente')),
+      refresh: () => throwError(() => new Error('refresh must not be called during login')),
+      logout: () => of(void 0)
+    } as unknown as AuthApiService;
+    const authStorage = {
+      load: () => null,
+      save: () => undefined,
+      clear: () => undefined
+    } as unknown as AuthStorageService;
+
+    const service = new AuthSessionService(authApi, authStorage);
+    service.loginWithResponse(buildResponse('Cliente')).subscribe();
+
+    expect(service.resolveHomeRoute()).toBe('/client/contracts');
   });
 });

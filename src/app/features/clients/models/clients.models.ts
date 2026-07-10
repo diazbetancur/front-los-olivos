@@ -30,6 +30,10 @@ export interface ClientListItemResponse {
   status: string;
 }
 
+export interface ResetClientPortalPasswordResponse {
+  password: string;
+}
+
 export interface ClientDetailResponse {
   id: string;
   userId?: string | null;

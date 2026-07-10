@@ -8,6 +8,7 @@ import { HasPermissionDirective } from '../../../../core/auth/has-permission.dir
 import { AuthSessionService } from '../../../../core/auth/auth-session.service';
 import { ApiErrorService } from '../../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../../core/ui/app-feedback.service';
+import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../../shared/components/loading-state/loading-state.component';
 import {
@@ -32,7 +33,8 @@ import { ClientsApiService } from '../../services/clients-api.service';
     ReactiveFormsModule,
     LoadingStateComponent,
     EmptyStateComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    AppModalComponent
   ],
   templateUrl: './client-form-page.component.html',
   styleUrl: './client-form-page.component.scss'
@@ -50,11 +52,14 @@ export class ClientFormPageComponent implements OnInit {
 
   readonly canCreate = computed(() => this.authSession.hasPermission('Clients.Create'));
   readonly canUpdate = computed(() => this.authSession.hasPermission('Clients.Update'));
+  readonly canResetPassword = computed(() => this.authSession.hasPermission('Clients.ResetPassword'));
 
   readonly clientId = signal<string | null>(null);
   readonly isEditing = computed(() => this.clientId() !== null);
   readonly canSave = computed(() => (this.isEditing() ? this.canUpdate() : this.canCreate()));
   readonly loadedClient = signal<ClientDetailResponse | null>(null);
+  readonly hasPortalAccount = computed(() => !!this.loadedClient()?.userId);
+  readonly generatedPassword = signal<string | null>(null);
 
   private readonly defaultNationality = 'Hondureña';
   readonly isJuridica = signal(false);
@@ -360,6 +365,55 @@ export class ClientFormPageComponent implements OnInit {
           this.handleOperationError(error, 'No fue posible eliminar el beneficiario.');
         }
       });
+  }
+
+  resetPortalPassword(): void {
+    const id = this.clientId();
+    if (!id || !this.canResetPassword() || !this.hasPortalAccount()) {
+      return;
+    }
+
+    const confirmed = globalThis.confirm(
+      'Se generara una nueva contraseña para este cliente y se cerraran todas sus sesiones activas en el portal. Deseas continuar?'
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.clientsApi
+      .resetPortalPassword(id)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.isSubmitting = false;
+          this.syncView();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          this.generatedPassword.set(response.password);
+        },
+        error: (error) => {
+          this.handleOperationError(error, 'No fue posible generar la contraseña.');
+        }
+      });
+  }
+
+  closeGeneratedPasswordModal(): void {
+    this.generatedPassword.set(null);
+  }
+
+  copyGeneratedPassword(): void {
+    const password = this.generatedPassword();
+    if (!password) {
+      return;
+    }
+
+    navigator.clipboard.writeText(password).then(
+      () => this.feedback.showSuccess('Contraseña copiada al portapapeles.'),
+      () => this.feedback.showError('No fue posible copiar la contraseña.')
+    );
   }
 
   openCreateReferenceForm(): void {

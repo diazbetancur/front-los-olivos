@@ -16,6 +16,19 @@
         <p>Registra los datos generales del cliente. Los campos con <span class="req-mark">*</span> son obligatorios.</p>
       }
     </div>
+    @if (isEditing() && canResetPassword()) {
+      <div class="page-header-actions">
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="isSubmitting || !hasPortalAccount()"
+          [title]="hasPortalAccount() ? '' : 'El cliente aún no tiene cuenta de portal registrada.'"
+          (click)="resetPortalPassword()"
+        >
+          Generar contraseña
+        </button>
+      </div>
+    }
   </header>
 
   @if (isLoading) {
@@ -521,5 +534,26 @@
         }
       </div>
     }
+  }
+
+  @if (generatedPassword(); as password) {
+    <app-modal [closeOnBackdrop]="false" (closed)="closeGeneratedPasswordModal()">
+      <section class="form-panel nested-form">
+        <header>
+          <h5>Contraseña generada</h5>
+        </header>
+        <p>
+          Esta contraseña se muestra <strong>una sola vez</strong>. Compártela con el cliente ahora
+          — no podrás volver a verla después de cerrar esta ventana.
+        </p>
+        <div class="generated-password-box">
+          <code>{{ password }}</code>
+          <button type="button" class="ghost" (click)="copyGeneratedPassword()">Copiar</button>
+        </div>
+        <div class="form-actions">
+          <button type="button" (click)="closeGeneratedPasswordModal()">Cerrar</button>
+        </div>
+      </section>
+    </app-modal>
   }
 </section>

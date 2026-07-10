@@ -11,6 +11,7 @@ import {
   CreateClientReferenceRequest,
   GetClientsQuery,
   PagedResult,
+  ResetClientPortalPasswordResponse,
   UpdateClientBeneficiaryRequest,
   UpdateClientRequest,
   UpdateClientReferenceRequest
@@ -40,6 +41,13 @@ export class ClientsApiService {
 
   disableClient(clientId: string): Observable<void> {
     return this.apiClient.post<Record<string, never>, void>(`/api/v1/admin/clients/${clientId}/disable`, {});
+  }
+
+  resetPortalPassword(clientId: string): Observable<ResetClientPortalPasswordResponse> {
+    return this.apiClient.post<Record<string, never>, ResetClientPortalPasswordResponse>(
+      `/api/v1/admin/clients/${clientId}/reset-password`,
+      {}
+    );
   }
 
   getBeneficiaries(clientId: string): Observable<ReadonlyArray<ClientBeneficiaryResponse>> {
