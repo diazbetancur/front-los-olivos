@@ -3,7 +3,7 @@ import { ChangeDetectorRef, Component, DestroyRef, OnInit, ViewRef, computed, in
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize } from 'rxjs';
+import { Subject, catchError, debounceTime, finalize, of, switchMap } from 'rxjs';
 import { HasPermissionDirective } from '../../../../core/auth/has-permission.directive';
 import { AuthSessionService } from '../../../../core/auth/auth-session.service';
 import { ApiErrorService } from '../../../../core/http/api-error.service';
@@ -143,6 +143,17 @@ export class ContractFormPageComponent implements OnInit {
   projectDropdownItems: ReadonlyArray<ProjectLookupItem> = [];
   showProjectDropdown = false;
 
+  // Busqueda de lotes server-side (BUG-008): el proyecto puede tener mas lotes que una pagina
+  // de lookup (100), asi que el termino se envia al backend en vez de filtrar localmente.
+  createLotSearch = '';
+  isLotSearchLoading = false;
+  private lotLookupProjectId: string | null = null;
+  private lotKeepSelectedIds: ReadonlyArray<string> = [];
+  private readonly lotSearchTerms$ = new Subject<string>();
+  // Acumula todo lote visto (carga inicial + cada busqueda), para que el total/monto de los
+  // lotes ya seleccionados no dependa de que sigan visibles en la lista filtrada actual.
+  private readonly lotDetailsById = new Map<string, LotLookupItem>();
+
   isSubmitting = false;
   isDetailLoading = false;
   isScheduleLoading = false;
@@ -207,6 +218,49 @@ export class ContractFormPageComponent implements OnInit {
         this.monthlyAuto = false;
       });
 
+    // BUG-008: el termino de busqueda de lotes se envia al backend (debounce 300ms) en vez de
+    // filtrar solo la primera pagina de 100 lotes cargada en el cliente.
+    this.lotSearchTerms$
+      .pipe(
+        debounceTime(300),
+        switchMap((term) => {
+          if (!this.lotLookupProjectId) {
+            return of(null);
+          }
+          this.isLotSearchLoading = true;
+          return this.contractsApi
+            .getLotOptions({
+              page: 1,
+              pageSize: LOOKUP_PAGE_SIZE,
+              projectId: this.lotLookupProjectId,
+              blockId: null,
+              status: null,
+              search: term || null,
+              minArea: null,
+              maxArea: null,
+              minPrice: null,
+              maxPrice: null
+            })
+            .pipe(catchError(() => of(null)));
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((response) => {
+        this.isLotSearchLoading = false;
+        if (response === null) {
+          this.syncView();
+          return;
+        }
+        for (const item of response.items) {
+          this.lotDetailsById.set(item.id, item);
+        }
+        const keep = new Set(this.lotKeepSelectedIds);
+        this.createLotOptions = response.items.filter(
+          (item) => item.status === 'Disponible' || keep.has(item.id)
+        );
+        this.syncView();
+      });
+
     const id = this.route.snapshot.paramMap.get('id');
     const routeMode = this.route.snapshot.data['mode'] as string | undefined;
 
@@ -267,17 +321,13 @@ export class ContractFormPageComponent implements OnInit {
   }
 
   selectedLotsTotal(): number {
-    const selected = new Set(this.selectedLotIds);
-    return this.createLotOptions
-      .filter((lot) => selected.has(lot.id))
-      .reduce((sum, lot) => sum + lot.listPrice, 0);
+    // Usa el mapa acumulado (no createLotOptions, que solo refleja la busqueda visible
+    // actual) para que un lote seleccionado siga sumando aunque ya no este en pantalla.
+    return this.selectedLotIds.reduce((sum, id) => sum + (this.lotDetailsById.get(id)?.listPrice ?? 0), 0);
   }
 
   private applyLotsAmount(lotIds: ReadonlyArray<string>): void {
-    const selected = new Set(lotIds);
-    const total = this.createLotOptions
-      .filter((lot) => selected.has(lot.id))
-      .reduce((sum, lot) => sum + lot.listPrice, 0);
+    const total = lotIds.reduce((sum, id) => sum + (this.lotDetailsById.get(id)?.listPrice ?? 0), 0);
     // No dispara valueChanges para conservar el modo automatico.
     this.contractForm.controls.contractAmount.setValue(total, { emitEvent: false });
     this.recalcMonthlySuggestion();
@@ -874,7 +924,7 @@ export class ContractFormPageComponent implements OnInit {
 
   resolveLotLabel(lotId: string): string {
     const option = this.lotOptions.find((item) => item.id === lotId)
-      ?? this.createLotOptions.find((item) => item.id === lotId);
+      ?? this.lotDetailsById.get(lotId);
     return option?.fullCode ?? lotId;
   }
 
@@ -951,7 +1001,16 @@ export class ContractFormPageComponent implements OnInit {
       });
   }
 
+  onCreateLotSearchInput(term: string): void {
+    this.createLotSearch = term;
+    this.lotSearchTerms$.next(term.trim());
+  }
+
   private loadCreateLotOptions(projectId: string | null, keepSelectedIds: ReadonlyArray<string> = []): void {
+    this.lotLookupProjectId = projectId;
+    this.lotKeepSelectedIds = keepSelectedIds;
+    this.createLotSearch = '';
+
     if (!projectId) {
       this.createLotOptions = [];
       return;
@@ -974,6 +1033,9 @@ export class ContractFormPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
+          for (const item of response.items) {
+            this.lotDetailsById.set(item.id, item);
+          }
           // Disponibles para elegir + los ya seleccionados del contrato (que estan Contratado).
           this.createLotOptions = response.items.filter(
             (item) => item.status === 'Disponible' || keep.has(item.id)
