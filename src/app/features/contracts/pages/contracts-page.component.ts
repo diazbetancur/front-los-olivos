@@ -84,9 +84,9 @@ export class ContractsPageComponent implements OnInit {
     return Math.max(1, Math.ceil(this.totalCount / pageSize));
   });
 
-  get hasProjectSelected(): boolean {
-    return !!this.filterForm.controls.projectId.value;
-  }
+  // Refleja la ultima consulta aplicada (no el estado del formulario): controla si se muestra
+  // el estado vacio inicial o la tabla/paginacion.
+  hasQueried = false;
 
   ngOnInit(): void {
     this.loadLookupOptions();
@@ -107,9 +107,8 @@ export class ContractsPageComponent implements OnInit {
       toDate: '',
       pageSize: 20
     });
-    if (this.hasProjectSelected) {
-      this.loadContracts(1);
-    }
+    // Sin proyecto, loadContracts restablece el estado vacio inicial (limpia una busqueda global).
+    this.loadContracts(1);
   }
 
   onPageSizeChange(size: number): void {
@@ -190,25 +189,29 @@ export class ContractsPageComponent implements OnInit {
 
   protected loadContracts(page: number): void {
     const projectId = this.cleanString(this.filterForm.controls.projectId.value);
-    if (!projectId) {
-      // Sin proyecto no se consulta el backend; se muestra el estado vacio.
+    const search = this.cleanString(this.filterForm.controls.search.value);
+    if (!projectId && !search) {
+      // Sin proyecto ni busqueda no se consulta el backend; se muestra el estado vacio.
+      // Con termino de busqueda se permite buscar globalmente por numero (OBS-014).
       this.contracts = [];
       this.totalCount = 0;
       this.currentPage = 1;
       this.listError = null;
       this.isLoading = false;
+      this.hasQueried = false;
       return;
     }
 
     this.listError = null;
     this.isLoading = true;
+    this.hasQueried = true;
 
     const query: GetProjectContractsQuery = {
       projectId,
       page,
       pageSize: this.filterForm.controls.pageSize.value,
       status: this.cleanString(this.filterForm.controls.status.value),
-      search: this.cleanString(this.filterForm.controls.search.value),
+      search,
       fromDate: this.cleanString(this.filterForm.controls.fromDate.value),
       toDate: this.cleanString(this.filterForm.controls.toDate.value)
     };
