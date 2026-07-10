@@ -23,6 +23,7 @@ export interface CurrentUserResponse {
   firstName: string;
   lastName: string;
   isActive: boolean;
+  mustChangePassword: boolean;
   roles: ReadonlyArray<RoleAssignmentResponse>;
   permissions: ReadonlyArray<string>;
 }
