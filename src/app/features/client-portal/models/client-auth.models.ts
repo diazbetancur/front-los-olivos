@@ -15,6 +15,15 @@ export interface ChangeClientPasswordRequest {
   newPassword: string;
 }
 
+export interface ForgotClientPasswordRequest {
+  email: string;
+}
+
+export interface ResetClientPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
 export interface ClientProfileResponse {
   firstName: string;
   lastName: string;

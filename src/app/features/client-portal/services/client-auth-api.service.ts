@@ -7,6 +7,8 @@ import {
   ClientLoginRequest,
   ClientProfileResponse,
   ClientRegisterRequest,
+  ForgotClientPasswordRequest,
+  ResetClientPasswordRequest,
   UpdateClientProfileRequest
 } from '../models/client-auth.models';
 
@@ -31,6 +33,20 @@ export class ClientAuthApiService {
   changePassword(request: ChangeClientPasswordRequest): Observable<{ message: string }> {
     return this.apiClient.put<ChangeClientPasswordRequest, { message: string }>(
       '/api/v1/client/auth/change-password',
+      request
+    );
+  }
+
+  forgotPassword(request: ForgotClientPasswordRequest): Observable<{ message: string }> {
+    return this.apiClient.post<ForgotClientPasswordRequest, { message: string }>(
+      '/api/v1/client/auth/forgot-password',
+      request
+    );
+  }
+
+  resetPassword(request: ResetClientPasswordRequest): Observable<{ message: string }> {
+    return this.apiClient.post<ResetClientPasswordRequest, { message: string }>(
+      '/api/v1/client/auth/reset-password',
       request
     );
   }

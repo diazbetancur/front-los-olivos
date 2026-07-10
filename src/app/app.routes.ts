@@ -241,6 +241,28 @@ export const routes: Routes = [
       )
   },
   {
+    path: 'client/olvide-password',
+    loadComponent: () =>
+      import('./features/client-portal/pages/client-forgot-password/client-forgot-password.component').then(
+        (m) => m.ClientForgotPasswordComponent
+      )
+  },
+  {
+    path: 'client/restablecer-password',
+    loadComponent: () =>
+      import('./features/client-portal/pages/client-reset-password/client-reset-password.component').then(
+        (m) => m.ClientResetPasswordComponent
+      )
+  },
+  {
+    path: 'client/cambiar-password',
+    loadComponent: () =>
+      import(
+        './features/client-portal/pages/client-change-password-required/client-change-password-required.component'
+      ).then((m) => m.ClientChangePasswordRequiredComponent),
+    canActivate: [clientAreaGuard]
+  },
+  {
     path: 'client',
     loadComponent: () =>
       import('./features/client-portal/client-shell/client-shell.component').then((m) => m.ClientShellComponent),
