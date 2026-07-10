@@ -384,26 +384,44 @@
             </div>
             @if (!isProjectSelected) {
               <p class="warning-text">Selecciona un proyecto para listar sus lotes.</p>
-            } @else if (createLotOptions.length === 0) {
-              <p class="warning-text">No hay lotes disponibles para el proyecto seleccionado.</p>
             } @else {
-              <ul class="lots-picker-list">
-                @for (lot of createLotOptions; track lot.id) {
-                  <li>
-                    <label class="lot-option">
-                      <input
-                        type="checkbox"
-                        [checked]="isLotSelected(lot.id)"
-                        (change)="toggleLot(lot.id)"
-                      />
-                      <span class="lot-option-code">
-                        @if (lot.code) { Bloque {{ lot.code }} · }Lote {{ lot.fullCode }}
-                      </span>
-                      <span class="lot-option-price">{{ lot.listPrice | number: '1.2-2' }} {{ lot.currency }}</span>
-                    </label>
-                  </li>
-                }
-              </ul>
+              <input
+                type="text"
+                class="ui-form-control lots-picker-search"
+                placeholder="Buscar lote por código o bloque..."
+                aria-label="Buscar lote"
+                [value]="createLotSearch"
+                (input)="onCreateLotSearchInput($any($event.target).value)"
+              />
+              @if (isLotSearchLoading) {
+                <p class="warning-text">Buscando lotes...</p>
+              } @else if (createLotOptions.length === 0) {
+                <p class="warning-text">
+                  @if (createLotSearch) {
+                    No hay lotes que coincidan con "{{ createLotSearch }}".
+                  } @else {
+                    No hay lotes disponibles para el proyecto seleccionado.
+                  }
+                </p>
+              } @else {
+                <ul class="lots-picker-list">
+                  @for (lot of createLotOptions; track lot.id) {
+                    <li>
+                      <label class="lot-option">
+                        <input
+                          type="checkbox"
+                          [checked]="isLotSelected(lot.id)"
+                          (change)="toggleLot(lot.id)"
+                        />
+                        <span class="lot-option-code">
+                          @if (lot.code) { Bloque {{ lot.code }} · }Lote {{ lot.fullCode }}
+                        </span>
+                        <span class="lot-option-price">{{ lot.listPrice | number: '1.2-2' }} {{ lot.currency }}</span>
+                      </label>
+                    </li>
+                  }
+                </ul>
+              }
             }
             <small class="ui-field-inline-error" [class.visible]="contractForm.controls.lotIds.invalid && (contractForm.controls.lotIds.touched || createFormSubmitted)">Selecciona al menos un lote.</small>
           </div>

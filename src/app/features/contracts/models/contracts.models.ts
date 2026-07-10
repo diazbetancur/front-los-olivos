@@ -28,7 +28,9 @@ export interface GetContractsQuery {
 }
 
 export interface GetProjectContractsQuery {
-  projectId: string;
+  // Opcional cuando hay termino de busqueda: el backend permite busqueda global por numero
+  // de contrato sin proyecto (OBS-014).
+  projectId?: string | null;
   page: number;
   pageSize: number;
   status?: string | null;

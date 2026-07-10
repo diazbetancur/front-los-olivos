@@ -73,17 +73,17 @@
     </section>
   }
 
-  @if (!hasProjectSelected) {
+  @if (!hasQueried) {
     <app-empty-state
       title="Selecciona un proyecto"
-      message="Elige un proyecto para ver sus contratos."
+      message="Elige un proyecto para ver sus contratos, o busca directamente por numero de contrato."
     />
   } @else if (isLoading) {
     <app-loading-state message="Cargando contratos..." />
   } @else if (contracts.length === 0) {
     <app-empty-state
       title="Sin contratos"
-      message="Este proyecto no tiene contratos que coincidan con el filtro."
+      message="No hay contratos que coincidan con el filtro."
     />
   } @else {
     <section class="table-wrap">
@@ -124,7 +124,7 @@
     </section>
   }
 
-  @if (hasProjectSelected) {
+  @if (hasQueried) {
     <app-pagination
       [currentPage]="currentPage"
       [totalCount]="totalCount"
