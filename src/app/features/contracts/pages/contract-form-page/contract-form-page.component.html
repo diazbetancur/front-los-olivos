@@ -44,7 +44,7 @@
             <div><span class="detail-label">Prima</span><span>{{ detail.downPayment | number: '1.2-2' }}</span></div>
             <div><span class="detail-label">Cuota mensual</span><span>{{ detail.monthlyPayment | number: '1.2-2' }}</span></div>
             <div><span class="detail-label">Tasa interés</span><span>{{ detail.interestRate }}</span></div>
-            <div><span class="detail-label">Tasa mora</span><span>{{ detail.lateFeeRate ?? '-' }}</span></div>
+            <div><span class="detail-label">Tasa mora</span><span>{{ detail.lateFeeRate }}</span></div>
             <div><span class="detail-label">Mora habilitada</span><span>{{ detail.lateFeeRateEnabled ? 'Sí' : 'No' }}</span></div>
             <div><span class="detail-label">CAT anual</span><span>{{ detail.annualTotalCost != null ? (detail.annualTotalCost | number: '1.2-2') : '-' }}</span></div>
             <div><span class="detail-label">Opción de compra</span><span>{{ detail.purchaseOptionValue != null ? (detail.purchaseOptionValue | number: '1.2-2') : '-' }}</span></div>
