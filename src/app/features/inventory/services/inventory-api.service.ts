@@ -55,6 +55,14 @@ export class InventoryApiService {
     });
   }
 
+  getBlocks(projectId: string): Observable<{ blocks: string[] }> {
+    return this.apiClient.get<{ blocks: string[] }>(`/api/v1/admin/lots/projects/${projectId}/blocks`);
+  }
+
+  getFullCodes(projectId: string): Observable<{ blocks: string[] }> {
+    return this.apiClient.get<{ blocks: string[] }>(`/api/v1/admin/lots/projects/${projectId}/fullcodes`);
+  }
+
   createLot(request: CreateLotRequest): Observable<LotDetailResponse> {
     return this.apiClient.post<CreateLotRequest, LotDetailResponse>('/api/v1/admin/lots', request);
   }
