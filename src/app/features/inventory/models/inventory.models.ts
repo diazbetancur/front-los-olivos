@@ -62,6 +62,7 @@ export interface GetLotsQuery {
   minPrice?: number | null;
   maxPrice?: number | null;
   blockCode?: string | null;
+  fullCode?: string | null;
   page: number;
   pageSize: number;
 }

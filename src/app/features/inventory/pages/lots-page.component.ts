@@ -67,6 +67,8 @@ export class LotsPageComponent implements OnInit {
   readonly actionsMenuPosition = signal<{ top: number; right: number } | null>(null);
   readonly blockOptions = signal<ReadonlyArray<string>>([]);
   readonly isBlocksLoading = signal(false);
+  readonly fullCodeOptions = signal<ReadonlyArray<string>>([]);
+  readonly isFullCodesLoading = signal(false);
 
   readonly canCreate = computed(() => this.authSession.hasPermission('Lots.Create'));
   readonly canUpdate = computed(() => this.authSession.hasPermission('Lots.Update'));
@@ -85,6 +87,7 @@ export class LotsPageComponent implements OnInit {
   readonly filterForm = this.formBuilder.nonNullable.group({
     projectId: [''],
     blockCode: [''],
+    fullCode: [''],
     status: [''],
     search: ['', [Validators.maxLength(256)]],
     minArea: [''],
@@ -171,10 +174,13 @@ export class LotsPageComponent implements OnInit {
 
   onProjectChange(): void {
     this.filterForm.controls.blockCode.setValue('');
+    this.filterForm.controls.fullCode.setValue('');
     this.blockOptions.set([]);
+    this.fullCodeOptions.set([]);
 
     if (this.hasProjectSelected) {
       this.loadBlocks();
+      this.loadFullCodes();
       this.loadLots(1);
     } else {
       this.lots = [];
@@ -185,6 +191,10 @@ export class LotsPageComponent implements OnInit {
   }
 
   onBlockChange(): void {
+    this.loadLots(1);
+  }
+
+  onFullCodeChange(): void {
     this.loadLots(1);
   }
 
@@ -601,6 +611,7 @@ export class LotsPageComponent implements OnInit {
     const query: GetLotsQuery = {
       projectId: this.cleanString(this.filterForm.controls.projectId.value),
       blockCode: this.cleanString(this.filterForm.controls.blockCode.value),
+      fullCode: this.cleanString(this.filterForm.controls.fullCode.value),
       status: this.cleanString(this.filterForm.controls.status.value),
       search: this.cleanString(this.filterForm.controls.search.value),
       minArea: this.toNullableNumber(this.filterForm.controls.minArea.value),
@@ -653,6 +664,31 @@ export class LotsPageComponent implements OnInit {
         error: () => {
           this.blockOptions.set([]);
           this.isBlocksLoading.set(false);
+          this.syncView();
+        },
+      });
+  }
+
+  private loadFullCodes(): void {
+    const projectId = this.filterForm.controls.projectId.value;
+    if (!projectId) {
+      this.fullCodeOptions.set([]);
+      return;
+    }
+
+    this.isFullCodesLoading.set(true);
+    this.inventoryApi
+      .getFullCodes(projectId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.fullCodeOptions.set(response.blocks);
+          this.isFullCodesLoading.set(false);
+          this.syncView();
+        },
+        error: () => {
+          this.fullCodeOptions.set([]);
+          this.isFullCodesLoading.set(false);
           this.syncView();
         },
       });
