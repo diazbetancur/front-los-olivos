@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ClientAuthApiService } from '../../services/client-auth-api.service';
 import { PasswordRulesComponent } from '../../../security/components/password-rules/password-rules';
+import { PasswordInputComponent } from '../../../../shared/components/password-input/password-input.component';
 
 function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   const newPw = group.get('newPassword')?.value as string;
@@ -16,7 +17,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   templateUrl: './client-reset-password.component.html',
   styleUrl: './client-reset-password.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, PasswordRulesComponent]
+  imports: [ReactiveFormsModule, RouterLink, PasswordRulesComponent, PasswordInputComponent]
 })
 export class ClientResetPasswordComponent {
   private readonly fb = inject(FormBuilder);

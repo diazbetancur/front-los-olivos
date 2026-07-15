@@ -126,24 +126,24 @@
             </label>
 
             @if (!editingUserId) {
-              <label>
-                <span class="form-label">Contraseña <span class="required-marker">*</span></span>
-                <input type="password" formControlName="password" />
+              <div>
+                <label for="password" class="form-label">Contraseña <span class="required-marker">*</span></label>
+                <app-password-input id="password" formControlName="password" />
                 @if (userForm.controls.password.invalid && (userForm.controls.password.touched || formSubmitted)) {
                   <span class="field-error">Contraseña minimo 12 caracteres.</span>
                 }
-              </label>
+              </div>
               <div class="full-width">
                 <app-password-rules [password]="userForm.controls.password.value" />
               </div>
             } @else {
-              <label>
-                <span class="form-label">Nueva contraseña</span>
-                <input type="password" formControlName="newPassword" placeholder="Dejar vacío para no cambiar" />
+              <div>
+                <label for="newPassword" class="form-label">Nueva contraseña</label>
+                <app-password-input id="newPassword" formControlName="newPassword" placeholder="Dejar vacío para no cambiar" />
                 @if (userForm.controls.newPassword.invalid && (userForm.controls.newPassword.touched || formSubmitted)) {
                   <span class="field-error">Contraseña minimo 12 caracteres, al menos 3 tipos de caracteres.</span>
                 }
-              </label>
+              </div>
               <div class="full-width">
                 <app-password-rules [password]="userForm.controls.newPassword.value" />
               </div>

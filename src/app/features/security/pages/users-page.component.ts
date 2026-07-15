@@ -12,6 +12,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { PasswordRulesComponent } from '../components/password-rules/password-rules';
+import { PasswordInputComponent } from '../../../shared/components/password-input/password-input.component';
 
 import {
   CreateUserRequest,
@@ -37,7 +38,8 @@ const LOOKUP_PAGE_SIZE = 100;
     EmptyStateComponent,
     HasPermissionDirective,
     PaginationComponent,
-    PasswordRulesComponent
+    PasswordRulesComponent,
+    PasswordInputComponent
   ],
   templateUrl: './users-page.component.html',
   styleUrl: './users-page.component.scss'

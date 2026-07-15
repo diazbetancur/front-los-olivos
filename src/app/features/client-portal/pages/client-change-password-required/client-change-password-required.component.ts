@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthSessionService } from '../../../../core/auth/auth-session.service';
 import { ClientAuthApiService } from '../../services/client-auth-api.service';
 import { PasswordRulesComponent } from '../../../security/components/password-rules/password-rules';
+import { PasswordInputComponent } from '../../../../shared/components/password-input/password-input.component';
 
 function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   const newPw = group.get('newPassword')?.value as string;
@@ -17,7 +18,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   templateUrl: './client-change-password-required.component.html',
   styleUrl: './client-change-password-required.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, PasswordRulesComponent]
+  imports: [ReactiveFormsModule, PasswordRulesComponent, PasswordInputComponent]
 })
 export class ClientChangePasswordRequiredComponent {
   private readonly fb = inject(FormBuilder);

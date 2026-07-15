@@ -7,13 +7,14 @@ import { AuthSessionService } from '../../../../core/auth/auth-session.service';
 import { ClientAuthApiService } from '../../services/client-auth-api.service';
 import { AppFeedbackService } from '../../../../core/ui/app-feedback.service';
 import { PwaInstallPromptComponent } from '../../../../shared/components/pwa-install-prompt/pwa-install-prompt';
+import { PasswordInputComponent } from '../../../../shared/components/password-input/password-input.component';
 
 @Component({
   selector: 'app-client-login',
   templateUrl: './client-login.component.html',
   styleUrl: './client-login.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, PwaInstallPromptComponent]
+  imports: [ReactiveFormsModule, RouterLink, PwaInstallPromptComponent, PasswordInputComponent]
 })
 export class ClientLoginComponent {
   private readonly fb = inject(FormBuilder);
