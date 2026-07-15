@@ -7,10 +7,11 @@ import { finalize } from 'rxjs';
 import { AuthSessionService } from '../../../core/auth/auth-session.service';
 import { ApiErrorService } from '../../../core/http/api-error.service';
 import { AppFeedbackService } from '../../../core/ui/app-feedback.service';
+import { PasswordInputComponent } from '../../../shared/components/password-input/password-input.component';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, PasswordInputComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })

@@ -20,6 +20,52 @@
         </select>
       </label>
 
+      @if (hasProjectSelected) {
+        <label class="project-selector-label">
+          Bloque
+          @if (isBlocksLoading()) {
+            <span class="loading-text">Cargando...</span>
+          } @else if (blockOptions().length === 0) {
+            <select [formControl]="filterForm.controls.blockCode" [disabled]="true" class="project-selector">
+              <option value="">Sin bloques</option>
+            </select>
+          } @else {
+            <select
+              [formControl]="filterForm.controls.blockCode"
+              (change)="onBlockChange()"
+              class="project-selector"
+            >
+              <option value="">Ver todos los bloques</option>
+              @for (block of blockOptions(); track block) {
+                <option [value]="block">{{ block }}</option>
+              }
+            </select>
+          }
+        </label>
+
+        <label class="project-selector-label">
+          Número lote
+          @if (isFullCodesLoading()) {
+            <span class="loading-text">Cargando...</span>
+          } @else if (fullCodeOptions().length === 0) {
+            <select [formControl]="filterForm.controls.fullCode" [disabled]="true" class="project-selector">
+              <option value="">Sin lotes</option>
+            </select>
+          } @else {
+            <select
+              [formControl]="filterForm.controls.fullCode"
+              (change)="onFullCodeChange()"
+              class="project-selector"
+            >
+              <option value="">Ver todos los lotes</option>
+              @for (fullCode of fullCodeOptions(); track fullCode) {
+                <option [value]="fullCode">{{ fullCode }}</option>
+              }
+            </select>
+          }
+        </label>
+      }
+
       <button
         type="button"
         class="ui-btn-primary"

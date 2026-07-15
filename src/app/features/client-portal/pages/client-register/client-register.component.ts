@@ -4,13 +4,14 @@ import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ClientAuthApiService } from '../../services/client-auth-api.service';
 import { AppFeedbackService } from '../../../../core/ui/app-feedback.service';
+import { PasswordInputComponent } from '../../../../shared/components/password-input/password-input.component';
 
 @Component({
   selector: 'app-client-register',
   templateUrl: './client-register.component.html',
   styleUrl: './client-register.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink]
+  imports: [ReactiveFormsModule, RouterLink, PasswordInputComponent]
 })
 export class ClientRegisterComponent {
   private readonly fb = inject(FormBuilder);
