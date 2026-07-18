@@ -326,6 +326,15 @@ export class ContractFormPageComponent implements OnInit {
     return this.selectedLotIds.reduce((sum, id) => sum + (this.lotDetailsById.get(id)?.listPrice ?? 0), 0);
   }
 
+  // Detalle completo (Bloque/Número/Precio) de los lotes ya seleccionados, para la tabla
+  // removible. Usa el mapa acumulado para no depender de la pagina de busqueda actual;
+  // filtra ids sin detalle disponible (no deberia pasar, pero no debe romper si pasa).
+  get selectedLots(): LotLookupItem[] {
+    return this.selectedLotIds
+      .map((id) => this.lotDetailsById.get(id))
+      .filter((lot): lot is LotLookupItem => !!lot);
+  }
+
   private applyLotsAmount(lotIds: ReadonlyArray<string>): void {
     const total = lotIds.reduce((sum, id) => sum + (this.lotDetailsById.get(id)?.listPrice ?? 0), 0);
     // No dispara valueChanges para conservar el modo automatico.
