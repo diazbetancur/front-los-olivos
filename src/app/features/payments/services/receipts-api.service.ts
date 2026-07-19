@@ -7,6 +7,7 @@ import {
   PagedResult,
   ReceiptDetailResponse,
   ReceiptListItemResponse,
+  ReceiptSignedUploadResponse,
   VoidReceiptRequest
 } from '../models/payments.models';
 
@@ -33,6 +34,23 @@ export class ReceiptsApiService {
 
   downloadReceiptPdf(receiptId: string): Observable<HttpResponse<Blob>> {
     return this.httpClient.get(`/api/v1/admin/receipts/${receiptId}/pdf`, {
+      observe: 'response',
+      responseType: 'blob'
+    });
+  }
+
+  uploadSignedDocument(receiptId: string, file: File): Observable<ReceiptSignedUploadResponse> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.httpClient.post<ReceiptSignedUploadResponse>(`/api/v1/admin/receipts/${receiptId}/signed-document`, form);
+  }
+
+  getSignedDocuments(receiptId: string): Observable<ReceiptSignedUploadResponse[]> {
+    return this.apiClient.get<ReceiptSignedUploadResponse[]>(`/api/v1/admin/receipts/${receiptId}/signed-documents`);
+  }
+
+  downloadSignedDocument(receiptId: string, uploadId: string): Observable<HttpResponse<Blob>> {
+    return this.httpClient.get(`/api/v1/admin/receipts/${receiptId}/signed-documents/${uploadId}/download`, {
       observe: 'response',
       responseType: 'blob'
     });
