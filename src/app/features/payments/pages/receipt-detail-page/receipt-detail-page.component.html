@@ -48,6 +48,73 @@
       </div>
     </div>
 
+    <div class="rd-card">
+      <h2 class="rd-subtitle">Recibo firmado/sellado</h2>
+
+      @if (detail.status !== 'Anulado') {
+        <div class="rd-upload-row" *appHasPermission="['Receipts.UploadSigned']">
+          <input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            title="Archivo del recibo firmado"
+            aria-label="Archivo del recibo firmado"
+            (change)="onSignedFileSelected($event)"
+          />
+          <button type="button" class="ghost" (click)="uploadSignedDocument()" [disabled]="isUploading() || !selectedFile">
+            {{ isUploading() ? 'Subiendo...' : 'Subir recibo firmado' }}
+          </button>
+        </div>
+        @if (uploadError()) {
+          <p class="error-text">{{ uploadError() }}</p>
+        }
+      }
+
+      @if (isLoadingUploads()) {
+        <app-loading-state message="Cargando historial..." />
+      } @else if (uploadsError()) {
+        <p class="error-text">{{ uploadsError() }}</p>
+      } @else if (signedUploads().length === 0) {
+        <p class="rd-empty">Aún no se subió el recibo firmado.</p>
+      } @else {
+        <table class="rd-history-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Usuario</th>
+              <th>Archivo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (upload of signedUploads(); track upload.id; let i = $index) {
+              <tr>
+                <td>{{ upload.uploadedAtUtc | date: 'short' }}</td>
+                <td>{{ upload.uploadedBy }}</td>
+                <td>{{ upload.fileName }}</td>
+                <td>
+                  @if (i === 0) {
+                    <span class="status-badge ok">Vigente</span>
+                  }
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="ghost"
+                    (click)="downloadSignedDocument(upload.id)"
+                    [disabled]="isDownloading()"
+                    *appHasPermission="['Receipts.Print']"
+                  >
+                    Descargar
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
     @if (showVoid()) {
       <app-modal (closed)="cancelVoid()">
         <section class="form-panel">

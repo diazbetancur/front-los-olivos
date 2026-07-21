@@ -10,7 +10,7 @@ import { AppFeedbackService } from '../../../../core/ui/app-feedback.service';
 import { AppModalComponent } from '../../../../shared/components/app-modal/app-modal.component';
 import { HasPermissionDirective } from '../../../../core/auth/has-permission.directive';
 import { LoadingStateComponent } from '../../../../shared/components/loading-state/loading-state.component';
-import { ReceiptDetailResponse, VoidReceiptRequest } from '../../models/payments.models';
+import { ReceiptDetailResponse, ReceiptSignedUploadResponse, VoidReceiptRequest } from '../../models/payments.models';
 import { ReceiptsApiService } from '../../services/receipts-api.service';
 
 @Component({
@@ -38,6 +38,13 @@ export class ReceiptDetailPageComponent implements OnInit {
   readonly voidError = signal<string | null>(null);
   readonly voidSubmitted = signal(false);
 
+  readonly signedUploads = signal<ReceiptSignedUploadResponse[]>([]);
+  readonly isLoadingUploads = signal(true);
+  readonly uploadsError = signal<string | null>(null);
+  readonly isUploading = signal(false);
+  readonly uploadError = signal<string | null>(null);
+  selectedFile: File | null = null;
+
   readonly voidForm = this.formBuilder.nonNullable.group({
     reason: ['', [Validators.required, Validators.maxLength(1024)]]
   });
@@ -50,6 +57,7 @@ export class ReceiptDetailPageComponent implements OnInit {
       return;
     }
     this.loadReceipt(id);
+    this.loadSignedUploads(id);
   }
 
   goBack(): void {
@@ -75,6 +83,66 @@ export class ReceiptDetailPageComponent implements OnInit {
       .subscribe({
         next: (response) => {
           const fileName = this.readFileName(response) ?? `${current.receiptNumber}.pdf`;
+          this.saveBlob(response.body, fileName);
+          this.feedback.show({ level: 'success', text: `Descarga iniciada: ${fileName}` });
+        },
+        error: (error) => this.feedback.showError(this.apiErrorService.normalize(error).userMessage)
+      });
+  }
+
+  onSignedFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.selectedFile = input.files && input.files.length > 0 ? input.files[0] : null;
+    this.uploadError.set(null);
+  }
+
+  uploadSignedDocument(): void {
+    const current = this.receipt();
+    if (!current) {
+      return;
+    }
+    if (!this.selectedFile) {
+      this.uploadError.set('Selecciona un archivo para subir.');
+      return;
+    }
+    const file = this.selectedFile;
+    this.isUploading.set(true);
+    this.uploadError.set(null);
+    this.receiptsApi
+      .uploadSignedDocument(current.id, file)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isUploading.set(false))
+      )
+      .subscribe({
+        next: () => {
+          this.selectedFile = null;
+          this.feedback.showSuccess('Recibo firmado subido correctamente.');
+          this.loadSignedUploads(current.id);
+        },
+        error: (error) => {
+          const normalizedError = this.apiErrorService.normalize(error);
+          this.uploadError.set(normalizedError.userMessage);
+          this.feedback.showError(normalizedError.userMessage);
+        }
+      });
+  }
+
+  downloadSignedDocument(uploadId: string): void {
+    const current = this.receipt();
+    if (!current) {
+      return;
+    }
+    this.isDownloading.set(true);
+    this.receiptsApi
+      .downloadSignedDocument(current.id, uploadId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isDownloading.set(false))
+      )
+      .subscribe({
+        next: (response) => {
+          const fileName = this.readFileName(response) ?? `${current.receiptNumber}-firmado.pdf`;
           this.saveBlob(response.body, fileName);
           this.feedback.show({ level: 'success', text: `Descarga iniciada: ${fileName}` });
         },
@@ -133,6 +201,21 @@ export class ReceiptDetailPageComponent implements OnInit {
       .subscribe({
         next: (response) => this.receipt.set(response),
         error: (error) => this.loadError.set(this.apiErrorService.normalize(error).userMessage)
+      });
+  }
+
+  private loadSignedUploads(receiptId: string): void {
+    this.isLoadingUploads.set(true);
+    this.uploadsError.set(null);
+    this.receiptsApi
+      .getSignedDocuments(receiptId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.isLoadingUploads.set(false))
+      )
+      .subscribe({
+        next: (response) => this.signedUploads.set(response),
+        error: (error) => this.uploadsError.set(this.apiErrorService.normalize(error).userMessage)
       });
   }
 
