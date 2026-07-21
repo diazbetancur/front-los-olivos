@@ -147,6 +147,7 @@ export interface ClientAllocationItem {
   amountApplied: number;
   hasReceipt: boolean;
   receiptId?: string | null;
+  hasSignedDocument: boolean;
 }
 
 export interface UploadClientPaymentProofRequest {

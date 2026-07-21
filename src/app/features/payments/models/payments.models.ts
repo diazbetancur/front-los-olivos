@@ -193,6 +193,16 @@ export interface VoidReceiptRequest {
   reason?: string | null;
 }
 
+export interface ReceiptSignedUploadResponse {
+  id: string;
+  receiptId: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAtUtc: string;
+  uploadedBy: string;
+}
+
 export interface ContractLookupItem {
   id: string;
   contractNumber: string;

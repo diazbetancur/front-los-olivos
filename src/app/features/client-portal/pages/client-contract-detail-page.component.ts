@@ -166,29 +166,9 @@ export class ClientContractDetailPageComponent implements OnInit {
     if (!this.contractId || this.busyAllocationId !== null) {
       return;
     }
-    if (allocation.hasReceipt && allocation.receiptId) {
+    if (allocation.hasSignedDocument && allocation.receiptId) {
       this.downloadAllocationReceipt(allocation.receiptId);
-      return;
     }
-    this.busyAllocationId = allocation.id;
-    this.syncView();
-    this.api
-      .generateAllocationReceipt(this.contractId, allocation.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (created) => {
-          this.busyAllocationId = null;
-          this.downloadAllocationReceipt(created.id);
-          if (this.contractId) {
-            this.loadAllocations(this.contractId);
-          }
-        },
-        error: (error) => {
-          this.busyAllocationId = null;
-          this.feedback.showError(this.apiErrorService.normalize(error).userMessage);
-          this.syncView();
-        }
-      });
   }
 
   private downloadAllocationReceipt(receiptId: string): void {
