@@ -20,6 +20,9 @@
             <button type="button" (click)="startEdit()">Editar</button>
           }
           <button type="button" class="ghost" (click)="openStatusForm()" *appHasPermission="['Contracts.Approve']">Cambiar estado</button>
+          @if (detail.status === 'Activo' || detail.status === 'EnMora') {
+            <button type="button" class="ghost" (click)="openAssignForm()" *appHasPermission="['Contracts.Assign']">Cesión de derechos</button>
+          }
           <button type="button" class="danger" (click)="openCancelForm()" *appHasPermission="['Contracts.Cancel']">Cancelar contrato</button>
         </div>
       </header>
@@ -57,6 +60,18 @@
             }
             @if (detail.notes) {
               <div class="full-width"><span class="detail-label">Notas</span><span>{{ detail.notes }}</span></div>
+            }
+            @if (detail.sourceContractId) {
+              <div class="full-width">
+                <span class="detail-label">Cesión de derechos</span>
+                <span>Proviene del contrato <button type="button" class="ghost" (click)="viewLinkedContract(detail.sourceContractId!)">{{ detail.sourceContractId }}</button></span>
+              </div>
+            }
+            @if (detail.assignedToContractId) {
+              <div class="full-width">
+                <span class="detail-label">Cesión de derechos</span>
+                <span>Cedido al contrato <button type="button" class="ghost" (click)="viewLinkedContract(detail.assignedToContractId!)">{{ detail.assignedToContractId }}</button></span>
+              </div>
             }
           </div>
 
@@ -245,6 +260,93 @@
               <div class="form-actions">
                 <button type="button" class="ghost" (click)="cancelCancelForm()">Cancelar</button>
                 <button type="submit" class="danger" [disabled]="isSubmitting || cancelForm.invalid">Confirmar cancelación</button>
+              </div>
+            </form>
+          </section>
+        </app-modal>
+      }
+
+      @if (showAssignForm) {
+        <app-modal (closed)="cancelAssignForm()">
+          <section class="form-panel nested-form">
+            <header>
+              <h5>Cesión de derechos</h5>
+              <button type="button" class="ghost ui-icon-close-btn" (click)="cancelAssignForm()" aria-label="Cerrar" title="Cerrar">×</button>
+            </header>
+            @if (assignError) { <p class="error-text">{{ assignError }}</p> }
+            @if (isLoadingAssignPreview) {
+              <app-loading-state message="Calculando saldo pendiente..." />
+            } @else if (assignPreview; as preview) {
+              <p class="warning-text">
+                Saldo pendiente: {{ preview.pendingBalance | number: '1.2-2' }} — Cuotas restantes: {{ preview.remainingInstallments }}.
+                Los valores sugeridos abajo se pueden ajustar antes de confirmar.
+              </p>
+            }
+            <form [formGroup]="assignForm" (ngSubmit)="submitAssignContract()" novalidate>
+              <div class="grid ui-form-grid-2">
+                <div class="combo-field full-width">
+                  <span class="combo-label required-label">Cesionario (nuevo titular)</span>
+                  <div class="combobox">
+                    <input
+                      type="text"
+                      class="combo-input ui-form-control"
+                      [value]="assignClientSearch"
+                      (input)="onAssignClientSearchInput($any($event.target).value)"
+                      (focus)="showAssignClientDropdown = assignClientDropdownItems.length > 0"
+                      (blur)="closeAssignClientDropdown()"
+                      placeholder="Buscar por nombre o DNI..."
+                      autocomplete="off"
+                    />
+                    @if (showAssignClientDropdown) {
+                      <ul class="combo-dropdown">
+                        @for (client of assignClientDropdownItems; track client.id) {
+                          <li (mousedown)="selectAssignClient(client)">
+                            <span class="combo-item-name">{{ client.fullName }}</span>
+                            @if (client.dni) {
+                              <span class="combo-item-meta">DNI: {{ client.dni }}</span>
+                            }
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                  @if (assignForm.controls.newClientId.invalid && (assignForm.controls.newClientId.touched || assignFormSubmitted)) {
+                    <span class="field-error">Selecciona el cliente que recibe los derechos.</span>
+                  }
+                </div>
+
+                <label>
+                  <span class="required-label">Fecha de contrato</span>
+                  <input type="date" formControlName="contractDate" class="ui-form-control" />
+                </label>
+                <label>
+                  <span class="required-label">Fecha de inicio</span>
+                  <input type="date" formControlName="startDate" class="ui-form-control" />
+                </label>
+                <label>
+                  <span class="required-label">Plazo (meses)</span>
+                  <input type="number" min="1" max="600" formControlName="termMonths" class="ui-form-control" />
+                </label>
+                <label>
+                  <span class="required-label">Monto de contrato</span>
+                  <input type="number" step="0.01" min="0.01" formControlName="contractAmount" class="ui-form-control" />
+                </label>
+                <label>
+                  <span class="required-label">Cuota mensual</span>
+                  <input type="number" step="0.01" min="0.01" formControlName="monthlyPayment" class="ui-form-control" />
+                </label>
+                <label class="full-width">
+                  Condición especial
+                  <textarea rows="2" formControlName="specialConditionText" class="ui-form-control" placeholder="Se completa automáticamente con la referencia al contrato original si se deja vacío."></textarea>
+                </label>
+                <label class="full-width">
+                  Notas
+                  <textarea rows="2" formControlName="notes" class="ui-form-control"></textarea>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="ghost" (click)="cancelAssignForm()">Cancelar</button>
+                <button type="submit" [disabled]="isSubmitting || assignForm.invalid">Confirmar cesión</button>
               </div>
             </form>
           </section>
