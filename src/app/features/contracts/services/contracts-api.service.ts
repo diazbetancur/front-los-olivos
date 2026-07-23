@@ -2,8 +2,10 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClientService } from '../../../core/http/api-client.service';
 import {
+  AssignContractRequest,
   CancelContractRequest,
   ClientLookupItem,
+  ContractAssignmentPreviewResponse,
   ContractDetailResponse,
   ContractInstallmentResponse,
   ContractListItemResponse,
@@ -91,6 +93,19 @@ export class ContractsApiService {
   cancelContract(contractId: string, request: CancelContractRequest): Observable<ContractDetailResponse> {
     return this.apiClient.post<CancelContractRequest, ContractDetailResponse>(
       `/api/v1/admin/contracts/${contractId}/cancel`,
+      request
+    );
+  }
+
+  getAssignmentPreview(contractId: string): Observable<ContractAssignmentPreviewResponse> {
+    return this.apiClient.get<ContractAssignmentPreviewResponse>(
+      `/api/v1/admin/contracts/${contractId}/assignment-preview`
+    );
+  }
+
+  assignContract(contractId: string, request: AssignContractRequest): Observable<ContractDetailResponse> {
+    return this.apiClient.post<AssignContractRequest, ContractDetailResponse>(
+      `/api/v1/admin/contracts/${contractId}/assign`,
       request
     );
   }

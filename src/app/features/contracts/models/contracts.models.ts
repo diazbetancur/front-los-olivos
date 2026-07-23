@@ -129,6 +129,8 @@ export interface ContractDetailResponse {
   documentGeneratedAtUtc?: string | null;
   signedDocumentStorageKey?: string | null;
   signedDocumentUploadedAtUtc?: string | null;
+  sourceContractId?: string | null;
+  assignedToContractId?: string | null;
 }
 
 export interface CreateContractRequest {
@@ -183,6 +185,27 @@ export interface UpdateContractStatusRequest {
 }
 
 export interface CancelContractRequest {
+  notes?: string | null;
+}
+
+export interface ContractAssignmentPreviewResponse {
+  contractId: string;
+  pendingBalance: number;
+  remainingInstallments: number;
+  suggestedContractAmount: number;
+  suggestedTermMonths: number;
+  suggestedMonthlyPayment: number;
+  suggestedAnnualTotalCost: number;
+}
+
+export interface AssignContractRequest {
+  newClientId: string;
+  contractDate: string;
+  startDate: string;
+  termMonths: number;
+  contractAmount: number;
+  monthlyPayment: number;
+  specialConditionText?: string | null;
   notes?: string | null;
 }
 

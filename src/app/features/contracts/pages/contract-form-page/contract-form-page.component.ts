@@ -12,8 +12,10 @@ import { AppModalComponent } from '../../../../shared/components/app-modal/app-m
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { LoadingStateComponent } from '../../../../shared/components/loading-state/loading-state.component';
 import {
+  AssignContractRequest,
   CancelContractRequest,
   ClientLookupItem,
+  ContractAssignmentPreviewResponse,
   ContractDetailResponse,
   ContractInstallmentResponse,
   ContractStatus,
@@ -70,6 +72,7 @@ export class ContractFormPageComponent implements OnInit {
   readonly canUpdateDraft = computed(() => this.authSession.hasPermission('Contracts.UpdateDraft'));
   readonly canViewSchedule = computed(() => this.authSession.hasPermission('PaymentSchedules.View'));
   readonly canViewDocuments = computed(() => this.authSession.hasPermission('Documents.View'));
+  readonly canAssign = computed(() => this.authSession.hasPermission('Contracts.Assign'));
 
   readonly contractId = signal<string | null>(null);
   readonly mode = signal<'create' | 'view' | 'edit'>('create');
@@ -127,6 +130,17 @@ export class ContractFormPageComponent implements OnInit {
     notes: ['', [Validators.required, Validators.maxLength(2048)]]
   });
 
+  readonly assignForm = this.formBuilder.nonNullable.group({
+    newClientId: ['', [Validators.required]],
+    contractDate: [this.todayString(), [Validators.required]],
+    startDate: [this.todayString(), [Validators.required]],
+    termMonths: [1, [Validators.required, Validators.min(1), Validators.max(600)]],
+    contractAmount: [0, [Validators.required, Validators.min(0.01)]],
+    monthlyPayment: [0, [Validators.required, Validators.min(0.01)]],
+    specialConditionText: ['', [Validators.maxLength(4096)]],
+    notes: ['', [Validators.maxLength(2048)]]
+  });
+
   schedule: ReadonlyArray<ContractInstallmentResponse> = [];
   documents: ReadonlyArray<GeneratedDocumentResponse> = [];
   projectOptions: ReadonlyArray<ProjectLookupItem> = [];
@@ -139,6 +153,13 @@ export class ContractFormPageComponent implements OnInit {
   clientSearchInput = '';
   clientDropdownItems: ReadonlyArray<ClientLookupItem> = [];
   showClientDropdown = false;
+
+  // Combobox state — cesion de derechos form (cesionario)
+  assignClientSearch = '';
+  assignClientDropdownItems: ReadonlyArray<ClientLookupItem> = [];
+  showAssignClientDropdown = false;
+  assignPreview: ContractAssignmentPreviewResponse | null = null;
+  isLoadingAssignPreview = false;
   projectSearchInput = '';
   projectDropdownItems: ReadonlyArray<ProjectLookupItem> = [];
   showProjectDropdown = false;
@@ -168,10 +189,12 @@ export class ContractFormPageComponent implements OnInit {
   showStatusForm = false;
   showCancelForm = false;
   showGenerateConfirm = false;
+  showAssignForm = false;
 
   createFormSubmitted = false;
   statusFormSubmitted = false;
   cancelFormSubmitted = false;
+  assignFormSubmitted = false;
 
   createFormError: string | null = null;
   detailError: string | null = null;
@@ -179,6 +202,7 @@ export class ContractFormPageComponent implements OnInit {
   documentsError: string | null = null;
   statusError: string | null = null;
   cancelError: string | null = null;
+  assignError: string | null = null;
 
   get isClientSelected(): boolean {
     return !!this.contractForm.controls.clientId.value;
@@ -630,6 +654,10 @@ export class ContractFormPageComponent implements OnInit {
 
   // ---- Detalle ----
 
+  viewLinkedContract(contractId: string): void {
+    void this.router.navigate(['/admin/contracts', contractId]);
+  }
+
   viewContractDetail(contractId: string): void {
     this.detailTab.set('info');
     this.detailError = null;
@@ -676,6 +704,7 @@ export class ContractFormPageComponent implements OnInit {
 
     this.showStatusForm = true;
     this.showCancelForm = false;
+    this.showAssignForm = false;
     this.statusError = null;
     this.statusFormSubmitted = false;
     this.statusForm.reset({
@@ -747,6 +776,7 @@ export class ContractFormPageComponent implements OnInit {
 
     this.showCancelForm = true;
     this.showStatusForm = false;
+    this.showAssignForm = false;
     this.cancelError = null;
     this.cancelFormSubmitted = false;
     this.cancelForm.reset({ notes: '' });
@@ -802,6 +832,172 @@ export class ContractFormPageComponent implements OnInit {
           this.cancelError = normalizedError.userMessage;
           if (normalizedError.status === 409) {
             this.feedback.showError(`Conflicto al cancelar contrato: ${normalizedError.userMessage}`);
+          }
+        }
+      });
+  }
+
+  openAssignForm(): void {
+    if (!this.selectedContractDetail) {
+      return;
+    }
+
+    this.showAssignForm = true;
+    this.showStatusForm = false;
+    this.showCancelForm = false;
+    this.assignError = null;
+    this.assignFormSubmitted = false;
+    this.assignPreview = null;
+    this.assignClientSearch = '';
+    this.assignClientDropdownItems = [];
+    this.showAssignClientDropdown = false;
+    this.assignForm.reset({
+      newClientId: '',
+      contractDate: this.todayString(),
+      startDate: this.todayString(),
+      termMonths: 1,
+      contractAmount: 0,
+      monthlyPayment: 0,
+      specialConditionText: '',
+      notes: ''
+    });
+    this.loadAssignPreview();
+  }
+
+  cancelAssignForm(): void {
+    this.showAssignForm = false;
+    this.assignFormSubmitted = false;
+    this.assignError = null;
+  }
+
+  private loadAssignPreview(): void {
+    if (!this.selectedContractDetail) {
+      return;
+    }
+
+    this.isLoadingAssignPreview = true;
+    this.contractsApi
+      .getAssignmentPreview(this.selectedContractDetail.id)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.isLoadingAssignPreview = false;
+          this.syncView();
+        })
+      )
+      .subscribe({
+        next: (preview) => {
+          this.assignPreview = preview;
+          this.assignForm.patchValue({
+            termMonths: preview.suggestedTermMonths,
+            contractAmount: preview.suggestedContractAmount,
+            monthlyPayment: preview.suggestedMonthlyPayment
+          });
+        },
+        error: (error) => {
+          const normalizedError = this.apiErrorService.normalize(error);
+          this.assignError = normalizedError.userMessage;
+        }
+      });
+  }
+
+  // ---- Cesionario combobox ----
+
+  onAssignClientSearchInput(term: string): void {
+    this.assignClientSearch = term;
+
+    if (this.assignForm.controls.newClientId.value) {
+      this.assignForm.controls.newClientId.setValue('', { emitEvent: false });
+    }
+
+    const lower = term.toLowerCase().trim();
+    if (lower.length < 1) {
+      this.assignClientDropdownItems = [];
+      this.showAssignClientDropdown = false;
+      return;
+    }
+
+    this.assignClientDropdownItems = this.clientOptions
+      .filter(
+        (c) =>
+          c.fullName.toLowerCase().includes(lower) ||
+          (c.dni?.toLowerCase() ?? '').includes(lower)
+      )
+      .slice(0, 8);
+    this.showAssignClientDropdown = this.assignClientDropdownItems.length > 0;
+  }
+
+  selectAssignClient(client: ClientLookupItem): void {
+    this.assignForm.controls.newClientId.setValue(client.id, { emitEvent: false });
+    this.assignForm.controls.newClientId.markAsDirty();
+    this.assignForm.controls.newClientId.markAsTouched();
+    this.assignClientSearch = client.dni ? `${client.fullName} — ${client.dni}` : client.fullName;
+    this.showAssignClientDropdown = false;
+    this.assignClientDropdownItems = [];
+  }
+
+  closeAssignClientDropdown(): void {
+    setTimeout(() => {
+      this.showAssignClientDropdown = false;
+      if (!this.assignForm.controls.newClientId.value) {
+        this.assignClientSearch = '';
+      }
+      this.syncView();
+    }, 150);
+  }
+
+  submitAssignContract(): void {
+    if (!this.selectedContractDetail) {
+      return;
+    }
+
+    this.assignFormSubmitted = true;
+    this.assignError = null;
+    if (this.assignForm.invalid) {
+      this.assignForm.markAllAsTouched();
+      return;
+    }
+
+    const confirmed = globalThis.confirm(
+      `Se cedera el contrato ${this.selectedContractDetail.contractNumber} a un contrato nuevo y este quedara cerrado. Deseas continuar?`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    const raw = this.assignForm.getRawValue();
+    const payload: AssignContractRequest = {
+      newClientId: raw.newClientId,
+      contractDate: raw.contractDate,
+      startDate: raw.startDate,
+      termMonths: Number(raw.termMonths),
+      contractAmount: Number(raw.contractAmount),
+      monthlyPayment: Number(raw.monthlyPayment),
+      specialConditionText: this.cleanString(raw.specialConditionText),
+      notes: this.cleanString(raw.notes)
+    };
+
+    this.isSubmitting = true;
+    this.contractsApi
+      .assignContract(this.selectedContractDetail.id, payload)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.isSubmitting = false;
+          this.syncView();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          this.feedback.show({ level: 'success', text: 'Cesión de derechos registrada correctamente.' });
+          this.showAssignForm = false;
+          void this.router.navigate(['/admin/contracts', response.id]);
+        },
+        error: (error) => {
+          const normalizedError = this.apiErrorService.normalize(error);
+          this.assignError = normalizedError.userMessage;
+          if (normalizedError.status === 409) {
+            this.feedback.showError(`Conflicto al ceder el contrato: ${normalizedError.userMessage}`);
           }
         }
       });
