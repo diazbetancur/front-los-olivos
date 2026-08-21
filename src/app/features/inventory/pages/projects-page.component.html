@@ -199,6 +199,9 @@
               @if (editingProjectLogoStorageKey) {
                 <p class="logo-current-state">
                   <span class="chip">Logo cargado</span>
+                  @if (logoPreviewUrl) {
+                    <img [src]="logoPreviewUrl" alt="Logo del proyecto" class="logo-preview-image" />
+                  }
                 </p>
               }
               <label>

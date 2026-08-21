@@ -101,6 +101,10 @@ export class InventoryApiService {
     return this.httpClient.post<ProjectDetailResponse>(`/api/v1/admin/projects/${projectId}/logo`, formData);
   }
 
+  getProjectLogo(projectId: string): Observable<Blob> {
+    return this.apiClient.getBlob(`/api/v1/admin/projects/${projectId}/logo`);
+  }
+
   previewLotImport(projectId: string, file: File): Observable<LotImportPreviewResponse> {
     const formData = new FormData();
     formData.append('projectId', projectId);
