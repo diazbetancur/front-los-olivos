@@ -82,6 +82,7 @@ export class ProjectsPageComponent implements OnInit {
   showForm = false;
   editingProjectId: string | null = null;
   editingProjectLogoStorageKey: string | null = null;
+  logoPreviewUrl: string | null = null;
   projectFormSubmitted = false;
   listError: string | null = null;
   formError: string | null = null;
@@ -127,6 +128,7 @@ export class ProjectsPageComponent implements OnInit {
   openCreateForm(): void {
     this.editingProjectId = null;
     this.editingProjectLogoStorageKey = null;
+    this.clearLogoPreview();
     this.formError = null;
     this.projectFormSubmitted = false;
     this.selectedLogoFile = null;
@@ -163,6 +165,7 @@ export class ProjectsPageComponent implements OnInit {
         next: (project) => {
           this.fillForm(project);
           this.editingProjectLogoStorageKey = project.logoStorageKey ?? null;
+          this.loadLogoPreview(projectId);
         },
         error: (error) => {
           const normalizedError = this.apiErrorService.normalize(error);
@@ -175,9 +178,36 @@ export class ProjectsPageComponent implements OnInit {
     this.showForm = false;
     this.editingProjectId = null;
     this.editingProjectLogoStorageKey = null;
+    this.clearLogoPreview();
     this.projectFormSubmitted = false;
     this.formError = null;
     this.selectedLogoFile = null;
+  }
+
+  private loadLogoPreview(projectId: string): void {
+    this.clearLogoPreview();
+    if (!this.editingProjectLogoStorageKey) {
+      return;
+    }
+
+    this.inventoryApi
+      .getProjectLogo(projectId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => {
+          this.logoPreviewUrl = URL.createObjectURL(blob);
+        },
+        error: () => {
+          // El logo es opcional para la vista: si falla la carga, simplemente no se muestra.
+        },
+      });
+  }
+
+  private clearLogoPreview(): void {
+    if (this.logoPreviewUrl) {
+      URL.revokeObjectURL(this.logoPreviewUrl);
+    }
+    this.logoPreviewUrl = null;
   }
 
   submitProject(): void {
@@ -280,6 +310,7 @@ export class ProjectsPageComponent implements OnInit {
         next: (project) => {
           this.editingProjectLogoStorageKey = project.logoStorageKey ?? null;
           this.selectedLogoFile = null;
+          this.loadLogoPreview(projectId);
           this.feedback.show({ level: 'success', text: 'Logo del proyecto actualizado correctamente.' });
         },
         error: (error) => {
