@@ -10,3 +10,15 @@
 .row-actions {
   align-items: center;
 }
+
+.logo-current-state {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-preview-image {
+  max-height: 3rem;
+  max-width: 8rem;
+  object-fit: contain;
+}
