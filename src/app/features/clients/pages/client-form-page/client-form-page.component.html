@@ -343,6 +343,36 @@
                 </label>
               </div>
 
+              @if (beneficiaryIsMinor()) {
+                <h4>Datos del tutor</h4>
+                <p class="form-card-sub">El beneficiario es menor de edad (menos de 21 años) — se requieren los datos de su tutor responsable.</p>
+                <div class="grid ui-form-grid-3">
+                  <label class="required">
+                    Nombre completo del tutor
+                    <input type="text" class="ui-form-control" formControlName="tutorFullName" />
+                    <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.tutorFullName)">{{ fieldErrorMessage(beneficiaryForm.controls.tutorFullName) }}</small>
+                  </label>
+                  <label>
+                    Tipo de documento del tutor
+                    <select class="ui-form-control" formControlName="tutorDocumentType">
+                      <option value="">Sin especificar</option>
+                      @for (dt of documentTypes; track dt.value) {
+                        <option [value]="dt.value">{{ dt.label }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="required">
+                    Número de documento del tutor
+                    <input type="text" class="ui-form-control" formControlName="tutorDni" />
+                    <small class="ui-field-inline-error" [class.visible]="fieldInvalid(beneficiaryForm.controls.tutorDni)">{{ fieldErrorMessage(beneficiaryForm.controls.tutorDni) }}</small>
+                  </label>
+                  <label>
+                    Nacionalidad del tutor
+                    <input type="text" class="ui-form-control" formControlName="tutorNationality" />
+                  </label>
+                </div>
+              }
+
               <div class="form-actions">
                 <button type="button" class="ghost" (click)="cancelBeneficiaryForm()">Cancelar</button>
                 <button type="submit" class="btn-primary" [disabled]="isSubmitting || beneficiaryForm.invalid">

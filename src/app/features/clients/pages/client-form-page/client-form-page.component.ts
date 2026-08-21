@@ -65,6 +65,7 @@ export class ClientFormPageComponent implements OnInit {
   readonly isJuridica = signal(false);
   readonly clientNationalityRequired = signal(false);
   readonly beneficiaryNationalityRequired = signal(false);
+  readonly beneficiaryIsMinor = signal(false);
 
   readonly personTypes: ReadonlyArray<ClientPersonType> = ['Natural', 'Juridica'];
   readonly statuses: ReadonlyArray<ClientStatus> = ['Activo', 'Inactivo', 'Bloqueado'];
@@ -106,7 +107,11 @@ export class ClientFormPageComponent implements OnInit {
     phone: ['', [Validators.maxLength(32), Validators.pattern(/^[0-9+()\-\s]{7,32}$/)]],
     relationship: ['', [Validators.maxLength(128)]],
     address: ['', [Validators.maxLength(512)]],
-    notes: ['', [Validators.maxLength(2048)]]
+    notes: ['', [Validators.maxLength(2048)]],
+    tutorFullName: ['', [Validators.maxLength(256)]],
+    tutorDocumentType: [''],
+    tutorDni: ['', [Validators.maxLength(32)]],
+    tutorNationality: ['', [Validators.maxLength(64)]]
   });
 
   readonly referenceForm = this.formBuilder.nonNullable.group({
@@ -251,11 +256,16 @@ export class ClientFormPageComponent implements OnInit {
         phone: '',
         relationship: '',
         address: '',
-        notes: ''
+        notes: '',
+        tutorFullName: '',
+        tutorDocumentType: '',
+        tutorDni: '',
+        tutorNationality: ''
       },
       { emitEvent: false }
     );
     this.applyBeneficiaryNationalityRule(this.beneficiaryForm.controls.documentType.value);
+    this.applyTutorRule(this.beneficiaryForm.controls.birthDate.value);
   }
 
   openEditBeneficiaryForm(beneficiary: ClientBeneficiaryResponse): void {
@@ -273,11 +283,16 @@ export class ClientFormPageComponent implements OnInit {
         phone: beneficiary.phone,
         relationship: beneficiary.relationship,
         address: beneficiary.address,
-        notes: beneficiary.notes
+        notes: beneficiary.notes,
+        tutorFullName: beneficiary.tutorFullName ?? '',
+        tutorDocumentType: beneficiary.tutorDocumentType ?? '',
+        tutorDni: beneficiary.tutorDni ?? '',
+        tutorNationality: beneficiary.tutorNationality ?? ''
       },
       { emitEvent: false }
     );
     this.applyBeneficiaryNationalityRule(this.beneficiaryForm.controls.documentType.value);
+    this.applyTutorRule(this.beneficiaryForm.controls.birthDate.value);
   }
 
   cancelBeneficiaryForm(): void {
@@ -679,6 +694,11 @@ export class ClientFormPageComponent implements OnInit {
         this.onDocumentTypeChanged(this.beneficiaryForm.controls.nationality, documentType);
         this.applyBeneficiaryNationalityRule(documentType);
       });
+
+    this.applyTutorRule(this.beneficiaryForm.controls.birthDate.value);
+    this.beneficiaryForm.controls.birthDate.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((birthDate) => this.applyTutorRule(birthDate));
   }
 
   private applyClientNationalityRule(documentType: string): void {
@@ -713,6 +733,45 @@ export class ClientFormPageComponent implements OnInit {
     }
     control.updateValueAndValidity({ emitEvent: false });
     return isPassport;
+  }
+
+  // Tutor obligatorio si el beneficiario tiene menos de 21 años cumplidos hoy (spec 016) - misma
+  // regla que valida el backend, evaluada aqui para no depender de una ida y vuelta al servidor.
+  private applyTutorRule(birthDate: string): void {
+    const isMinor = this.isMinorToday(birthDate);
+    this.beneficiaryIsMinor.set(isMinor);
+
+    const requiredValidators = isMinor
+      ? [Validators.required, Validators.maxLength(256)]
+      : [Validators.maxLength(256)];
+    this.beneficiaryForm.controls.tutorFullName.setValidators(requiredValidators);
+    this.beneficiaryForm.controls.tutorFullName.updateValueAndValidity({ emitEvent: false });
+
+    const dniValidators = isMinor
+      ? [Validators.required, Validators.maxLength(32)]
+      : [Validators.maxLength(32)];
+    this.beneficiaryForm.controls.tutorDni.setValidators(dniValidators);
+    this.beneficiaryForm.controls.tutorDni.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private isMinorToday(birthDate: string): boolean {
+    if (!birthDate) {
+      return false;
+    }
+
+    const parsed = new Date(birthDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - parsed.getFullYear();
+    const monthsUntilBirthday = today.getMonth() - parsed.getMonth();
+    if (monthsUntilBirthday < 0 || (monthsUntilBirthday === 0 && today.getDate() < parsed.getDate())) {
+      age--;
+    }
+
+    return age < 21;
   }
 
   private toCreateClientPayload(): CreateClientRequest {
@@ -750,7 +809,11 @@ export class ClientFormPageComponent implements OnInit {
       phone: this.cleanString(raw.phone),
       relationship: this.cleanString(raw.relationship),
       address: this.cleanString(raw.address),
-      notes: this.cleanString(raw.notes)
+      notes: this.cleanString(raw.notes),
+      tutorFullName: this.cleanString(raw.tutorFullName),
+      tutorDocumentType: this.cleanString(raw.tutorDocumentType),
+      tutorDni: this.cleanString(raw.tutorDni),
+      tutorNationality: this.cleanString(raw.tutorNationality)
     };
   }
 

@@ -85,6 +85,10 @@ export interface ClientBeneficiaryResponse {
   relationship: string;
   address: string;
   notes: string;
+  tutorFullName: string;
+  tutorDocumentType: string | null;
+  tutorDni: string;
+  tutorNationality: string;
 }
 
 export interface CreateClientBeneficiaryRequest {
@@ -97,6 +101,10 @@ export interface CreateClientBeneficiaryRequest {
   relationship?: string | null;
   address?: string | null;
   notes?: string | null;
+  tutorFullName?: string | null;
+  tutorDocumentType?: string | null;
+  tutorDni?: string | null;
+  tutorNationality?: string | null;
 }
 
 export interface UpdateClientBeneficiaryRequest extends CreateClientBeneficiaryRequest {}
