@@ -131,6 +131,11 @@ export interface ContractDetailResponse {
   signedDocumentUploadedAtUtc?: string | null;
   sourceContractId?: string | null;
   assignedToContractId?: string | null;
+  stipulatedPartyFullName: string;
+  stipulatedPartyDocumentType: string | null;
+  stipulatedPartyDocumentNumber: string;
+  stipulatedPartyNationality: string;
+  stipulatedPartyAddress: string;
 }
 
 export interface CreateContractRequest {
@@ -155,6 +160,11 @@ export interface CreateContractRequest {
   discountPreparedDeadline?: string | null;
   discountPreparedEnabled?: boolean | null;
   notes?: string | null;
+  stipulatedPartyFullName?: string | null;
+  stipulatedPartyDocumentType?: string | null;
+  stipulatedPartyDocumentNumber?: string | null;
+  stipulatedPartyNationality?: string | null;
+  stipulatedPartyAddress?: string | null;
 }
 
 export interface UpdateContractRequest {
@@ -177,6 +187,11 @@ export interface UpdateContractRequest {
   discountPreparedDeadline?: string | null;
   discountPreparedEnabled?: boolean | null;
   notes?: string | null;
+  stipulatedPartyFullName?: string | null;
+  stipulatedPartyDocumentType?: string | null;
+  stipulatedPartyDocumentNumber?: string | null;
+  stipulatedPartyNationality?: string | null;
+  stipulatedPartyAddress?: string | null;
 }
 
 export interface UpdateContractStatusRequest {
