@@ -183,7 +183,14 @@
                 rows="2"
                 formControlName="locationReference"
                 class="ui-form-control ui-form-control-textarea"
+                placeholder="Lo de Vaca, Sector de Las Liconas"
               ></textarea>
+              <small class="ui-field-hint">
+                Solo el paraje o sector. El contrato ya arma la frase completa: &laquo;ubicada en el
+                lugar denominado <em>&lt;esta referencia&gt;</em>, en el Municipio de
+                &lt;municipio&gt;, departamento de &lt;departamento&gt;&raquo;. No repitas aqui el
+                municipio ni el departamento.
+              </small>
               <small
                 class="ui-field-inline-error"
                 [class.visible]="hasControlError('locationReference')"
