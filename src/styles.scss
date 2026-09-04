@@ -716,6 +716,14 @@ label {
   resize: vertical;
 }
 
+.ui-field-hint {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: #6b7280;
+}
+
 .ui-field-inline-error {
   min-height: 1rem;
   font-size: 0.76rem;

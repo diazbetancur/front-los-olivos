@@ -76,4 +76,27 @@ describe('ProjectsPageComponent', () => {
     component.cancelForm();
     expect(component.logoPreviewUrl).toBeNull();
   });
+
+  it('explains on the location field that the contract already adds the municipality', async () => {
+    // El dato real se cargo con la frase completa pegada ("ubicada en el lugar denominado ...,
+    // en el municipio de Comayagua, departamento de Comayagua"), que el contrato volvia a
+    // agregar. La ayuda del campo existe para que no se repita.
+    component.openCreateForm();
+    // En modo zoneless, llamar el metodo directo no marca la vista sucia como lo haria el click
+    // del boton, y el @if del modal no se renderiza.
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const textarea = host.querySelector<HTMLTextAreaElement>(
+      'textarea[formControlName="locationReference"]',
+    );
+    expect(textarea).toBeTruthy();
+    expect(textarea!.placeholder).toBe('Lo de Vaca, Sector de Las Liconas');
+
+    const hint = textarea!.parentElement!.querySelector<HTMLElement>('.ui-field-hint');
+    expect(hint).toBeTruthy();
+    expect(hint!.textContent).toContain('ubicada en el lugar denominado');
+    expect(hint!.textContent).toContain('No repitas aqui el municipio ni el departamento');
+  });
 });
