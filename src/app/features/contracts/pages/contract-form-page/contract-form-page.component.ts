@@ -44,6 +44,13 @@ function downPaymentNotExceedsAmount(group: AbstractControl): ValidationErrors |
   return downPayment <= contractAmount ? null : { downPaymentExceedsAmount: true };
 }
 
+// Spec 016: nombre y numero de documento del estipulante van juntos (todo o nada).
+function stipulationRequiresFullNameAndDocumentNumber(group: AbstractControl): ValidationErrors | null {
+  const fullName = (group.get('stipulatedPartyFullName')?.value as string)?.trim();
+  const documentNumber = (group.get('stipulatedPartyDocumentNumber')?.value as string)?.trim();
+  return !!fullName === !!documentNumber ? null : { stipulationIncomplete: true };
+}
+
 @Component({
   selector: 'app-contract-form-page',
   imports: [
@@ -94,6 +101,12 @@ export class ContractFormPageComponent implements OnInit {
     'Anulado'
   ];
 
+  readonly documentTypes = [
+    { value: 'Dni', label: 'DNI' },
+    { value: 'Passport', label: 'Pasaporte' }
+  ] as const;
+  readonly stipulatedPartyNationalityRequired = signal(false);
+
   readonly contractForm = this.formBuilder.nonNullable.group(
     {
       projectId: ['', [Validators.required]],
@@ -116,9 +129,14 @@ export class ContractFormPageComponent implements OnInit {
       discountPreparedAmount: [''],
       discountPreparedDeadline: [''],
       discountPreparedEnabled: [false],
-      notes: ['', [Validators.maxLength(2048)]]
+      notes: ['', [Validators.maxLength(2048)]],
+      stipulatedPartyFullName: ['', [Validators.maxLength(256)]],
+      stipulatedPartyDocumentType: [''],
+      stipulatedPartyDocumentNumber: ['', [Validators.maxLength(32)]],
+      stipulatedPartyNationality: ['', [Validators.maxLength(64)]],
+      stipulatedPartyAddress: ['', [Validators.maxLength(512)]]
     },
-    { validators: [startDateNotBeforeContractDate, downPaymentNotExceedsAmount] }
+    { validators: [startDateNotBeforeContractDate, downPaymentNotExceedsAmount, stipulationRequiresFullNameAndDocumentNumber] }
   );
 
   readonly statusForm = this.formBuilder.nonNullable.group({
@@ -241,6 +259,12 @@ export class ContractFormPageComponent implements OnInit {
       .subscribe(() => {
         this.monthlyAuto = false;
       });
+
+    // Estipulacion (persona extranjera, spec 016): nacionalidad obligatoria solo con pasaporte.
+    this.applyStipulatedPartyNationalityRule(this.contractForm.controls.stipulatedPartyDocumentType.value);
+    this.contractForm.controls.stipulatedPartyDocumentType.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((documentType) => this.applyStipulatedPartyNationalityRule(documentType));
 
     // BUG-008: el termino de busqueda de lotes se envia al backend (debounce 300ms) en vez de
     // filtrar solo la primera pagina de 100 lotes cargada en el cliente.
@@ -632,8 +656,14 @@ export class ContractFormPageComponent implements OnInit {
             discountPreparedAmount: detail.discountPreparedAmount != null ? String(detail.discountPreparedAmount) : '',
             discountPreparedDeadline: detail.discountPreparedDeadline ?? '',
             discountPreparedEnabled: detail.discountPreparedEnabled,
-            notes: detail.notes ?? ''
+            notes: detail.notes ?? '',
+            stipulatedPartyFullName: detail.stipulatedPartyFullName ?? '',
+            stipulatedPartyDocumentType: detail.stipulatedPartyDocumentType ?? '',
+            stipulatedPartyDocumentNumber: detail.stipulatedPartyDocumentNumber ?? '',
+            stipulatedPartyNationality: detail.stipulatedPartyNationality ?? '',
+            stipulatedPartyAddress: detail.stipulatedPartyAddress ?? ''
           });
+          this.applyStipulatedPartyNationalityRule(this.contractForm.controls.stipulatedPartyDocumentType.value);
           // El monto se carga como valor propio del borrador (no autosuma sobre lo guardado).
           this.contractForm.controls.contractAmount.setValue(detail.contractAmount, { emitEvent: false });
           this.contractForm.controls.lotIds.setValue([...detail.lotIds]);
@@ -1328,7 +1358,12 @@ export class ContractFormPageComponent implements OnInit {
       discountPreparedAmount: this.toNullableNumber(raw.discountPreparedAmount),
       discountPreparedDeadline: this.cleanString(raw.discountPreparedDeadline),
       discountPreparedEnabled: raw.discountPreparedEnabled,
-      notes: this.cleanString(raw.notes)
+      notes: this.cleanString(raw.notes),
+      stipulatedPartyFullName: this.cleanString(raw.stipulatedPartyFullName),
+      stipulatedPartyDocumentType: this.cleanString(raw.stipulatedPartyDocumentType),
+      stipulatedPartyDocumentNumber: this.cleanString(raw.stipulatedPartyDocumentNumber),
+      stipulatedPartyNationality: this.cleanString(raw.stipulatedPartyNationality),
+      stipulatedPartyAddress: this.cleanString(raw.stipulatedPartyAddress)
     };
   }
 
@@ -1354,7 +1389,12 @@ export class ContractFormPageComponent implements OnInit {
       discountPreparedAmount: this.toNullableNumber(raw.discountPreparedAmount),
       discountPreparedDeadline: this.cleanString(raw.discountPreparedDeadline),
       discountPreparedEnabled: raw.discountPreparedEnabled,
-      notes: this.cleanString(raw.notes)
+      notes: this.cleanString(raw.notes),
+      stipulatedPartyFullName: this.cleanString(raw.stipulatedPartyFullName),
+      stipulatedPartyDocumentType: this.cleanString(raw.stipulatedPartyDocumentType),
+      stipulatedPartyDocumentNumber: this.cleanString(raw.stipulatedPartyDocumentNumber),
+      stipulatedPartyNationality: this.cleanString(raw.stipulatedPartyNationality),
+      stipulatedPartyAddress: this.cleanString(raw.stipulatedPartyAddress)
     };
   }
 
@@ -1380,6 +1420,16 @@ export class ContractFormPageComponent implements OnInit {
 
   private todayString(): string {
     return new Date().toISOString().slice(0, 10);
+  }
+
+  private applyStipulatedPartyNationalityRule(documentType: string): void {
+    const isPassport = documentType === 'Passport';
+    this.stipulatedPartyNationalityRequired.set(isPassport);
+    const control = this.contractForm.controls.stipulatedPartyNationality;
+    control.setValidators(isPassport
+      ? [Validators.required, Validators.maxLength(64)]
+      : [Validators.maxLength(64)]);
+    control.updateValueAndValidity({ emitEvent: false });
   }
 
   private syncView(): void {

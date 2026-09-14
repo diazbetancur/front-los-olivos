@@ -58,6 +58,9 @@
             @if (detail.specialConditionText) {
               <div class="full-width"><span class="detail-label">Condición especial</span><span>{{ detail.specialConditionText }}</span></div>
             }
+            @if (detail.stipulatedPartyFullName) {
+              <div class="full-width"><span class="detail-label">Estipulación</span><span>{{ detail.stipulatedPartyFullName }} — {{ detail.stipulatedPartyDocumentType === 'Passport' ? 'Pasaporte' : 'DNI' }} No. {{ detail.stipulatedPartyDocumentNumber }}</span></div>
+            }
             @if (detail.notes) {
               <div class="full-width"><span class="detail-label">Notas</span><span>{{ detail.notes }}</span></div>
             }
@@ -690,6 +693,47 @@
           </div>
         </section>
 
+        <section class="form-card">
+          <div class="form-card-head">
+            <span class="form-card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <div>
+              <h3 class="form-card-title">Estipulación (persona extranjera)</h3>
+              <p class="form-card-sub">Opcional — solo si el cliente firmante actúa como estipulante de una persona extranjera (documento tipo pasaporte).</p>
+            </div>
+          </div>
+
+          <div class="grid ui-form-grid-3">
+            <label>
+              Nombre completo
+              <input type="text" class="ui-form-control" formControlName="stipulatedPartyFullName" />
+            </label>
+            <label>
+              Tipo de documento
+              <select class="ui-form-control" formControlName="stipulatedPartyDocumentType">
+                <option value="">Sin especificar</option>
+                @for (dt of documentTypes; track dt.value) {
+                  <option [value]="dt.value">{{ dt.label }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              Número de documento
+              <input type="text" class="ui-form-control" formControlName="stipulatedPartyDocumentNumber" />
+            </label>
+            <label [class.required]="stipulatedPartyNationalityRequired()">
+              Nacionalidad
+              <input type="text" class="ui-form-control" formControlName="stipulatedPartyNationality" />
+              <small class="ui-field-inline-error" [class.visible]="contractForm.controls.stipulatedPartyNationality.invalid && (contractForm.controls.stipulatedPartyNationality.touched || createFormSubmitted)">Nacionalidad requerida cuando el documento es pasaporte.</small>
+            </label>
+            <label class="span-2">
+              Dirección
+              <input type="text" class="ui-form-control" formControlName="stipulatedPartyAddress" />
+            </label>
+          </div>
+        </section>
+
       </div>
 
       @if (isCreate() && !hasCreateSelections()) {
@@ -700,6 +744,9 @@
       }
       @if (contractForm.errors?.['downPaymentExceedsAmount'] && (contractForm.touched || createFormSubmitted)) {
         <p class="field-error">La prima no puede ser mayor al monto del contrato.</p>
+      }
+      @if (contractForm.errors?.['stipulationIncomplete'] && (contractForm.touched || createFormSubmitted)) {
+        <p class="field-error">El nombre y el número de documento del estipulante van juntos: completa ambos o ninguno.</p>
       }
 
       <div class="form-actions-bar">
