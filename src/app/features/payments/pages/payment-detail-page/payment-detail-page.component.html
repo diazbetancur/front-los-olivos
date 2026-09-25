@@ -174,9 +174,12 @@
       <!-- Aplicaciones actuales -->
       <div class="pd-card">
         <div class="pd-card-head">
-          <h2 class="pd-card-title">Aplicaciones actuales</h2>
+          <h2 class="pd-card-title">Cuotas aplicadas y sus recibos</h2>
           <div class="pd-card-head-right">
-            <span class="pd-count">{{ detail.allocations.length }} {{ detail.allocations.length === 1 ? 'cuota' : 'cuotas' }}</span>
+            <span class="pd-count">
+              {{ detail.allocations.length }} {{ detail.allocations.length === 1 ? 'cuota' : 'cuotas' }}
+              · {{ receiptsEmitted() }} {{ receiptsEmitted() === 1 ? 'recibo' : 'recibos' }}
+            </span>
           </div>
         </div>
 
@@ -192,11 +195,11 @@
                   <th>Monto aplicado</th>
                   <th>Aplicado en</th>
                   <th>Estado</th>
-                  <th>Comprobante</th>
+                  <th>Recibo</th>
                 </tr>
               </thead>
               <tbody>
-                @for (allocation of pagedAllocations(); track allocation.id) {
+                @for (allocation of allocations(); track allocation.id) {
                   <tr>
                     <td><span class="pd-num-badge">#{{ allocation.installmentNumber }}</span></td>
                     <td class="muted">{{ allocation.dueDate || '—' }}</td>
@@ -208,16 +211,29 @@
                       </span>
                     </td>
                     <td>
-                      @if ((allocation.hasReceipt && canDownloadReceipt()) || (!allocation.hasReceipt && !allocation.isVoided && canGenerateReceipt())) {
+                      @if (allocation.hasReceipt) {
+                        <span class="pd-receipt-number">{{ allocation.receiptNumber || 'Recibo emitido' }}</span>
+                        @if (canDownloadReceipt()) {
+                          <button
+                            type="button"
+                            class="action-icon-btn"
+                            (click)="onAllocationReceipt(allocation)"
+                            [disabled]="busyAllocationId() !== null"
+                            [title]="'Descargar recibo ' + (allocation.receiptNumber || '')"
+                            [attr.aria-label]="'Descargar recibo de la cuota ' + allocation.installmentNumber"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                          </button>
+                        }
+                      } @else if (!allocation.isVoided && canGenerateReceipt()) {
                         <button
                           type="button"
-                          class="action-icon-btn"
+                          class="pd-btn-soft"
                           (click)="onAllocationReceipt(allocation)"
                           [disabled]="busyAllocationId() !== null"
-                          title="Descargar comprobante"
-                          aria-label="Descargar comprobante"
+                          [attr.aria-label]="'Generar recibo de la cuota ' + allocation.installmentNumber"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                          Generar recibo
                         </button>
                       } @else {
                         -
@@ -228,11 +244,6 @@
               </tbody>
             </table>
           </div>
-              <div class="pd-pager">
-                <button type="button" class="pd-btn-soft" [disabled]="allocationsPage() <= 1" (click)="prevAllocationsPage()">Anterior</button>
-                <span class="muted">Página {{ allocationsPage() }} de {{ allocationsTotalPages() }}</span>
-                <button type="button" class="pd-btn-soft" [disabled]="allocationsPage() >= allocationsTotalPages()" (click)="nextAllocationsPage()">Siguiente</button>
-              </div>
         }
       </div>
     } @else {
