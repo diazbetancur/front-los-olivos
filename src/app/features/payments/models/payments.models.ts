@@ -89,6 +89,7 @@ export interface PaymentAllocationResponse {
   voidedAtUtc?: string | null;
   hasReceipt?: boolean;
   receiptId?: string | null;
+  receiptNumber?: string | null;
   dueDate?: string | null;
 }
 

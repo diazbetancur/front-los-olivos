@@ -80,6 +80,7 @@ export class ContractFormPageComponent implements OnInit {
   readonly canViewSchedule = computed(() => this.authSession.hasPermission('PaymentSchedules.View'));
   readonly canViewDocuments = computed(() => this.authSession.hasPermission('Documents.View'));
   readonly canAssign = computed(() => this.authSession.hasPermission('Contracts.Assign'));
+  readonly canActivate = computed(() => this.authSession.hasPermission('Contracts.Activate'));
 
   readonly contractId = signal<string | null>(null);
   readonly mode = signal<'create' | 'view' | 'edit'>('create');
@@ -134,6 +135,7 @@ export class ContractFormPageComponent implements OnInit {
       stipulatedPartyDocumentType: [''],
       stipulatedPartyDocumentNumber: ['', [Validators.maxLength(32)]],
       stipulatedPartyNationality: ['', [Validators.maxLength(64)]],
+      stipulatedPartyRtn: ['', [Validators.maxLength(32)]],
       stipulatedPartyAddress: ['', [Validators.maxLength(512)]]
     },
     { validators: [startDateNotBeforeContractDate, downPaymentNotExceedsAmount, stipulationRequiresFullNameAndDocumentNumber] }
@@ -198,6 +200,7 @@ export class ContractFormPageComponent implements OnInit {
   isScheduleLoading = false;
   isDocumentsLoading = false;
   isGeneratingDocuments = false;
+  isActivating = false;
   isUploadingSigned = false;
   signedFile: File | null = null;
   signedUploadError: string | null = null;
@@ -661,6 +664,7 @@ export class ContractFormPageComponent implements OnInit {
             stipulatedPartyDocumentType: detail.stipulatedPartyDocumentType ?? '',
             stipulatedPartyDocumentNumber: detail.stipulatedPartyDocumentNumber ?? '',
             stipulatedPartyNationality: detail.stipulatedPartyNationality ?? '',
+            stipulatedPartyRtn: detail.stipulatedPartyRtn ?? '',
             stipulatedPartyAddress: detail.stipulatedPartyAddress ?? ''
           });
           this.applyStipulatedPartyNationalityRule(this.contractForm.controls.stipulatedPartyDocumentType.value);
@@ -1100,6 +1104,53 @@ export class ContractFormPageComponent implements OnInit {
       });
   }
 
+  /** Un contrato entra en vigencia sin necesidad del documento firmado, que puede cargarse despues. */
+  canActivateContract(): boolean {
+    const status = this.selectedContractDetail?.status;
+    return this.canActivate() && (status === 'Borrador' || status === 'PendienteFirma');
+  }
+
+  activateContract(): void {
+    if (!this.selectedContractDetail || this.isActivating) {
+      return;
+    }
+
+    const confirmed = globalThis.confirm(
+      `El contrato ${this.selectedContractDetail.contractNumber} quedara Activo y podra recibir pagos. Deseas continuar?`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    this.isActivating = true;
+    this.contractsApi
+      .activateContract(this.selectedContractDetail.id)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => {
+          this.isActivating = false;
+          this.syncView();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          this.feedback.show({
+            level: 'success',
+            text: 'Contrato activado. Ya puede recibir pagos; el documento firmado se puede cargar despues.'
+          });
+          this.viewContractDetail(response.id);
+        },
+        error: (error) => {
+          const normalizedError = this.apiErrorService.normalize(error);
+          if (normalizedError.status === 409) {
+            this.feedback.showError(`Conflicto al activar el contrato: ${normalizedError.userMessage}`);
+            return;
+          }
+          this.feedback.showError(normalizedError.userMessage);
+        }
+      });
+  }
+
   onSignedFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.signedFile = input.files && input.files.length > 0 ? input.files[0] : null;
@@ -1125,7 +1176,10 @@ export class ContractFormPageComponent implements OnInit {
       )
       .subscribe({
         next: (response) => {
-          this.feedback.show({ level: 'success', text: 'Contrato firmado cargado. El contrato queda Activo.' });
+          this.feedback.show({
+            level: 'success',
+            text: `Contrato firmado cargado. El contrato queda ${response.status}.`
+          });
           this.signedFile = null;
           this.viewContractDetail(response.id);
         },
@@ -1363,6 +1417,7 @@ export class ContractFormPageComponent implements OnInit {
       stipulatedPartyDocumentType: this.cleanString(raw.stipulatedPartyDocumentType),
       stipulatedPartyDocumentNumber: this.cleanString(raw.stipulatedPartyDocumentNumber),
       stipulatedPartyNationality: this.cleanString(raw.stipulatedPartyNationality),
+      stipulatedPartyRtn: this.cleanString(raw.stipulatedPartyRtn),
       stipulatedPartyAddress: this.cleanString(raw.stipulatedPartyAddress)
     };
   }
@@ -1394,6 +1449,7 @@ export class ContractFormPageComponent implements OnInit {
       stipulatedPartyDocumentType: this.cleanString(raw.stipulatedPartyDocumentType),
       stipulatedPartyDocumentNumber: this.cleanString(raw.stipulatedPartyDocumentNumber),
       stipulatedPartyNationality: this.cleanString(raw.stipulatedPartyNationality),
+      stipulatedPartyRtn: this.cleanString(raw.stipulatedPartyRtn),
       stipulatedPartyAddress: this.cleanString(raw.stipulatedPartyAddress)
     };
   }

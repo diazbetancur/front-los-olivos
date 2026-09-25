@@ -339,6 +339,14 @@
   white-space: nowrap;
 }
 
+.pd-receipt-number {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: #3f4756;
+  margin-right: 0.4rem;
+  white-space: nowrap;
+}
+
 .pd-btn-soft {
   display: inline-flex;
   align-items: center;

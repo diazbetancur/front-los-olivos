@@ -87,31 +87,31 @@ export class PaymentDetailPageComponent implements OnInit {
 
   readonly busyAllocationId = signal<string | null>(null);
 
-  readonly allocationsPageSize = signal(10);
-  readonly allocationsPage = signal(1);
+  /**
+   * Todas las cuotas que cubre el pago, sin paginar: cada una tiene su propio recibo y el usuario
+   * tiene que poder verlas y descargarlas todas. Paginar de 10 escondia las cuotas siguientes —
+   * con un pago de 12 cuotas, dos quedaban invisibles y parecia que faltaban recibos.
+   */
+  readonly allocations = computed(() => this.payment()?.allocations ?? []);
 
-  readonly pagedAllocations = computed(() => {
-    const all = this.payment()?.allocations ?? [];
-    const size = this.allocationsPageSize();
-    const start = (this.allocationsPage() - 1) * size;
-    return all.slice(start, start + size);
-  });
+  readonly receiptsEmitted = computed(
+    () => this.allocations().filter((allocation) => allocation.hasReceipt).length
+  );
 
-  readonly allocationsTotalPages = computed(() => {
-    const total = this.payment()?.allocations?.length ?? 0;
-    return Math.max(1, Math.ceil(total / this.allocationsPageSize()));
-  });
-
-  prevAllocationsPage(): void {
-    if (this.allocationsPage() > 1) {
-      this.allocationsPage.update((page) => page - 1);
+  /**
+   * Un pago emite un recibo por cuota cubierta. Si alguno no se emitio, hay que decirlo: la
+   * emision es best-effort y antes el mensaje afirmaba en singular que el recibo estaba listo.
+   */
+  private receiptsSummary(result: PaymentApplyResultResponse): string {
+    const allocations = result.payment?.allocations ?? [];
+    const emitted = allocations.filter((allocation) => allocation.hasReceipt).length;
+    if (allocations.length === 0) {
+      return '';
     }
-  }
-
-  nextAllocationsPage(): void {
-    if (this.allocationsPage() < this.allocationsTotalPages()) {
-      this.allocationsPage.update((page) => page + 1);
+    if (emitted === allocations.length) {
+      return emitted === 1 ? 'Se emitió 1 recibo.' : `Se emitieron ${emitted} recibos.`;
     }
+    return `Se emitieron ${emitted} de ${allocations.length} recibos; los pendientes se pueden generar desde la tabla de cuotas.`;
   }
 
   readonly schedulePageSize = signal(12);
@@ -276,7 +276,7 @@ export class PaymentDetailPageComponent implements OnInit {
             this.showCreditConfirm.set(true);
             return;
           }
-          this.feedback.showSuccess('Pago aprobado: aplicado y recibo emitido.');
+          this.feedback.showSuccess(`Pago aprobado y aplicado. ${this.receiptsSummary(result)}`);
           this.reload();
         },
         error: (error) => {

@@ -19,6 +19,11 @@
           @if (detail.status === 'Borrador' && canUpdateDraft()) {
             <button type="button" (click)="startEdit()">Editar</button>
           }
+          @if (canActivateContract()) {
+            <button type="button" (click)="activateContract()" [disabled]="isActivating">
+              {{ isActivating ? 'Activando...' : 'Activar contrato' }}
+            </button>
+          }
           <button type="button" class="ghost" (click)="openStatusForm()" *appHasPermission="['Contracts.Approve']">Cambiar estado</button>
           @if (detail.status === 'Activo' || detail.status === 'EnMora') {
             <button type="button" class="ghost" (click)="openAssignForm()" *appHasPermission="['Contracts.Assign']">Cesión de derechos</button>
@@ -59,7 +64,14 @@
               <div class="full-width"><span class="detail-label">Condición especial</span><span>{{ detail.specialConditionText }}</span></div>
             }
             @if (detail.stipulatedPartyFullName) {
-              <div class="full-width"><span class="detail-label">Estipulación</span><span>{{ detail.stipulatedPartyFullName }} — {{ detail.stipulatedPartyDocumentType === 'Passport' ? 'Pasaporte' : 'DNI' }} No. {{ detail.stipulatedPartyDocumentNumber }}</span></div>
+              <div class="full-width">
+                <span class="detail-label">Estipulante (firma el contrato)</span>
+                <span>
+                  {{ detail.stipulatedPartyFullName }} — {{ detail.stipulatedPartyDocumentType === 'Passport' ? 'Pasaporte' : 'DNI' }} No. {{ detail.stipulatedPartyDocumentNumber }}
+                  @if (detail.stipulatedPartyRtn) { · RTN {{ detail.stipulatedPartyRtn }} }
+                  @if (detail.stipulatedPartyAddress) { · {{ detail.stipulatedPartyAddress }} }
+                </span>
+              </div>
             }
             @if (detail.notes) {
               <div class="full-width"><span class="detail-label">Notas</span><span>{{ detail.notes }}</span></div>
@@ -110,20 +122,21 @@
             </section>
           }
 
-          @if (detail.status === 'PendienteFirma' || detail.signedDocumentStorageKey) {
+          @if (detail.status === 'Borrador' || detail.status === 'PendienteFirma' || detail.status === 'Activo' || detail.status === 'EnMora' || detail.signedDocumentStorageKey) {
             <section class="detail-subsection">
               <h4>Firma del contrato</h4>
               @if (detail.signedDocumentStorageKey) {
                 <p>
                   Contrato firmado cargado@if (detail.signedDocumentUploadedAtUtc) { el {{ detail.signedDocumentUploadedAtUtc | date: 'short' }} }.
                 </p>
-              } @else if (detail.status === 'PendienteFirma') {
+              } @else {
                 <div class="inline-actions" *appHasPermission="['Contracts.Activate']">
                   <input type="file" accept=".pdf,.docx" (change)="onSignedFileSelected($event)" />
                   <button type="button" (click)="uploadSignedContract()" [disabled]="isUploadingSigned || !signedFile">
                     {{ isUploadingSigned ? 'Subiendo...' : 'Subir contrato firmado' }}
                   </button>
                 </div>
+                <p class="form-card-sub">El documento firmado es opcional para operar: el contrato puede activarse y recibir pagos antes de cargarlo.</p>
                 @if (signedUploadError) {
                   <p class="error-text">{{ signedUploadError }}</p>
                 }
@@ -726,6 +739,10 @@
               Nacionalidad
               <input type="text" class="ui-form-control" formControlName="stipulatedPartyNationality" />
               <small class="ui-field-inline-error" [class.visible]="contractForm.controls.stipulatedPartyNationality.invalid && (contractForm.controls.stipulatedPartyNationality.touched || createFormSubmitted)">Nacionalidad requerida cuando el documento es pasaporte.</small>
+            </label>
+            <label>
+              RTN
+              <input type="text" class="ui-form-control" formControlName="stipulatedPartyRtn" />
             </label>
             <label class="span-2">
               Dirección
