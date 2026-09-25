@@ -135,6 +135,7 @@ export class ContractFormPageComponent implements OnInit {
       stipulatedPartyDocumentType: [''],
       stipulatedPartyDocumentNumber: ['', [Validators.maxLength(32)]],
       stipulatedPartyNationality: ['', [Validators.maxLength(64)]],
+      stipulatedPartyRtn: ['', [Validators.maxLength(32)]],
       stipulatedPartyAddress: ['', [Validators.maxLength(512)]]
     },
     { validators: [startDateNotBeforeContractDate, downPaymentNotExceedsAmount, stipulationRequiresFullNameAndDocumentNumber] }
@@ -663,6 +664,7 @@ export class ContractFormPageComponent implements OnInit {
             stipulatedPartyDocumentType: detail.stipulatedPartyDocumentType ?? '',
             stipulatedPartyDocumentNumber: detail.stipulatedPartyDocumentNumber ?? '',
             stipulatedPartyNationality: detail.stipulatedPartyNationality ?? '',
+            stipulatedPartyRtn: detail.stipulatedPartyRtn ?? '',
             stipulatedPartyAddress: detail.stipulatedPartyAddress ?? ''
           });
           this.applyStipulatedPartyNationalityRule(this.contractForm.controls.stipulatedPartyDocumentType.value);
@@ -1415,6 +1417,7 @@ export class ContractFormPageComponent implements OnInit {
       stipulatedPartyDocumentType: this.cleanString(raw.stipulatedPartyDocumentType),
       stipulatedPartyDocumentNumber: this.cleanString(raw.stipulatedPartyDocumentNumber),
       stipulatedPartyNationality: this.cleanString(raw.stipulatedPartyNationality),
+      stipulatedPartyRtn: this.cleanString(raw.stipulatedPartyRtn),
       stipulatedPartyAddress: this.cleanString(raw.stipulatedPartyAddress)
     };
   }
@@ -1446,6 +1449,7 @@ export class ContractFormPageComponent implements OnInit {
       stipulatedPartyDocumentType: this.cleanString(raw.stipulatedPartyDocumentType),
       stipulatedPartyDocumentNumber: this.cleanString(raw.stipulatedPartyDocumentNumber),
       stipulatedPartyNationality: this.cleanString(raw.stipulatedPartyNationality),
+      stipulatedPartyRtn: this.cleanString(raw.stipulatedPartyRtn),
       stipulatedPartyAddress: this.cleanString(raw.stipulatedPartyAddress)
     };
   }

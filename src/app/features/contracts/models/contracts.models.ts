@@ -135,6 +135,7 @@ export interface ContractDetailResponse {
   stipulatedPartyDocumentType: string | null;
   stipulatedPartyDocumentNumber: string;
   stipulatedPartyNationality: string;
+  stipulatedPartyRtn: string;
   stipulatedPartyAddress: string;
 }
 
@@ -164,6 +165,7 @@ export interface CreateContractRequest {
   stipulatedPartyDocumentType?: string | null;
   stipulatedPartyDocumentNumber?: string | null;
   stipulatedPartyNationality?: string | null;
+  stipulatedPartyRtn?: string | null;
   stipulatedPartyAddress?: string | null;
 }
 
@@ -191,6 +193,7 @@ export interface UpdateContractRequest {
   stipulatedPartyDocumentType?: string | null;
   stipulatedPartyDocumentNumber?: string | null;
   stipulatedPartyNationality?: string | null;
+  stipulatedPartyRtn?: string | null;
   stipulatedPartyAddress?: string | null;
 }
 

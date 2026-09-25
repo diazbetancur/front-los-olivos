@@ -64,7 +64,14 @@
               <div class="full-width"><span class="detail-label">Condición especial</span><span>{{ detail.specialConditionText }}</span></div>
             }
             @if (detail.stipulatedPartyFullName) {
-              <div class="full-width"><span class="detail-label">Estipulación</span><span>{{ detail.stipulatedPartyFullName }} — {{ detail.stipulatedPartyDocumentType === 'Passport' ? 'Pasaporte' : 'DNI' }} No. {{ detail.stipulatedPartyDocumentNumber }}</span></div>
+              <div class="full-width">
+                <span class="detail-label">Estipulante (firma el contrato)</span>
+                <span>
+                  {{ detail.stipulatedPartyFullName }} — {{ detail.stipulatedPartyDocumentType === 'Passport' ? 'Pasaporte' : 'DNI' }} No. {{ detail.stipulatedPartyDocumentNumber }}
+                  @if (detail.stipulatedPartyRtn) { · RTN {{ detail.stipulatedPartyRtn }} }
+                  @if (detail.stipulatedPartyAddress) { · {{ detail.stipulatedPartyAddress }} }
+                </span>
+              </div>
             }
             @if (detail.notes) {
               <div class="full-width"><span class="detail-label">Notas</span><span>{{ detail.notes }}</span></div>
@@ -732,6 +739,10 @@
               Nacionalidad
               <input type="text" class="ui-form-control" formControlName="stipulatedPartyNationality" />
               <small class="ui-field-inline-error" [class.visible]="contractForm.controls.stipulatedPartyNationality.invalid && (contractForm.controls.stipulatedPartyNationality.touched || createFormSubmitted)">Nacionalidad requerida cuando el documento es pasaporte.</small>
+            </label>
+            <label>
+              RTN
+              <input type="text" class="ui-form-control" formControlName="stipulatedPartyRtn" />
             </label>
             <label class="span-2">
               Dirección
