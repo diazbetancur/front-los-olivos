@@ -35,7 +35,7 @@ const VISIBLE_PERMISSION_CODES = new Set<string>([
   'Projects.View', 'Projects.Create', 'Projects.Update', 'Projects.Disable',
   'Lots.View', 'Lots.Create', 'Lots.Update', 'Lots.ChangeStatus', 'Lots.Import',
   'Clients.View', 'Clients.Create', 'Clients.Update', 'Clients.Disable',
-  'Contracts.View', 'Contracts.Create', 'Contracts.Approve', 'Contracts.Cancel', 'Contracts.GenerateDocument',
+  'Contracts.View', 'Contracts.Create', 'Contracts.Approve', 'Contracts.Activate', 'Contracts.Cancel', 'Contracts.GenerateDocument',
   'PaymentSchedules.View',
   'Documents.View',
   'Payments.View', 'Payments.Register', 'Payments.Apply', 'Payments.Void', 'Payments.ReviewProof',

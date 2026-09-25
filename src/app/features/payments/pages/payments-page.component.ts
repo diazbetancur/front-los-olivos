@@ -357,8 +357,15 @@ export class PaymentsPageComponent implements OnInit {
       return;
     }
 
+    // Un pago emite un recibo por cuota cubierta: con 12 cuotas son 12 recibos, y el mensaje en
+    // singular hacia pensar que se habia generado uno solo.
+    const allocations = result.payment?.allocations ?? [];
+    const emitted = allocations.filter((allocation) => allocation.hasReceipt).length;
+    const receiptsText = emitted === allocations.length
+      ? (emitted === 1 ? 'Se emitió 1 recibo.' : `Se emitieron ${emitted} recibos.`)
+      : `Se emitieron ${emitted} de ${allocations.length} recibos; los pendientes se pueden generar desde el detalle del pago.`;
     const message = result.payment?.status === 'Aplicado'
-      ? 'Pago aplicado y recibo emitido.'
+      ? `Pago aplicado. ${receiptsText}`
       : 'Pago registrado. Queda pendiente de aprobacion.';
     this.feedback.showSuccess(message);
     this.cancelRegisterForm();

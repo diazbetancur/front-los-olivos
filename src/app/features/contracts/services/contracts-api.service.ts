@@ -90,6 +90,14 @@ export class ContractsApiService {
     );
   }
 
+  /** Pone el contrato en vigencia sin exigir el documento firmado, que puede cargarse despues. */
+  activateContract(contractId: string): Observable<ContractDetailResponse> {
+    return this.apiClient.post<Record<string, never>, ContractDetailResponse>(
+      `/api/v1/admin/contracts/${contractId}/activate`,
+      {}
+    );
+  }
+
   cancelContract(contractId: string, request: CancelContractRequest): Observable<ContractDetailResponse> {
     return this.apiClient.post<CancelContractRequest, ContractDetailResponse>(
       `/api/v1/admin/contracts/${contractId}/cancel`,
